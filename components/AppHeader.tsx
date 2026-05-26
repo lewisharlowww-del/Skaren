@@ -48,11 +48,11 @@ export function AppHeader() {
 
   return (
     <>
-    <header className="sticky top-0 z-40 border-b border-white/60 bg-porcelain/85 backdrop-blur-2xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:py-4">
+    <header className="sticky top-0 z-40 border-b border-white/60 bg-porcelain/88 backdrop-blur-2xl">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))] sm:py-4">
         <Link href="/" className="group flex items-center gap-3 font-black text-soil-900">
-          <SkarenMark className="h-10 w-10 transition duration-300 group-hover:-rotate-6 group-hover:scale-105 sm:h-11 sm:w-11" iconClassName="h-6 w-6 text-white" />
-          <SkarenWordmark className="text-xl sm:text-lg" />
+          <SkarenMark className="h-9 w-9 transition duration-300 group-hover:-rotate-6 group-hover:scale-105 sm:h-11 sm:w-11" iconClassName="h-5 w-5 text-white sm:h-6 sm:w-6" />
+          <SkarenWordmark className="text-lg sm:text-lg" />
         </Link>
 
         <nav className="hidden items-center gap-2 text-sm font-medium text-soil-600 sm:flex">
@@ -96,18 +96,18 @@ export function AppHeader() {
           <Link
             href="/support"
             aria-label="Support Skaren"
-            className="focus-ring grid min-h-11 min-w-11 place-items-center rounded-full border border-black/5 bg-white text-forest shadow-sm active:scale-95"
+            className="focus-ring tap-feedback grid min-h-10 min-w-10 place-items-center rounded-full border border-black/5 bg-white text-forest shadow-sm"
           >
             <BadgeCheck className="h-5 w-5" />
           </Link>
-          <Link href="/scan" className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-black text-white shadow-soft active:scale-95">
+          <Link href="/scan" className="focus-ring tap-feedback inline-flex min-h-10 items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-black text-white shadow-soft">
             <ScanBarcode className="h-4 w-4" />
             Scan
           </Link>
         </div>
       </div>
     </header>
-    <nav className="fixed inset-x-3 bottom-3 z-50 grid grid-cols-5 rounded-[1.7rem] border border-white/70 bg-white/85 p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-phone backdrop-blur-2xl sm:hidden">
+    <nav className="fixed inset-x-3 bottom-3 z-50 grid grid-cols-5 rounded-[1.7rem] border border-white/70 bg-white/85 p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-phone backdrop-blur-2xl dark:border-white/10 dark:bg-[#121d16]/92 sm:hidden">
       {[
         { href: "/", label: "Home", icon: Home },
         { href: isSignedIn ? "/history" : "/login?next=%2Fhistory", label: "History", icon: History },
@@ -122,10 +122,10 @@ export function AppHeader() {
             href={item.href}
             className={`focus-ring flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[0.68rem] font-black transition active:scale-95 ${
               item.primary
-                ? "bg-ink text-white shadow-soft"
+                ? "bg-ink text-white shadow-soft dark:bg-white dark:text-ink"
                 : active
-                  ? "bg-lime-100 text-ink"
-                  : "text-soil-600 hover:bg-white"
+                  ? "bg-lime-100 text-ink dark:bg-forest dark:text-white dark:shadow-sm"
+                  : "text-soil-600 hover:bg-white dark:text-white/60 dark:hover:bg-white/10"
             }`}
           >
             <item.icon className="h-4 w-4" />

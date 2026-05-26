@@ -71,33 +71,33 @@ function LoginContent() {
   return (
     <>
       <AppHeader />
-      <main className="mx-auto grid max-w-6xl items-start gap-7 px-4 pb-20 pt-7 md:min-h-[calc(100vh-5rem)] md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-8 md:py-10">
+      <main className="page-fade-up mx-auto grid w-full max-w-[430px] items-start gap-4 px-4 pb-36 pt-4 md:min-h-[calc(100vh-5rem)] md:max-w-6xl md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-8 md:py-10">
         <section className="mx-auto max-w-xl text-center md:mx-0 md:text-left">
-          <SkarenMark className="mx-auto mb-4 h-14 w-14 md:mx-0" iconClassName="h-8 w-8 text-white" />
+          <SkarenMark className="mx-auto mb-3 h-11 w-11 md:mx-0 md:mb-4 md:h-14 md:w-14" iconClassName="h-6 w-6 text-white md:h-8 md:w-8" />
           <p className="font-black uppercase tracking-[0.16em] text-forest">Welcome back</p>
-          <h1 className="font-display mt-3 text-4xl font-black leading-tight tracking-[-0.05em] text-ink sm:text-5xl">
-            Log in to keep your scans synced.
+          <h1 className="font-display mt-2 text-[2.4rem] font-black leading-[0.96] tracking-[-0.055em] text-ink sm:text-5xl">
+            Track smarter choices instantly.
           </h1>
-          <p className="mx-auto mt-4 max-w-md text-base font-medium leading-7 text-soil-600 md:mx-0 md:text-lg md:leading-8">
-            See your history, streaks, and product stats across your phone and laptop.
+          <p className="mx-auto mt-3 max-w-md text-[0.98rem] font-semibold leading-7 text-soil-600 md:mx-0 md:text-lg md:leading-8">
+            Save your scans, follow your progress, and unlock deeper product insights.
           </p>
           <Link
             href="/scan"
-            className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 font-black text-forest shadow-sm"
+            className="focus-ring tap-feedback mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-forest shadow-sm"
           >
             <ScanBarcode className="h-5 w-5" />
             Scan without logging in
           </Link>
         </section>
 
-        <section className="mx-auto w-full max-w-[25rem] rounded-[2.25rem] border border-white/70 bg-white/85 p-6 shadow-glass backdrop-blur-xl sm:p-8">
+        <section className="mx-auto w-full max-w-[24rem] rounded-[2rem] border border-white/70 bg-white/88 p-5 shadow-glass backdrop-blur-xl sm:p-7">
           <div className="text-center">
-            <SkarenMark className="mx-auto mb-4 h-14 w-14" iconClassName="h-8 w-8 text-white" />
-            <h2 className="text-3xl font-black text-ink">
+            <SkarenMark className="mx-auto mb-3 h-11 w-11" iconClassName="h-6 w-6 text-white" />
+            <h2 className="text-2xl font-black text-ink">
               <SkarenWordmark />
             </h2>
             <p className="mt-2 text-sm font-medium text-soil-600">
-              {signedInEmail ? "Your account is active on this device." : "Log in to your Skaren account."}
+              {signedInEmail ? "Your account is active on this device." : "Sign in to keep your product reports synced."}
             </p>
           </div>
 
@@ -121,7 +121,7 @@ function LoginContent() {
               <div className="mt-5 grid gap-3">
                 <Link
                   href="/account"
-                  className="focus-ring inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 font-black text-white shadow-phone"
+                className="focus-ring tap-feedback inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 font-black text-white shadow-phone"
                 >
                   <UserRound className="h-5 w-5" />
                   Go to account
@@ -129,7 +129,7 @@ function LoginContent() {
                 <button
                   type="button"
                   onClick={() => void signOut()}
-                  className="focus-ring inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-white px-5 py-4 font-black text-soil-700 shadow-sm"
+                  className="focus-ring tap-feedback inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-white px-5 py-4 font-black text-soil-700 shadow-sm"
                 >
                   <LogOut className="h-5 w-5" />
                   Sign out
@@ -163,7 +163,7 @@ function LoginContent() {
               </label>
               <button
                 disabled={loading || !isSupabaseConfigured}
-                className="focus-ring inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 font-black text-white shadow-phone disabled:cursor-not-allowed disabled:bg-soil-600"
+                className="focus-ring tap-feedback inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 font-black text-white shadow-phone disabled:cursor-not-allowed disabled:bg-soil-600"
               >
                 <LogIn className="h-5 w-5" />
                 {loading ? "Logging in..." : "Log in"}

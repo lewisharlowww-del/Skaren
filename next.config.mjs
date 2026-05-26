@@ -3,6 +3,24 @@ import { PHASE_DEVELOPMENT_SERVER } from "next/constants.js";
 /** @type {(phase: string) => import('next').NextConfig} */
 const createNextConfig = (phase) => ({
   distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next",
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Service-Worker-Allowed", value: "/" }
+        ]
+      },
+      {
+        source: "/manifest.webmanifest",
+        headers: [
+          { key: "Content-Type", value: "application/manifest+json" },
+          { key: "Cache-Control", value: "public, max-age=3600" }
+        ]
+      }
+    ];
+  },
   images: {
     remotePatterns: [
       {

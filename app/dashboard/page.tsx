@@ -81,18 +81,18 @@ export default function DashboardPage() {
     <>
       <AppHeader />
       <OnboardingSlides open={showOnboarding} onComplete={() => setShowOnboarding(false)} />
-      <main className="mx-auto w-full max-w-[430px] overflow-x-hidden px-4 pb-44 pt-6 sm:max-w-6xl sm:py-8">
+      <main className="page-fade-up mx-auto w-full max-w-[430px] overflow-x-hidden px-4 pb-44 pt-4 sm:max-w-6xl sm:py-8">
         <div className="flex w-full min-w-0 flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div className="min-w-0">
             <p className="text-sm font-black uppercase tracking-[0.16em] text-forest">Your Skaren overview</p>
-            <h1 className="mt-2 font-display text-[2.6rem] font-black leading-none tracking-[-0.055em] text-ink sm:text-4xl">Stats</h1>
+            <h1 className="mt-1 font-display text-[2.45rem] font-black leading-none tracking-[-0.055em] text-ink sm:mt-2 sm:text-4xl">Stats</h1>
             <p className="mt-2 max-w-xl text-base font-semibold leading-7 text-soil-600">
               See your scan rhythm, saved product history, and the grades you are choosing most often.
             </p>
           </div>
           <button
             onClick={() => router.push("/scan")}
-            className="focus-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 font-black text-white shadow-soft"
+            className="focus-ring tap-feedback inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 font-black text-white shadow-soft"
           >
             <ScanBarcode className="h-5 w-5" />
             New scan
@@ -100,18 +100,18 @@ export default function DashboardPage() {
         </div>
 
         {loading ? (
-          <div className="mt-8 grid w-full gap-4">
+          <div className="mt-5 grid w-full gap-4 sm:mt-8">
             <div className="skeleton-shimmer h-64 rounded-[2rem] bg-white/70" />
             <div className="skeleton-shimmer h-40 rounded-[2rem] bg-white/70" />
           </div>
         ) : scans.length === 0 ? (
-          <div className="mt-8">
+          <div className="mt-5 sm:mt-8">
             <EmptyState />
           </div>
         ) : (
           <>
-            <section className="mt-8 grid w-full min-w-0 gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-              <div className={`relative min-w-0 overflow-hidden rounded-[2.25rem] border border-white/70 bg-gradient-to-br ${tone.bg} p-5 shadow-glass backdrop-blur-xl sm:p-8`}>
+            <section className="mt-5 grid w-full min-w-0 gap-4 sm:mt-8 lg:grid-cols-[1.15fr_0.85fr]">
+              <div className={`relative min-w-0 overflow-hidden rounded-[2rem] border border-white/70 bg-gradient-to-br ${tone.bg} p-5 shadow-glass backdrop-blur-xl sm:rounded-[2.25rem] sm:p-8`}>
                 <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/65 blur-3xl" />
                 <div className="absolute -bottom-24 left-10 h-72 w-72 rounded-full bg-leaf-100/70 blur-3xl" />
                 <div className="relative z-10 grid gap-6 sm:grid-cols-[auto_1fr] sm:items-center">
@@ -165,7 +165,7 @@ export default function DashboardPage() {
               <StatCard label="Lowest saved product" value={worst ? `Grade ${scoreToGrade(worst.ecoscan_score)}` : "–"} icon={Leaf} detail={worst?.product_name ?? "No lower-grade product yet"} tone={worst && worst.ecoscan_score < 40 ? "red" : "amber"} />
             </section>
 
-            <section className="mt-6 grid w-full min-w-0 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+            <section className="mt-4 grid w-full min-w-0 gap-4 sm:mt-6 lg:grid-cols-[0.9fr_1.1fr]">
               <div className="min-w-0 overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-glass backdrop-blur-xl">
                 <div className="flex min-w-0 items-center justify-between gap-3">
                   <div className="min-w-0">

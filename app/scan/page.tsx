@@ -8,6 +8,7 @@ import { CheckCircle2, Info, Loader2, ScanBarcode } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { PhoneFrame } from "@/components/PhoneFrame";
+import { cacheProductLocally } from "@/lib/localProducts";
 import { toScanPayload } from "@/lib/openfoodfacts";
 import { getStoredSupportStatus } from "@/lib/premium";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
@@ -105,6 +106,7 @@ export default function ScanPage() {
 
       const product = data.product;
       sessionStorage.setItem(`skaren:${product.barcode}`, JSON.stringify(product));
+      cacheProductLocally(product);
 
       if (isSupabaseConfigured && supabase) {
         const { data: userData } = await supabase.auth.getUser();
@@ -144,20 +146,20 @@ export default function ScanPage() {
   return (
     <>
       <AppHeader />
-      <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl gap-5 px-4 pb-28 pt-5 sm:py-8 md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-8">
+      <main className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-[430px] gap-4 px-4 pb-36 pt-4 sm:max-w-6xl sm:py-8 md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-8">
         <motion.section
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 130, damping: 24 }}
         >
-          <div className="mb-4 grid h-14 w-14 place-items-center rounded-[1.25rem] bg-forest text-cream shadow-glass sm:mb-6 sm:h-16 sm:w-16 sm:rounded-[1.4rem]">
+          <div className="mb-3 grid h-12 w-12 place-items-center rounded-[1.2rem] bg-forest text-cream shadow-glass sm:mb-6 sm:h-16 sm:w-16 sm:rounded-[1.4rem]">
             <ScanBarcode className="h-7 w-7" />
           </div>
-          <h1 className="font-display max-w-xl text-4xl font-black leading-[0.96] tracking-[-0.05em] text-ink sm:text-6xl">Scan a barcode</h1>
-          <p className="mt-4 max-w-xl text-base leading-7 text-soil-600 sm:mt-5 sm:text-lg sm:leading-8">
+          <h1 className="font-display max-w-xl text-[2.4rem] font-black leading-[0.96] tracking-[-0.055em] text-ink sm:text-6xl">Scan a barcode</h1>
+          <p className="mt-3 max-w-xl text-base font-semibold leading-7 text-soil-600 sm:mt-5 sm:text-lg sm:leading-8">
             Use your phone camera to scan a barcode, or enter it manually when camera access is not available.
           </p>
-          <div className="glass-card mt-5 flex max-w-xl gap-3 rounded-[1.5rem] p-4 text-sm leading-6 text-soil-600 sm:mt-8 sm:rounded-[1.7rem]">
+          <div className="glass-card mt-4 flex max-w-xl gap-3 rounded-[1.5rem] p-4 text-sm leading-6 text-soil-600 sm:mt-8 sm:rounded-[1.7rem]">
             <Info className="mt-0.5 h-5 w-5 flex-none text-forest" />
             <p>Scan with your account to save history, badges, and dashboard stats.</p>
           </div>
@@ -167,15 +169,15 @@ export default function ScanPage() {
           initial={{ opacity: 0, y: 22, scale: 0.985 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ type: "spring", stiffness: 120, damping: 22, delay: 0.08 }}
-          className="mx-auto w-full max-w-[24rem] md:max-w-[22rem]"
+          className="mx-auto w-full max-w-[23rem] md:max-w-[22rem]"
         >
         <PhoneFrame>
-          <div className="flex min-h-[29rem] flex-col">
+          <div className="flex min-h-[27rem] flex-col">
             <div className="text-center">
               <p className="text-sm font-bold text-soil-600">Skaren barcode</p>
               <h2 className="font-display mt-2 text-[1.75rem] font-black tracking-[-0.04em] text-ink sm:text-3xl">Analyze Product</h2>
             </div>
-            <div className="my-5 sm:my-6">
+            <div className="my-4 sm:my-6">
               <BarcodeScanner autoStart disabled={loading} onDetected={(detectedBarcode) => void analyzeBarcode(detectedBarcode)} />
             </div>
 
@@ -194,7 +196,7 @@ export default function ScanPage() {
               </label>
               <button
                 disabled={loading}
-                className="focus-ring sticky bottom-24 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 font-black text-white shadow-phone transition active:scale-[0.99] hover:-translate-y-0.5 hover:bg-forest disabled:bg-soil-600 sm:static"
+                className="focus-ring tap-feedback sticky bottom-24 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 font-black text-white shadow-phone hover:-translate-y-0.5 hover:bg-forest disabled:bg-soil-600 sm:static"
               >
                 <AnimatePresence mode="wait" initial={false}>
                   {scanSuccess ? (

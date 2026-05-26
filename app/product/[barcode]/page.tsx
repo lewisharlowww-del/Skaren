@@ -14,6 +14,7 @@ import { ScoreBadge, gradeDescriptions } from "@/components/ScoreBadge";
 import { getEcoGrade, getNutritionGrade, scoreToGrade } from "@/lib/ecoscore";
 import { calculateHealthGrade, hasNokkelhullLabel, nutritionDataFromKassalapp } from "@/lib/healthscore";
 import { getProductEmoji } from "@/lib/kassalapp";
+import { cacheProductLocally, readLocalProduct } from "@/lib/localProducts";
 import { getStoredSupportStatus, isPremiumMetadata } from "@/lib/premium";
 import { supabase } from "@/lib/supabase";
 import type { GradeLetter, ProductResult } from "@/lib/types";
@@ -116,12 +117,12 @@ function ProductVisual({ product }: { product: ProductResult }) {
       initial={{ opacity: 0, y: 22, scale: 0.985 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: "spring", stiffness: 125, damping: 24 }}
-      className="group relative min-h-[25rem] w-full max-w-full overflow-hidden rounded-[2rem] bg-gradient-to-br from-cream via-white to-leaf-100 p-5 shadow-phone sm:min-h-[34rem] sm:rounded-[2.25rem] md:h-full md:min-h-[38rem] md:p-6"
+      className="group relative min-h-[22rem] w-full max-w-full overflow-hidden rounded-[1.8rem] bg-gradient-to-br from-cream via-white to-leaf-100 p-5 shadow-phone sm:min-h-[34rem] sm:rounded-[2.25rem] md:h-full md:min-h-[38rem] md:p-6"
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_34%,rgba(255,255,255,0.95),transparent_30%),radial-gradient(circle_at_20%_15%,rgba(82,183,136,0.22),transparent_26%),radial-gradient(circle_at_88%_82%,rgba(244,162,97,0.16),transparent_28%)]" />
       <div className="absolute inset-x-8 top-[18%] h-[48%] rounded-full bg-forest/10 blur-3xl" />
       <div className="absolute inset-x-12 bottom-24 h-16 rounded-full bg-black/15 blur-2xl" />
-      <div className="absolute inset-4 rounded-[1.65rem] border border-white/70 bg-white/25 backdrop-blur-[1px] sm:rounded-[2rem]" />
+      <div className="absolute inset-3 rounded-[1.5rem] border border-white/70 bg-white/25 backdrop-blur-[1px] sm:inset-4 sm:rounded-[2rem]" />
       <div className="absolute inset-0 opacity-70 transition duration-700 group-hover:opacity-90">
         <div className="absolute -left-20 top-10 h-56 w-56 rounded-full bg-leaf-200/25 blur-3xl" />
         <div className="absolute -bottom-16 right-0 h-72 w-72 rounded-full bg-white/50 blur-3xl" />
@@ -129,7 +130,7 @@ function ProductVisual({ product }: { product: ProductResult }) {
 
       {product.displayImage ? (
         <>
-          <div className="absolute inset-x-5 top-8 flex h-[58%] items-center justify-center sm:inset-x-8 sm:top-10 sm:h-[62%]">
+          <div className="absolute inset-x-5 top-6 flex h-[55%] items-center justify-center sm:inset-x-8 sm:top-10 sm:h-[62%]">
             <img
               alt={`${product.name} product packaging`}
               className="max-h-full max-w-full object-contain object-center drop-shadow-[0_28px_34px_rgba(16,21,18,0.28)] transition duration-700 group-hover:scale-[1.025]"
@@ -147,8 +148,8 @@ function ProductVisual({ product }: { product: ProductResult }) {
         </div>
       )}
 
-      <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
-        <h2 className="font-display line-clamp-2 break-words text-3xl font-black leading-[0.95] tracking-[-0.055em] text-white drop-shadow [overflow-wrap:anywhere] sm:text-5xl md:text-6xl">{product.name}</h2>
+      <div className="absolute inset-x-0 bottom-0 p-4 sm:p-7">
+        <h2 className="font-display line-clamp-2 break-words text-[2rem] font-black leading-[0.95] tracking-[-0.055em] text-white drop-shadow [overflow-wrap:anywhere] sm:text-5xl md:text-6xl">{product.name}</h2>
         <p className="mt-2 text-base font-semibold text-white/75 sm:mt-3 sm:text-lg">{product.brand || "Brand not listed"}</p>
       </div>
     </motion.div>
@@ -277,7 +278,7 @@ function ProductGradeCard({ product }: { product: ProductResult }) {
       initial={{ opacity: 0, y: 16, scale: 0.985 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: "spring", stiffness: 150, damping: 24, delay: 0.05 }}
-      className="rounded-[1.75rem] border border-black/5 bg-white p-6 shadow-soft sm:rounded-[2rem]"
+      className="rounded-[1.65rem] border border-black/5 bg-white p-5 shadow-soft sm:rounded-[2rem] sm:p-6"
     >
       <div className="relative flex flex-col items-center text-center">
         <button
@@ -307,9 +308,9 @@ function ProductGradeCard({ product }: { product: ProductResult }) {
         ) : null}
       </div>
 
-      <div className="my-6 h-px bg-black/5" />
+      <div className="my-5 h-px bg-black/5 sm:my-6" />
 
-      <div className="grid gap-3">
+      <div className="grid gap-2.5 sm:gap-3">
         <div className="rounded-2xl border border-black/5 bg-white p-4 text-center shadow-sm">
           <ScoreBadge grade={healthGrade} label="🥗 Health" />
           {product.hasNokkelhull ? (
@@ -324,7 +325,7 @@ function ProductGradeCard({ product }: { product: ProductResult }) {
       </div>
 
       {facts.length > 0 ? (
-        <div className="-mx-1 mt-5 flex gap-2 overflow-x-auto px-1 pb-1">
+          <div className="-mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:mt-5">
           {facts.map((fact) => (
             <div key={fact.label} className={`min-h-11 min-w-fit rounded-full border px-4 py-2 ${fact.tone}`}>
               <p className="text-[0.94rem] font-black leading-5">{fact.label}</p>
@@ -839,6 +840,13 @@ export default function ProductPage({ params }: ProductPageProps) {
         }
       }
 
+      const localProduct = readLocalProduct(params.barcode);
+      if (localProduct && !options.skipCache && !navigator.onLine) {
+        setProduct(withProductDefaults(localProduct));
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch("/api/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -860,10 +868,17 @@ export default function ProductPage({ params }: ProductPageProps) {
 
       const productWithDefaults = withProductDefaults(data.product);
       sessionStorage.setItem(`skaren:${productWithDefaults.barcode}`, JSON.stringify(productWithDefaults));
+      cacheProductLocally(productWithDefaults);
       setProduct(productWithDefaults);
     } catch {
-      setProduct(null);
-      setError({ message: "Something went wrong. Please try again.", type: "retry" });
+      const localProduct = readLocalProduct(params.barcode);
+      if (localProduct) {
+        setProduct(withProductDefaults(localProduct));
+        setError(null);
+      } else {
+        setProduct(null);
+        setError({ message: "Something went wrong. Please try again.", type: "retry" });
+      }
     } finally {
       setLoading(false);
     }
@@ -923,6 +938,7 @@ export default function ProductPage({ params }: ProductPageProps) {
             displayImageSource: "kassalapp"
           });
           sessionStorage.setItem(`skaren:${updated.barcode}`, JSON.stringify(updated));
+          cacheProductLocally(updated);
 
           return updated;
         });
@@ -951,15 +967,15 @@ export default function ProductPage({ params }: ProductPageProps) {
   return (
     <>
       <AppHeader />
-      <main className="mx-auto w-full max-w-[430px] overflow-x-hidden px-3 pb-48 pt-4 sm:max-w-2xl sm:px-4 sm:py-8 md:max-w-6xl">
-        <Link href="/scan" className="inline-flex min-h-11 items-center gap-2 rounded-full px-1 text-sm font-bold text-soil-600 hover:text-ink">
+      <main className="page-fade-up mx-auto w-full max-w-[430px] overflow-x-hidden px-3 pb-48 pt-3 sm:max-w-2xl sm:px-4 sm:py-8 md:max-w-6xl">
+        <Link href="/scan" className="tap-feedback inline-flex min-h-10 items-center gap-2 rounded-full px-1 text-sm font-bold text-soil-600 hover:text-ink">
           <ArrowLeft className="h-4 w-4" />
           Scan another product
         </Link>
 
         {loading ? (
-          <div className="mt-4 grid gap-3 md:grid-cols-[0.9fr_1.1fr]">
-            <div className="skeleton-shimmer h-[25rem] rounded-[2rem] bg-white/70 sm:h-96" />
+          <div className="mt-3 grid gap-3 md:grid-cols-[0.9fr_1.1fr]">
+            <div className="skeleton-shimmer h-[22rem] rounded-[1.8rem] bg-white/70 sm:h-96 sm:rounded-[2rem]" />
             <div className="skeleton-shimmer h-72 rounded-[2rem] bg-white/70 sm:h-96" />
           </div>
         ) : error ? (
@@ -973,7 +989,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               {error.type === "retry" ? (
                 <button
                   onClick={() => void loadProduct({ skipCache: true })}
-                className="focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 font-bold text-white shadow-soft"
+                className="focus-ring tap-feedback inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 font-bold text-white shadow-soft"
                 >
                   <RotateCcw className="h-5 w-5" />
                   Retry
@@ -981,7 +997,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               ) : null}
               <Link
                 href="/scan"
-                className="focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-5 py-3 font-bold text-ink"
+                className="focus-ring tap-feedback inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-5 py-3 font-bold text-ink"
               >
                 <ArrowLeft className="h-5 w-5" />
                 Back to scan
@@ -994,16 +1010,16 @@ export default function ProductPage({ params }: ProductPageProps) {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 120, damping: 24 }}
-              className="mt-3 w-full max-w-full overflow-hidden rounded-[2rem] border border-white/70 bg-white/70 shadow-glass backdrop-blur-2xl sm:mt-6 sm:rounded-[2.5rem]"
+              className="mt-2 w-full max-w-full overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/72 shadow-glass backdrop-blur-2xl sm:mt-6 sm:rounded-[2.5rem]"
             >
-              <div className="grid min-w-0 gap-3 p-3 md:grid-cols-[1.05fr_0.95fr] md:gap-5 md:p-5">
+              <div className="grid min-w-0 gap-2.5 p-2 md:grid-cols-[1.05fr_0.95fr] md:gap-5 md:p-5">
                 <div className="min-w-0">
                   <ProductVisual product={product} />
                 </div>
 
-                <div className="min-w-0 space-y-3 md:flex md:min-h-[38rem] md:flex-col md:justify-center">
+                <div className="min-w-0 space-y-2.5 md:flex md:min-h-[38rem] md:flex-col md:justify-center md:space-y-3">
                   <ProductGradeCard product={product} />
-                  <div className="rounded-[1.75rem] border border-white/70 bg-white/90 p-4 shadow-soft backdrop-blur-xl sm:rounded-[2rem] sm:p-5">
+                  <div className="rounded-[1.65rem] border border-white/70 bg-white/90 p-4 shadow-soft backdrop-blur-xl sm:rounded-[2rem] sm:p-5">
                     <div>
                       <NorwayDataBadge status={product.norwegianDataStatus} />
                     </div>
@@ -1023,14 +1039,14 @@ export default function ProductPage({ params }: ProductPageProps) {
         <div className="fixed inset-x-3 bottom-[6.4rem] z-40 grid grid-cols-2 gap-2 rounded-[1.5rem] border border-white/70 bg-white/90 p-2 shadow-phone backdrop-blur-2xl sm:hidden">
           <button
             onClick={() => void handleShare()}
-            className="focus-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-ink px-4 py-3 text-[0.95rem] font-black text-white active:scale-[0.99]"
+            className="focus-ring tap-feedback inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-ink px-4 py-3 text-[0.95rem] font-black text-white"
           >
             <Share2 className="h-5 w-5" />
             {copied ? "Copied" : "Share"}
           </button>
           <Link
             href="/scan"
-            className="focus-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-leaf-100 px-4 py-3 text-[0.95rem] font-black text-forest active:scale-[0.99]"
+            className="focus-ring tap-feedback inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-leaf-100 px-4 py-3 text-[0.95rem] font-black text-forest"
           >
             <Barcode className="h-5 w-5" />
             Scan another

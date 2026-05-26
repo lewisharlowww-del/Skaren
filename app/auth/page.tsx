@@ -54,33 +54,33 @@ export default function AuthPage() {
   return (
     <>
       <AppHeader />
-      <main className="mx-auto grid max-w-6xl items-start gap-7 px-4 pb-12 pt-7 md:min-h-[calc(100vh-5rem)] md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-8 md:py-10">
+      <main className="page-fade-up mx-auto grid w-full max-w-[430px] items-start gap-4 px-4 pb-36 pt-4 md:min-h-[calc(100vh-5rem)] md:max-w-6xl md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-8 md:py-10">
         <section className="mx-auto max-w-xl text-center md:mx-0 md:text-left">
-          <SkarenMark className="mx-auto mb-4 h-12 w-12 md:mx-0 md:mb-5 md:h-14 md:w-14" iconClassName="h-8 w-8 text-white" />
-          <h1 className="text-4xl font-black leading-tight text-ink sm:text-5xl">Save your product history</h1>
-          <p className="mx-auto mt-3 max-w-md text-base leading-7 text-soil-600 md:mx-0 md:mt-4 md:text-lg md:leading-8">
-            Create a free account when you want saved scans, streaks, and dashboard stats.
+          <SkarenMark className="mx-auto mb-3 h-11 w-11 md:mx-0 md:mb-5 md:h-14 md:w-14" iconClassName="h-6 w-6 text-white md:h-8 md:w-8" />
+          <h1 className="font-display text-[2.4rem] font-black leading-[0.96] tracking-[-0.055em] text-ink sm:text-5xl">Track smarter choices instantly.</h1>
+          <p className="mx-auto mt-3 max-w-md text-[0.98rem] font-semibold leading-7 text-soil-600 md:mx-0 md:mt-4 md:text-lg md:leading-8">
+            Save your scans, follow your progress, and unlock deeper product insights.
           </p>
         </section>
 
-        <PhoneFrame className="mx-auto w-full max-w-[21rem] md:max-w-[22rem]" contentClassName="min-h-0 px-5 pb-6 pt-9 sm:px-7 sm:pb-8 sm:pt-10">
+        <PhoneFrame className="mx-auto w-full max-w-[20.5rem] md:max-w-[22rem]" contentClassName="min-h-0 px-5 pb-6 pt-7 sm:px-7 sm:pb-8 sm:pt-9">
           <section>
-          <div className="mb-5 text-center sm:mb-7">
-            <SkarenMark className="mx-auto mb-3 h-12 w-12 sm:mb-4 sm:h-14 sm:w-14" iconClassName="h-8 w-8 text-white" />
+          <div className="mb-4 text-center sm:mb-6">
+            <SkarenMark className="mx-auto mb-3 h-11 w-11 sm:mb-4 sm:h-14 sm:w-14" iconClassName="h-6 w-6 text-white sm:h-8 sm:w-8" />
             <h2 className="text-2xl font-black text-ink sm:text-3xl"><SkarenWordmark /></h2>
-            <p className="mt-2 text-sm text-soil-600">Sign in to keep your scans synced.</p>
+            <p className="mt-2 text-sm text-soil-600">Create your Skaren account in a minute.</p>
           </div>
           {!isSupabaseConfigured ? <SupabaseNotice /> : null}
           <div className="mt-5 grid grid-cols-2 rounded-full bg-soil-100 p-1">
             <button
               onClick={() => setMode("signup")}
-              className={`rounded-full px-4 py-3 text-sm font-bold ${mode === "signup" ? "bg-ink text-white shadow-sm" : "text-soil-600"}`}
+              className={`tap-feedback rounded-full px-4 py-3 text-sm font-bold ${mode === "signup" ? "bg-ink text-white shadow-sm" : "text-soil-600"}`}
             >
               Sign up
             </button>
             <button
               onClick={() => setMode("login")}
-              className={`rounded-full px-4 py-3 text-sm font-bold ${mode === "login" ? "bg-ink text-white shadow-sm" : "text-soil-600"}`}
+              className={`tap-feedback rounded-full px-4 py-3 text-sm font-bold ${mode === "login" ? "bg-ink text-white shadow-sm" : "text-soil-600"}`}
             >
               Log in
             </button>
@@ -110,7 +110,7 @@ export default function AuthPage() {
             </label>
             <button
               disabled={loading || !isSupabaseConfigured}
-              className="focus-ring w-full rounded-full bg-ink px-5 py-4 font-bold text-white shadow-phone disabled:cursor-not-allowed disabled:bg-soil-600"
+              className="focus-ring tap-feedback w-full rounded-full bg-ink px-5 py-4 font-bold text-white shadow-phone disabled:cursor-not-allowed disabled:bg-soil-600"
             >
               {loading ? "Working..." : mode === "signup" ? "Create account" : "Log in"}
             </button>

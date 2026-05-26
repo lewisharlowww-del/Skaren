@@ -21,22 +21,22 @@ export default function PricingPage({ searchParams }: PricingPageProps) {
   return (
     <>
       <AppHeader />
-      <main className="mx-auto max-w-6xl px-4 py-12">
+      <main className="page-fade-up mx-auto w-full max-w-[430px] px-4 pb-36 pt-5 sm:max-w-6xl sm:py-12">
         <CheckoutStatusBanner status={checkoutStatus} amountNok={Number.isFinite(supportAmount) ? supportAmount : 0} sessionId={sessionId} />
 
         <div className="mx-auto max-w-2xl text-center">
           <p className="font-bold text-forest">Support Skaren</p>
-          <h1 className="mt-2 text-4xl font-black text-ink">Help us keep Skaren independent and improving</h1>
-          <p className="mt-4 leading-7 text-soil-600">
+          <h1 className="mt-2 font-display text-[2.4rem] font-black leading-[0.98] tracking-[-0.055em] text-ink sm:text-4xl">Help us keep Skaren independent and improving</h1>
+          <p className="mt-3 text-[0.98rem] font-semibold leading-7 text-soil-600 sm:mt-4">
             Free is for quick checks. Supporters help fund better product data, clearer insights, and future features. Support once from 50 kr and help shape what Skaren becomes.
           </p>
         </div>
 
-        <section className="mt-10 grid gap-5 md:grid-cols-2">
+        <section className="mt-6 grid gap-4 sm:mt-10 sm:gap-5 md:grid-cols-2">
           {Object.values(stripePlans).map((plan) => (
             <div
               key={plan.name}
-              className={`rounded-[2rem] border p-6 shadow-soft ${
+              className={`rounded-[1.8rem] border p-5 shadow-soft sm:rounded-[2rem] sm:p-6 ${
                 plan.name === "Support Skaren" ? "border-forest/20 bg-ink text-white ring-2 ring-leaf-100" : "border-black/5 bg-white/75"
               }`}
             >
@@ -73,7 +73,7 @@ export default function PricingPage({ searchParams }: PricingPageProps) {
                   <SupportCheckout />
                 </div>
               ) : (
-                <Link href="/scan" className="mt-8 inline-flex min-h-14 w-full items-center justify-center rounded-full bg-white px-5 py-4 font-bold text-ink shadow-sm">
+                <Link href="/scan" className="focus-ring tap-feedback mt-8 inline-flex min-h-14 w-full items-center justify-center rounded-full bg-white px-5 py-4 font-bold text-ink shadow-sm">
                   Continue free
                 </Link>
               )}
