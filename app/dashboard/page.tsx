@@ -81,11 +81,11 @@ export default function DashboardPage() {
     <>
       <AppHeader />
       <OnboardingSlides open={showOnboarding} onComplete={() => setShowOnboarding(false)} />
-      <main className="mx-auto max-w-6xl px-4 pb-44 pt-6 sm:py-8">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
+      <main className="mx-auto w-full max-w-[430px] overflow-x-hidden px-4 pb-44 pt-6 sm:max-w-6xl sm:py-8">
+        <div className="flex w-full min-w-0 flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div className="min-w-0">
             <p className="text-sm font-black uppercase tracking-[0.16em] text-forest">Your Skaren overview</p>
-            <h1 className="font-display mt-2 text-4xl font-black tracking-[-0.05em] text-ink">Stats</h1>
+            <h1 className="mt-2 font-display text-[2.6rem] font-black leading-none tracking-[-0.055em] text-ink sm:text-4xl">Stats</h1>
             <p className="mt-2 max-w-xl text-base font-semibold leading-7 text-soil-600">
               See your scan rhythm, saved product history, and the grades you are choosing most often.
             </p>
@@ -100,7 +100,7 @@ export default function DashboardPage() {
         </div>
 
         {loading ? (
-          <div className="mt-8 grid gap-4">
+          <div className="mt-8 grid w-full gap-4">
             <div className="skeleton-shimmer h-64 rounded-[2rem] bg-white/70" />
             <div className="skeleton-shimmer h-40 rounded-[2rem] bg-white/70" />
           </div>
@@ -110,8 +110,8 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
-            <section className="mt-8 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-              <div className={`relative overflow-hidden rounded-[2.25rem] border border-white/70 bg-gradient-to-br ${tone.bg} p-6 shadow-glass backdrop-blur-xl sm:p-8`}>
+            <section className="mt-8 grid w-full min-w-0 gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+              <div className={`relative min-w-0 overflow-hidden rounded-[2.25rem] border border-white/70 bg-gradient-to-br ${tone.bg} p-5 shadow-glass backdrop-blur-xl sm:p-8`}>
                 <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/65 blur-3xl" />
                 <div className="absolute -bottom-24 left-10 h-72 w-72 rounded-full bg-leaf-100/70 blur-3xl" />
                 <div className="relative z-10 grid gap-6 sm:grid-cols-[auto_1fr] sm:items-center">
@@ -132,7 +132,7 @@ export default function DashboardPage() {
                       <CalendarDays className="h-4 w-4" />
                       This month
                     </div>
-                    <h2 className="font-display mt-4 text-4xl font-black tracking-[-0.05em] text-ink">{tone.label}</h2>
+                    <h2 className="mt-4 font-display text-3xl font-black tracking-[-0.05em] text-ink sm:text-4xl">{tone.label}</h2>
                     <p className="mt-3 text-base font-semibold leading-7 text-soil-600">
                       Your saved scans average {monthlyAverage || 0}/100 across {monthlyScans.length} product{monthlyScans.length === 1 ? "" : "s"} this month.
                     </p>
@@ -154,27 +154,27 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="grid w-full min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-1">
                 <StatCard label="Products scanned" value={String(scans.length)} icon={ScanBarcode} detail="All-time saved product reports" tone="dark" />
                 <StatCard label="Current streak" value={`${streak || 0} day${streak === 1 ? "" : "s"}`} icon={Flame} detail={streak ? "Nice rhythm. Keep scanning." : "Scan today to start a streak."} tone={streak ? "green" : "neutral"} />
               </div>
             </section>
 
-            <section className="mt-4 grid gap-4 sm:grid-cols-2">
+            <section className="mt-4 grid w-full min-w-0 gap-4 sm:grid-cols-2">
               <StatCard label="Best saved product" value={best ? `Grade ${scoreToGrade(best.ecoscan_score)}` : "–"} icon={Trophy} detail={best?.product_name ?? "No best product yet"} tone="green" />
               <StatCard label="Lowest saved product" value={worst ? `Grade ${scoreToGrade(worst.ecoscan_score)}` : "–"} icon={Leaf} detail={worst?.product_name ?? "No lower-grade product yet"} tone={worst && worst.ecoscan_score < 40 ? "red" : "amber"} />
             </section>
 
-            <section className="mt-6 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-              <div className="rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-glass backdrop-blur-xl">
-                <div className="flex items-center justify-between">
-                  <div>
+            <section className="mt-6 grid w-full min-w-0 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+              <div className="min-w-0 overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-glass backdrop-blur-xl">
+                <div className="flex min-w-0 items-center justify-between gap-3">
+                  <div className="min-w-0">
                     <p className="text-xs font-black uppercase tracking-[0.15em] text-forest">Milestones</p>
                     <h2 className="font-display mt-1 text-2xl font-black tracking-[-0.04em] text-ink">Badges</h2>
                   </div>
                   <span className="rounded-full bg-leaf-50 px-3 py-1 text-sm font-black text-forest">{earnedBadges}/{badges.length}</span>
                 </div>
-                <div className="mt-4 grid gap-3">
+                <div className="mt-4 grid min-w-0 gap-3">
                   {badges.map((badge) => {
                     const earned = badge.test(scans);
                     return (
@@ -184,9 +184,9 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-glass backdrop-blur-xl">
-                <div className="flex items-center justify-between">
-                  <div>
+              <div className="min-w-0 overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-glass backdrop-blur-xl">
+                <div className="flex min-w-0 items-center justify-between gap-3">
+                  <div className="min-w-0">
                     <p className="text-xs font-black uppercase tracking-[0.15em] text-forest">Latest products</p>
                     <h2 className="font-display mt-1 text-2xl font-black tracking-[-0.04em] text-ink">Recent scans</h2>
                   </div>
@@ -194,7 +194,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="mt-4 space-y-3">
                   {scans.slice(0, 6).map((scan) => (
-                    <div key={`${scan.barcode}-${scan.created_at}`} className="flex items-center gap-3 rounded-[1.35rem] border border-black/5 bg-white p-3 shadow-sm">
+                    <div key={`${scan.barcode}-${scan.created_at}`} className="flex min-w-0 items-center gap-3 rounded-[1.35rem] border border-black/5 bg-white p-3 shadow-sm">
                       <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-leaf-50">
                         {scan.product_image ? (
                           // eslint-disable-next-line @next/next/no-img-element
