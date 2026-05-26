@@ -1,0 +1,149 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { CheckCircle2, HeartHandshake, Loader2 } from "lucide-react";
+import { getStoredSupportStatus, getSupporterBadge, isPremiumMetadata } from "@/lib/premium";
+import { supabase } from "@/lib/supabase";
+import { SupporterBadge } from "@/components/SupporterBadge";
+
+type SupportCheckoutProps = {
+  className?: string;
+  activeClassName?: string;
+};
+
+const presets = [50, 100, 250, 500];
+
+export function SupportCheckout({ className = "", activeClassName }: SupportCheckoutProps) {
+  const [amount, setAmount] = useState(150);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [isSupporter, setIsSupporter] = useState(false);
+  const [savedAmount, setSavedAmount] = useState(0);
+  const [savedBadge, setSavedBadge] = useState("Supporter");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadSupporterStatus() {
+      const { data } = (await supabase?.auth.getUser()) ?? { data: { user: null } };
+      const stored = getStoredSupportStatus(data.user?.email);
+      const metadataSupporter = isPremiumMetadata(data.user?.user_metadata);
+      const amountNok = Number(data.user?.user_metadata?.support_amount_nok ?? stored.amountNok);
+      const badge = String(data.user?.user_metadata?.supporter_badge ?? stored.badge ?? getSupporterBadge(amountNok));
+
+      if (!active) return;
+
+      setIsSupporter(metadataSupporter || stored.isSupporter);
+      setSavedAmount(Number.isFinite(amountNok) ? amountNok : 0);
+      setSavedBadge(badge);
+    }
+
+    void loadSupporterStatus();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function startCheckout() {
+    setLoading(true);
+    setError("");
+
+    try {
+      const { data: sessionData } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
+
+      if (!sessionData.session?.access_token) {
+        window.location.href = "/login?next=%2Fpricing";
+        return;
+      }
+
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`
+        },
+        body: JSON.stringify({ amountNok: amount })
+      });
+      const data = (await response.json()) as { url?: string; error?: string };
+
+      if (!response.ok || !data.url) {
+        setError(data.error ?? "Payment is not ready yet.");
+        return;
+      }
+
+      window.location.href = data.url;
+    } catch {
+      setError("Could not open payment. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (isSupporter) {
+    const badge = savedBadge || getSupporterBadge(savedAmount);
+
+    return (
+      <Link
+        href="/account"
+        className={`focus-ring inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full px-5 py-4 font-black shadow-phone transition ${
+          activeClassName ?? "bg-forest text-white hover:bg-ink"
+        }`}
+      >
+        <CheckCircle2 className="h-5 w-5" />
+        {badge}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={`rounded-[1.75rem] border border-white/10 bg-white/10 p-4 ${className}`}>
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <p className="text-sm font-black uppercase tracking-[0.14em] text-leaf-200">Support amount</p>
+          <p className="mt-1 text-4xl font-black text-white">{amount} kr</p>
+        </div>
+        <SupporterBadge badge={getSupporterBadge(amount)} amountNok={amount} compact />
+      </div>
+
+      <input
+        aria-label="Support amount in NOK"
+        type="range"
+        min={50}
+        max={5000}
+        step={50}
+        value={amount}
+        onChange={(event) => setAmount(Number(event.target.value))}
+        className="mt-5 h-2 w-full accent-leaf-200"
+      />
+
+      <div className="mt-4 grid grid-cols-4 gap-2">
+        {presets.map((preset) => (
+          <button
+            key={preset}
+            type="button"
+            onClick={() => setAmount(preset)}
+            className={`min-h-10 rounded-full px-3 text-sm font-black transition ${
+              amount === preset ? "bg-white text-ink" : "bg-white/10 text-white hover:bg-white/20"
+            }`}
+          >
+            {preset}
+          </button>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => void startCheckout()}
+        disabled={loading}
+        className="focus-ring mt-5 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-4 font-black text-ink shadow-phone transition hover:bg-leaf-50 disabled:cursor-wait disabled:bg-soil-100"
+      >
+        {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <HeartHandshake className="h-5 w-5" />}
+        {loading ? "Opening Stripe..." : `Support with ${amount} kr`}
+      </button>
+
+      {error ? <p className="mt-3 rounded-2xl bg-amber-50 p-3 text-sm font-bold text-amber-800">{error}</p> : null}
+    </div>
+  );
+}

@@ -1,0 +1,173 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    "Plus Jakarta Sans", "DM Sans", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(76, 175, 125, 0.22), transparent 30rem),
+    radial-gradient(circle at 90% 8%, rgba(26, 92, 58, 0.10), transparent 24rem),
+    linear-gradient(180deg, #f0f7f2 0%, #f8fbf8 46%, #f0f7f2 100%);
+  color: #101512;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(76, 175, 125, 0.35);
+}
+
+.focus-ring {
+  @apply focus:outline-none focus:ring-4 focus:ring-leaf-200 focus:ring-offset-2;
+}
+
+.glass-card {
+  @apply border border-white/60 bg-white/70 shadow-glass backdrop-blur-2xl;
+}
+
+.premium-card {
+  @apply border border-black/5 bg-white/85 shadow-soft backdrop-blur-xl;
+}
+
+.animate-rise {
+  animation: rise-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-float {
+  animation: float-soft 5s ease-in-out infinite;
+}
+
+.motion-product-card {
+  animation: product-card-in 720ms cubic-bezier(0.2, 0.95, 0.22, 1) both;
+}
+
+.motion-score-reveal {
+  animation: score-reveal 760ms cubic-bezier(0.2, 0.95, 0.22, 1) 120ms both;
+}
+
+.motion-scan-success {
+  animation: scan-success 520ms cubic-bezier(0.2, 0.95, 0.22, 1) both;
+}
+
+.scan-line {
+  animation: scan-line 1.55s ease-in-out infinite;
+  top: calc(50% - 3.1rem);
+}
+
+.motion-alt-card {
+  transform: translateZ(0);
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.95, 0.22, 1),
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.motion-alt-card:hover {
+  transform: translateY(-3px) scale(1.01);
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-shimmer::after {
+  animation: shimmer 1.45s ease-in-out infinite;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  content: "";
+  inset: 0;
+  position: absolute;
+  transform: translateX(-100%);
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes float-soft {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes product-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes score-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scan-success {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(0) scale(1.015);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes scan-line {
+  0%, 100% {
+    transform: translate(-50%, 0);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate(-50%, 6.1rem);
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
