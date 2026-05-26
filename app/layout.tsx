@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { AppFooter } from "@/components/AppFooter";
 import "./globals.css";
 
@@ -20,6 +21,7 @@ export default function RootLayout({
       <body className="min-h-screen antialiased">
         {children}
         <AppFooter />
+        <Analytics />
       </body>
     </html>
   );
