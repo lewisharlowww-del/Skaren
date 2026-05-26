@@ -8,7 +8,7 @@
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
-  "background_color": "#07110C",
+  "background_color": "#F0F7F2",
   "theme_color": "#1A5C3A",
   "categories": ["food", "health", "shopping", "lifestyle"],
   "lang": "en",

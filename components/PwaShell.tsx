@@ -118,11 +118,11 @@ export function PwaShell() {
   return (
     <>
       {showLaunch ? (
-        <div className="fixed inset-0 z-[80] grid place-items-center bg-[#07110C] text-white">
+        <div className="fixed inset-0 z-[80] grid place-items-center bg-porcelain text-ink">
           <div className="text-center">
             <SkarenMark className="mx-auto h-20 w-20 rounded-[1.7rem]" iconClassName="h-11 w-11 text-white" />
             <p className="mt-5 font-display text-3xl font-black tracking-[-0.04em]">Skaren</p>
-            <p className="mt-2 text-sm font-bold text-leaf-200">Scan smarter. Live cleaner.</p>
+            <p className="mt-2 text-sm font-bold text-forest">Scan smarter. Live cleaner.</p>
           </div>
         </div>
       ) : null}
@@ -135,7 +135,7 @@ export function PwaShell() {
       ) : null}
 
       {showInstall ? (
-        <div className="fixed inset-x-4 bottom-[6.2rem] z-[60] mx-auto max-w-[430px] rounded-[1.5rem] border border-white/70 bg-white/90 p-4 shadow-phone backdrop-blur-2xl dark:border-white/10 dark:bg-[#121d16]/95">
+        <div className="fixed inset-x-4 bottom-[6.2rem] z-[60] mx-auto max-w-[430px] rounded-[1.5rem] border border-white/70 bg-white/90 p-4 shadow-phone backdrop-blur-2xl">
           <button
             type="button"
             onClick={dismissInstall}

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "Skaren"
   },
   formatDetection: {
@@ -30,17 +30,14 @@ export const metadata: Metadata = {
     "mobile-web-app-capable": "yes",
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-title": "Skaren",
-    "apple-mobile-web-app-status-bar-style": "black-translucent",
+    "apple-mobile-web-app-status-bar-style": "default",
     "msapplication-TileColor": "#1A5C3A",
     "msapplication-tap-highlight": "no"
   }
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#1A5C3A" },
-    { media: "(prefers-color-scheme: dark)", color: "#07110C" }
-  ]
+  themeColor: "#1A5C3A"
 };
 
 export default function RootLayout({

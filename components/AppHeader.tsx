@@ -107,7 +107,7 @@ export function AppHeader() {
         </div>
       </div>
     </header>
-    <nav className="fixed inset-x-3 bottom-3 z-50 grid grid-cols-5 rounded-[1.7rem] border border-white/70 bg-white/85 p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-phone backdrop-blur-2xl dark:border-white/10 dark:bg-[#121d16]/92 sm:hidden">
+    <nav className="fixed inset-x-3 bottom-3 z-50 grid grid-cols-5 rounded-[1.7rem] border border-white/70 bg-white/85 p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-phone backdrop-blur-2xl sm:hidden">
       {[
         { href: "/", label: "Home", icon: Home },
         { href: isSignedIn ? "/history" : "/login?next=%2Fhistory", label: "History", icon: History },
@@ -122,10 +122,10 @@ export function AppHeader() {
             href={item.href}
             className={`focus-ring flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[0.68rem] font-black transition active:scale-95 ${
               item.primary
-                ? "bg-ink text-white shadow-soft dark:bg-white dark:text-ink"
+                ? "bg-ink text-white shadow-soft"
                 : active
-                  ? "bg-lime-100 text-ink dark:bg-forest dark:text-white dark:shadow-sm"
-                  : "text-soil-600 hover:bg-white dark:text-white/60 dark:hover:bg-white/10"
+                  ? "bg-lime-100 text-ink"
+                  : "text-soil-600 hover:bg-white"
             }`}
           >
             <item.icon className="h-4 w-4" />
