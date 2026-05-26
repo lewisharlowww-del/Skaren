@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AppFooter } from "@/components/AppFooter";
 import "./globals.css";
 
@@ -20,6 +21,7 @@ export default function RootLayout({
       <body className="min-h-screen antialiased">
         {children}
         <AppFooter />
+        <SpeedInsights />
       </body>
     </html>
   );
