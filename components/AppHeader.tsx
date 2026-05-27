@@ -52,7 +52,7 @@ export function AppHeader() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))] sm:py-4">
         <Link href="/" className="group flex items-center gap-3 font-black text-soil-900">
           <SkarenMark className="h-9 w-9 transition duration-300 group-hover:-rotate-6 group-hover:scale-105 sm:h-11 sm:w-11" iconClassName="h-5 w-5 text-white sm:h-6 sm:w-6" />
-          <SkarenWordmark className="text-lg sm:text-lg" />
+          <SkarenWordmark className="text-[1.8rem] sm:text-[2.05rem]" />
         </Link>
 
         <nav className="hidden items-center gap-2 text-sm font-medium text-soil-600 sm:flex">

@@ -8,52 +8,52 @@
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
-  "background_color": "#F0F7F2",
-  "theme_color": "#1A5C3A",
+  "background_color": "#0E5A34",
+  "theme_color": "#0E5A34",
   "categories": ["food", "health", "shopping", "lifestyle"],
   "lang": "en",
   "dir": "ltr",
   "icons": [
     {
-      "src": "/icons/icon-72.png",
+      "src": "/icons/icon-72.png?v=4",
       "sizes": "72x72",
       "type": "image/png"
     },
     {
-      "src": "/icons/icon-96.png",
+      "src": "/icons/icon-96.png?v=4",
       "sizes": "96x96",
       "type": "image/png"
     },
     {
-      "src": "/icons/icon-128.png",
+      "src": "/icons/icon-128.png?v=4",
       "sizes": "128x128",
       "type": "image/png"
     },
     {
-      "src": "/icons/icon-144.png",
+      "src": "/icons/icon-144.png?v=4",
       "sizes": "144x144",
       "type": "image/png"
     },
     {
-      "src": "/icons/icon-192.png",
+      "src": "/icons/icon-192.png?v=4",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/icons/icon-512.png?v=4",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/maskable-192.png",
+      "src": "/icons/maskable-192.png?v=4",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icons/maskable-512.png",
+      "src": "/icons/maskable-icon-512.png?v=4",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -65,21 +65,21 @@
       "short_name": "Scan",
       "description": "Open Skaren directly to the barcode scanner.",
       "url": "/scan?source=shortcut",
-      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96", "type": "image/png" }]
+      "icons": [{ "src": "/icons/icon-96.png?v=4", "sizes": "96x96", "type": "image/png" }]
     },
     {
       "name": "Scan history",
       "short_name": "History",
       "description": "Review saved product scans.",
       "url": "/history?source=shortcut",
-      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96", "type": "image/png" }]
+      "icons": [{ "src": "/icons/icon-96.png?v=4", "sizes": "96x96", "type": "image/png" }]
     },
     {
       "name": "Stats",
       "short_name": "Stats",
       "description": "Open your Skaren overview.",
       "url": "/dashboard?source=shortcut",
-      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96", "type": "image/png" }]
+      "icons": [{ "src": "/icons/icon-96.png?v=4", "sizes": "96x96", "type": "image/png" }]
     }
   ]
 }

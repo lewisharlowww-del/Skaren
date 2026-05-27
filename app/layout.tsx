@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   applicationName: "Skaren",
   title: "Skaren",
   description: "Scan smarter. Live cleaner.",
-  manifest: "/manifest.webmanifest",
+  manifest: "/manifest.webmanifest?v=4",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -18,26 +18,24 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon.svg", type: "image/svg+xml" }
+      { url: "/icons/favicon.ico?v=4", sizes: "any" },
+      { url: "/icons/icon-32.png?v=4", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192.png?v=4", sizes: "192x192", type: "image/png" }
     ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-    other: [{ rel: "mask-icon", url: "/skaren-symbol-monochrome.svg", color: "#1A5C3A" }]
+    apple: [{ url: "/icons/apple-touch-icon.png?v=4", sizes: "180x180", type: "image/png" }]
   },
   other: {
     "mobile-web-app-capable": "yes",
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-title": "Skaren",
     "apple-mobile-web-app-status-bar-style": "default",
-    "msapplication-TileColor": "#1A5C3A",
+    "msapplication-TileColor": "#0E5A34",
     "msapplication-tap-highlight": "no"
   }
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1A5C3A"
+  themeColor: "#0E5A34"
 };
 
 export default function RootLayout({

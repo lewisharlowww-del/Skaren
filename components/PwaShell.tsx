@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Download, Share, Smartphone, WifiOff, X } from "lucide-react";
-import { SkarenMark } from "@/components/SkarenLogo";
+import { SkarenMark, SkarenWordmark } from "@/components/SkarenLogo";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -121,7 +121,7 @@ export function PwaShell() {
         <div className="fixed inset-0 z-[80] grid place-items-center bg-porcelain text-ink">
           <div className="text-center">
             <SkarenMark className="mx-auto h-20 w-20 rounded-[1.7rem]" iconClassName="h-11 w-11 text-white" />
-            <p className="mt-5 font-display text-3xl font-black tracking-[-0.04em]">Skaren</p>
+            <SkarenWordmark className="mx-auto mt-5 text-4xl" />
             <p className="mt-2 text-sm font-bold text-forest">Scan smarter. Live cleaner.</p>
           </div>
         </div>

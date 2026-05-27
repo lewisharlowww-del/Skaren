@@ -1,36 +1,25 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { deflateSync } from "node:zlib";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { join } from "node:path";
+import { deflateSync, inflateSync } from "node:zlib";
 
 const root = new URL("..", import.meta.url).pathname;
 const iconsDir = join(root, "public", "icons");
+const sourcePath = "/Users/hodealucian/Downloads/ChatGPT Image May 27, 2026, 01_13_04 AM.png";
+const sourceCopy = join(iconsDir, "skaren-final-source.png");
+const squareMaster = join(iconsDir, "skaren-final-square.png");
 
-const colors = {
-  forest: [26, 92, 58, 255],
-  dark: [7, 17, 12, 255],
-  mint: [189, 239, 209, 255],
-  white: [255, 255, 255, 255]
-};
-
-function skarenSvg({ background = "#1A5C3A", mark = "white", cut = "#1A5C3A" } = {}) {
-  return `<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="64" height="64" rx="18" fill="${background}"/>
-  <path d="M32 10.5C41 18 46.25 26.2 46.25 34.6C46.25 43.2 40.13 49.75 32 49.75C23.87 49.75 17.75 43.2 17.75 34.6C17.75 26.2 23 18 32 10.5Z" fill="${mark}"/>
-  <path d="M24.8 31.25C26.47 27.87 29.35 25.72 33.78 24.95C35.08 24.72 36.15 25.82 35.92 27.12C35.15 31.55 33 34.43 29.62 36.1" stroke="${cut}" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M24.25 38.9H39.75" stroke="${cut}" stroke-width="3.8" stroke-linecap="round"/>
-  <path d="M38.2 30.9H42.05" stroke="${cut}" stroke-width="3.1" stroke-linecap="round" opacity="0.82"/>
-  <path d="M32 49.4V58.75" stroke="${mark}" stroke-width="4.6" stroke-linecap="round"/>
-  <path d="M26.2 58.18H37.8" stroke="${mark}" stroke-width="3.45" stroke-linecap="round" opacity="0.72"/>
-</svg>`;
-}
+const sizes = [32, 72, 96, 128, 144, 152, 180, 192, 384, 512];
+const cropSize = 660;
+const cropX = 182;
+const cropY = 405;
+const bg = [14, 90, 52, 255];
 
 function crc32(bytes) {
   let crc = -1;
   for (const byte of bytes) {
     crc ^= byte;
-    for (let i = 0; i < 8; i += 1) {
-      crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
-    }
+    for (let index = 0; index < 8; index += 1) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
   }
   return (crc ^ -1) >>> 0;
 }
@@ -44,7 +33,7 @@ function chunk(type, data) {
   return Buffer.concat([length, typeBytes, data, checksum]);
 }
 
-function png(width, height, rgba) {
+function encodePng(width, height, rgba) {
   const rows = [];
   for (let y = 0; y < height; y += 1) {
     const row = Buffer.alloc(1 + width * 4);
@@ -67,108 +56,133 @@ function png(width, height, rgba) {
   ]);
 }
 
-function blendPixel(buf, width, x, y, color, alpha = 1) {
-  if (x < 0 || y < 0 || x >= width || y >= width) return;
-  const i = (y * width + x) * 4;
-  const a = alpha * (color[3] / 255);
-  buf[i] = Math.round(color[0] * a + buf[i] * (1 - a));
-  buf[i + 1] = Math.round(color[1] * a + buf[i + 1] * (1 - a));
-  buf[i + 2] = Math.round(color[2] * a + buf[i + 2] * (1 - a));
-  buf[i + 3] = 255;
-}
+function decodePng(path) {
+  const bytes = readFileSync(path);
+  let offset = 8;
+  let width = 0;
+  let height = 0;
+  let colorType = 0;
+  const idat = [];
 
-function roundedRect(buf, size, x, y, w, h, r, color) {
-  for (let py = Math.floor(y); py < Math.ceil(y + h); py += 1) {
-    for (let px = Math.floor(x); px < Math.ceil(x + w); px += 1) {
-      const dx = Math.max(x - px, 0, px - (x + w - 1));
-      const dy = Math.max(y - py, 0, py - (y + h - 1));
-      const insideCorner = dx * dx + dy * dy <= r * r || (px >= x + r && px <= x + w - r) || (py >= y + r && py <= y + h - r);
-      if (insideCorner) blendPixel(buf, size, px, py, color);
+  while (offset < bytes.length) {
+    const length = bytes.readUInt32BE(offset);
+    const type = bytes.toString("ascii", offset + 4, offset + 8);
+    const data = bytes.subarray(offset + 8, offset + 8 + length);
+    offset += 12 + length;
+
+    if (type === "IHDR") {
+      width = data.readUInt32BE(0);
+      height = data.readUInt32BE(4);
+      colorType = data[9];
     }
+    if (type === "IDAT") idat.push(data);
+    if (type === "IEND") break;
   }
-}
 
-function pointInPolygon(x, y, points) {
-  let inside = false;
-  for (let i = 0, j = points.length - 1; i < points.length; j = i, i += 1) {
-    const xi = points[i][0];
-    const yi = points[i][1];
-    const xj = points[j][0];
-    const yj = points[j][1];
-    const intersect = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
-    if (intersect) inside = !inside;
-  }
-  return inside;
-}
+  if (colorType !== 6) throw new Error("Icon source must be an RGBA PNG.");
 
-function drawLine(buf, size, x1, y1, x2, y2, width, color) {
-  const minX = Math.floor(Math.min(x1, x2) - width);
-  const maxX = Math.ceil(Math.max(x1, x2) + width);
-  const minY = Math.floor(Math.min(y1, y2) - width);
-  const maxY = Math.ceil(Math.max(y1, y2) + width);
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const lengthSquared = dx * dx + dy * dy || 1;
+  const channels = 4;
+  const stride = width * channels;
+  const raw = inflateSync(Buffer.concat(idat));
+  const rgba = Buffer.alloc(height * stride);
+  let sourceOffset = 0;
 
-  for (let y = minY; y <= maxY; y += 1) {
-    for (let x = minX; x <= maxX; x += 1) {
-      const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / lengthSquared));
-      const px = x1 + t * dx;
-      const py = y1 + t * dy;
-      if ((x - px) ** 2 + (y - py) ** 2 <= (width / 2) ** 2) blendPixel(buf, size, x, y, color);
-    }
-  }
-}
+  for (let y = 0; y < height; y += 1) {
+    const filter = raw[sourceOffset];
+    sourceOffset += 1;
 
-function renderIcon(size, { maskable = false, dark = false } = {}) {
-  const buf = Buffer.alloc(size * size * 4);
-  const bg = dark ? colors.dark : colors.forest;
-  const mark = dark ? colors.mint : colors.white;
-  const cut = dark ? colors.dark : colors.forest;
+    for (let x = 0; x < stride; x += 1) {
+      const left = x >= channels ? rgba[y * stride + x - channels] : 0;
+      const up = y > 0 ? rgba[(y - 1) * stride + x] : 0;
+      const upLeft = y > 0 && x >= channels ? rgba[(y - 1) * stride + x - channels] : 0;
+      let value = raw[sourceOffset];
+      sourceOffset += 1;
 
-  roundedRect(buf, size, 0, 0, size, size, maskable ? size * 0.18 : size * 0.28, bg);
+      if (filter === 1) value = (value + left) & 255;
+      if (filter === 2) value = (value + up) & 255;
+      if (filter === 3) value = (value + Math.floor((left + up) / 2)) & 255;
+      if (filter === 4) {
+        const predictor = left + up - upLeft;
+        const leftDistance = Math.abs(predictor - left);
+        const upDistance = Math.abs(predictor - up);
+        const upLeftDistance = Math.abs(predictor - upLeft);
+        value = (value + (leftDistance <= upDistance && leftDistance <= upLeftDistance ? left : upDistance <= upLeftDistance ? up : upLeft)) & 255;
+      }
 
-  const s = size / 64;
-  const points = [
-    [32, 10.5], [39, 17.2], [44.2, 26.2], [46.25, 34.6], [44.4, 42.9],
-    [39.1, 48.1], [32, 49.75], [24.9, 48.1], [19.6, 42.9], [17.75, 34.6],
-    [19.8, 26.2], [25, 17.2]
-  ].map(([x, y]) => [x * s, y * s]);
-
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      if (pointInPolygon(x, y, points)) blendPixel(buf, size, x, y, mark);
+      rgba[y * stride + x] = value;
     }
   }
 
-  drawLine(buf, size, 24.8 * s, 31.25 * s, 33.78 * s, 24.95 * s, 3.8 * s, cut);
-  drawLine(buf, size, 33.78 * s, 24.95 * s, 35.92 * s, 27.12 * s, 3.8 * s, cut);
-  drawLine(buf, size, 35.92 * s, 27.12 * s, 29.62 * s, 36.1 * s, 3.8 * s, cut);
-  drawLine(buf, size, 24.25 * s, 38.9 * s, 39.75 * s, 38.9 * s, 3.8 * s, cut);
-  drawLine(buf, size, 38.2 * s, 30.9 * s, 42.05 * s, 30.9 * s, 3.1 * s, cut);
-  drawLine(buf, size, 32 * s, 49.4 * s, 32 * s, 58.75 * s, 4.6 * s, mark);
-  drawLine(buf, size, 26.2 * s, 58.18 * s, 37.8 * s, 58.18 * s, 3.45 * s, mark);
+  return { width, height, rgba };
+}
 
-  return png(size, size, buf);
+function icoFromPng(pngBytes) {
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(0, 0);
+  header.writeUInt16LE(1, 2);
+  header.writeUInt16LE(1, 4);
+
+  const directory = Buffer.alloc(16);
+  directory[0] = 32;
+  directory[1] = 32;
+  directory[2] = 0;
+  directory[3] = 0;
+  directory.writeUInt16LE(1, 4);
+  directory.writeUInt16LE(32, 6);
+  directory.writeUInt32LE(pngBytes.length, 8);
+  directory.writeUInt32LE(22, 12);
+
+  return Buffer.concat([header, directory, pngBytes]);
+}
+
+function sips(args) {
+  execFileSync("sips", args, { stdio: "ignore" });
+}
+
+if (!existsSync(sourcePath)) {
+  throw new Error(`Missing Skaren icon source PNG: ${sourcePath}`);
 }
 
 mkdirSync(iconsDir, { recursive: true });
+copyFileSync(sourcePath, sourceCopy);
 
-writeFileSync(join(root, "app", "icon.svg"), skarenSvg());
-writeFileSync(join(root, "public", "favicon.svg"), skarenSvg());
-writeFileSync(join(root, "public", "skaren-symbol-primary.svg"), skarenSvg());
-writeFileSync(join(root, "public", "skaren-symbol-dark.svg"), skarenSvg({ background: "#07110C", mark: "#BDEFD1", cut: "#07110C" }));
-writeFileSync(join(root, "public", "skaren-symbol-monochrome.svg"), skarenSvg({ background: "transparent", mark: "#1A5C3A", cut: "white" }));
-writeFileSync(join(root, "public", "skaren-app-icon.svg"), skarenSvg());
+// The supplied PNG has the final symbol centered inside a lot of presentation
+// space. App launchers need the mark to read clearly at small sizes, so this
+// uses a tighter optical crop around the actual symbol and then only resizes it.
+const source = decodePng(sourceCopy);
+const square = Buffer.alloc(cropSize * cropSize * 4);
 
-for (const size of [32, 72, 96, 128, 144, 152, 180, 192, 384, 512]) {
-  writeFileSync(join(iconsDir, `icon-${size}.png`), renderIcon(size));
+for (let y = 0; y < cropSize; y += 1) {
+  for (let x = 0; x < cropSize; x += 1) {
+    const target = (y * cropSize + x) * 4;
+    const sourceIndex = ((y + cropY) * source.width + x + cropX) * 4;
+    const alpha = source.rgba[sourceIndex + 3] / 255;
+
+    square[target] = Math.round(source.rgba[sourceIndex] * alpha + bg[0] * (1 - alpha));
+    square[target + 1] = Math.round(source.rgba[sourceIndex + 1] * alpha + bg[1] * (1 - alpha));
+    square[target + 2] = Math.round(source.rgba[sourceIndex + 2] * alpha + bg[2] * (1 - alpha));
+    square[target + 3] = 255;
+  }
 }
 
-writeFileSync(join(iconsDir, "maskable-192.png"), renderIcon(192, { maskable: true }));
-writeFileSync(join(iconsDir, "maskable-512.png"), renderIcon(512, { maskable: true }));
-writeFileSync(join(root, "public", "favicon-32.png"), renderIcon(32));
-writeFileSync(join(root, "public", "favicon-192.png"), renderIcon(192));
-writeFileSync(join(root, "public", "apple-touch-icon.png"), renderIcon(180));
+writeFileSync(squareMaster, encodePng(cropSize, cropSize, square));
 
-console.log(`Generated Skaren PWA icons in ${iconsDir}`);
+for (const size of sizes) {
+  sips(["-z", String(size), String(size), squareMaster, "--out", join(iconsDir, `icon-${size}.png`)]);
+}
+
+copyFileSync(join(iconsDir, "icon-180.png"), join(iconsDir, "apple-touch-icon.png"));
+copyFileSync(join(iconsDir, "icon-192.png"), join(iconsDir, "maskable-192.png"));
+copyFileSync(join(iconsDir, "icon-512.png"), join(iconsDir, "maskable-512.png"));
+copyFileSync(join(iconsDir, "icon-512.png"), join(iconsDir, "maskable-icon-512.png"));
+
+copyFileSync(join(iconsDir, "icon-32.png"), join(root, "public", "favicon-32.png"));
+copyFileSync(join(iconsDir, "icon-192.png"), join(root, "public", "favicon-192.png"));
+copyFileSync(join(iconsDir, "apple-touch-icon.png"), join(root, "public", "apple-touch-icon.png"));
+
+const faviconIco = icoFromPng(readFileSync(join(iconsDir, "icon-32.png")));
+writeFileSync(join(iconsDir, "favicon.ico"), faviconIco);
+writeFileSync(join(root, "public", "favicon.ico"), faviconIco);
+unlinkSync(sourceCopy);
+unlinkSync(squareMaster);
+console.log(`Generated Skaren icon assets directly from ${sourcePath}`);

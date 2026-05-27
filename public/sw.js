@@ -1,4 +1,4 @@
-const CACHE_VERSION = "skaren-pwa-v1";
+const CACHE_VERSION = "skaren-pwa-v4";
 const STATIC_CACHE = `${CACHE_VERSION}:static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}:runtime`;
 const IMAGE_CACHE = `${CACHE_VERSION}:images`;
@@ -8,13 +8,13 @@ const STATIC_ASSETS = [
   "/scan",
   "/offline",
   "/manifest.webmanifest",
-  "/favicon.svg",
-  "/favicon-32.png",
-  "/apple-touch-icon.png",
+  "/icons/favicon.ico",
+  "/icons/icon-32.png",
+  "/icons/apple-touch-icon.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/icons/maskable-192.png",
-  "/icons/maskable-512.png"
+  "/icons/maskable-icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
