@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, Loader2, ScanLine, X } from "lucide-react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
+import { vibrate } from "@/lib/haptics";
 
 type BarcodeScannerProps = {
   disabled?: boolean;
@@ -49,6 +50,7 @@ export function BarcodeScanner({ disabled = false, autoStart = false, onDetected
     setCameraError("");
     setIsStarting(true);
     detectedRef.current = false;
+    vibrate(18);
 
     try {
       const isLocalhost = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
@@ -88,6 +90,7 @@ export function BarcodeScanner({ disabled = false, autoStart = false, onDetected
           if (!cleanBarcode) return;
 
           detectedRef.current = true;
+          vibrate([18, 28, 28]);
           await stopScanner();
           onDetected(cleanBarcode);
         },

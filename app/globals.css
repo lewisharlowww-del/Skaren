@@ -67,7 +67,7 @@ body {
 }
 
 .motion-score-reveal {
-  animation: score-reveal 760ms cubic-bezier(0.2, 0.95, 0.22, 1) 120ms both;
+  animation: score-reveal 760ms cubic-bezier(0.2, 0.95, 0.22, 1) 120ms both, grade-pulse 1200ms ease-out 520ms 1;
 }
 
 .motion-scan-success {
@@ -103,6 +103,15 @@ body {
   inset: 0;
   position: absolute;
   transform: translateX(-100%);
+}
+
+.scan-glow {
+  animation: calm-glow 1.6s ease-in-out infinite;
+}
+
+.scan-progress-line {
+  animation: scan-progress 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  transform-origin: left center;
 }
 
 @keyframes rise-in {
@@ -144,6 +153,41 @@ body {
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes grade-pulse {
+  0% {
+    box-shadow: 0 18px 44px rgba(16, 21, 18, 0.12);
+  }
+  45% {
+    box-shadow: 0 18px 44px rgba(76, 175, 125, 0.24);
+  }
+  100% {
+    box-shadow: 0 18px 44px rgba(16, 21, 18, 0.12);
+  }
+}
+
+@keyframes calm-glow {
+  0%, 100% {
+    box-shadow: 0 22px 50px rgba(26, 92, 58, 0.18), 0 0 0 0 rgba(76, 175, 125, 0.24);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 26px 58px rgba(26, 92, 58, 0.24), 0 0 0 12px rgba(76, 175, 125, 0.08);
+    transform: scale(1.018);
+  }
+}
+
+@keyframes scan-progress {
+  0% {
+    transform: translateX(-70%) scaleX(0.35);
+  }
+  48% {
+    transform: translateX(15%) scaleX(0.72);
+  }
+  100% {
+    transform: translateX(120%) scaleX(0.45);
   }
 }
 

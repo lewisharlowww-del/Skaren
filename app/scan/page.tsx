@@ -8,6 +8,7 @@ import { CheckCircle2, Info, Loader2, ScanBarcode } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { PhoneFrame } from "@/components/PhoneFrame";
+import { vibrate } from "@/lib/haptics";
 import { cacheProductLocally } from "@/lib/localProducts";
 import { toScanPayload } from "@/lib/openfoodfacts";
 import { getStoredSupportStatus } from "@/lib/premium";
@@ -15,6 +16,7 @@ import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import type { ProductResult } from "@/lib/types";
 
 const freeGuestScanLimit = 5;
+const loadingMessages = ["Reading barcode...", "Checking ingredients...", "Building Skaren grade...", "Analyzing nutrition..."];
 
 function getGuestScanKey() {
   const date = new Date();
@@ -29,12 +31,95 @@ function recordGuestScan() {
   window.localStorage.setItem(getGuestScanKey(), String(getGuestScanCount() + 1));
 }
 
+function ScanLoadingOverlay({ barcode, scanSuccess, saved }: { barcode: string; scanSuccess: boolean; saved: boolean }) {
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setMessageIndex((index) => (index + 1) % loadingMessages.length);
+    }, 1050);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[80] grid place-items-center bg-mint/86 px-5 backdrop-blur-xl"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
+    >
+      <motion.section
+        initial={{ opacity: 0, y: 16, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 8, scale: 0.98 }}
+        transition={{ type: "spring", stiffness: 170, damping: 24 }}
+        className="w-full max-w-sm rounded-[2.25rem] border border-white/70 bg-white/92 p-6 text-center shadow-glass"
+      >
+        <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full ${scanSuccess ? "bg-leaf-100 text-forest" : "bg-forest text-cream"} shadow-phone scan-glow`}>
+          <AnimatePresence mode="wait">
+            {scanSuccess ? (
+              <motion.span
+                key="found"
+                initial={{ opacity: 0, scale: 0.82 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 360, damping: 24 }}
+              >
+                <CheckCircle2 className="h-12 w-12" />
+              </motion.span>
+            ) : (
+              <motion.span key="scan" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <ScanBarcode className="h-12 w-12" />
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-forest">{scanSuccess ? "Found product" : "Skaren scan"}</p>
+        <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-ink">
+          {scanSuccess ? "Opening product report" : loadingMessages[messageIndex]}
+        </h2>
+        <p className="mt-2 text-sm font-semibold leading-6 text-soil-600">
+          Barcode {barcode || "detected"} is being turned into a clean Skaren grade.
+        </p>
+
+        <div className="mt-6 overflow-hidden rounded-full bg-leaf-50">
+          <div className="scan-progress-line h-2 rounded-full bg-forest" />
+        </div>
+
+        <div className="mt-5 rounded-[1.5rem] border border-black/5 bg-soil-50 p-4 text-left">
+          <div className="skeleton-shimmer h-4 w-2/3 rounded-full bg-white" />
+          <div className="skeleton-shimmer mt-3 h-4 w-full rounded-full bg-white" />
+          <div className="skeleton-shimmer mt-3 h-4 w-4/5 rounded-full bg-white" />
+        </div>
+
+        <AnimatePresence>
+          {saved ? (
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              className="motion-scan-success mt-4 inline-flex items-center gap-2 rounded-full bg-leaf-100 px-4 py-2 text-sm font-black text-forest"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Saved to history
+            </motion.p>
+          ) : null}
+        </AnimatePresence>
+      </motion.section>
+    </motion.div>
+  );
+}
+
 export default function ScanPage() {
   const router = useRouter();
   const [barcode, setBarcode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [scanSuccess, setScanSuccess] = useState(false);
+  const [savedToHistory, setSavedToHistory] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [guestScansUsed, setGuestScansUsed] = useState(0);
@@ -81,8 +166,11 @@ export default function ScanPage() {
 
     setLoading(true);
     setScanSuccess(false);
+    setSavedToHistory(false);
     setError("");
     setBarcode(cleanBarcode);
+    vibrate(12);
+    let keepLoadingForNavigation = false;
 
     try {
       const response = await fetch("/api/scan", {
@@ -113,6 +201,8 @@ export default function ScanPage() {
 
         if (userData.user) {
           await supabase.from("scans").insert(toScanPayload(product, userData.user.id));
+          setSavedToHistory(true);
+          vibrate([12, 24, 18]);
         } else if (!isPremium) {
           recordGuestScan();
           setGuestScansUsed(getGuestScanCount());
@@ -123,7 +213,9 @@ export default function ScanPage() {
       }
 
       setScanSuccess(true);
-      window.setTimeout(() => router.push(`/product/${product.barcode}`), 320);
+      keepLoadingForNavigation = true;
+      vibrate([18, 30, 35]);
+      window.setTimeout(() => router.push(`/product/${product.barcode}`), 720);
     } catch {
       sessionStorage.setItem(
         `skaren-error:${cleanBarcode}`,
@@ -134,7 +226,7 @@ export default function ScanPage() {
       );
       router.push(`/product/${cleanBarcode}`);
     } finally {
-      setLoading(false);
+      if (!keepLoadingForNavigation) setLoading(false);
     }
   }
 
@@ -146,6 +238,9 @@ export default function ScanPage() {
   return (
     <>
       <AppHeader />
+      <AnimatePresence>
+        {loading ? <ScanLoadingOverlay barcode={barcode} scanSuccess={scanSuccess} saved={savedToHistory} /> : null}
+      </AnimatePresence>
       <main className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-[430px] gap-4 px-4 pb-36 pt-4 sm:max-w-6xl sm:py-8 md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-8">
         <motion.section
           initial={{ opacity: 0, y: 18 }}

@@ -30,6 +30,55 @@ type ProductError = {
   type: "not-found" | "retry";
 };
 
+const productLoadingMessages = ["Checking product data...", "Checking ingredients...", "Building Skaren grade...", "Analyzing nutrition..."];
+
+function ProductLoadingState({ barcode }: { barcode: string }) {
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setMessageIndex((index) => (index + 1) % productLoadingMessages.length);
+    }, 1050);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 14, scale: 0.99 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 8, scale: 0.99 }}
+      transition={{ type: "spring", stiffness: 160, damping: 25 }}
+      className="mt-3 overflow-hidden rounded-[2rem] border border-white/70 bg-white/80 p-4 shadow-glass backdrop-blur-2xl"
+    >
+      <div className="rounded-[1.7rem] bg-gradient-to-br from-cream via-white to-leaf-100 p-5">
+        <div className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-forest text-cream shadow-phone scan-glow">
+          <Barcode className="h-12 w-12" />
+        </div>
+        <p className="mt-5 text-center text-xs font-black uppercase tracking-[0.18em] text-forest">Product report</p>
+        <h1 className="mt-2 text-center text-2xl font-black tracking-[-0.04em] text-ink">{productLoadingMessages[messageIndex]}</h1>
+        <p className="mt-2 text-center text-sm font-semibold text-soil-600">Barcode {barcode}</p>
+
+        <div className="mt-6 overflow-hidden rounded-full bg-white">
+          <div className="scan-progress-line h-2 rounded-full bg-forest" />
+        </div>
+
+        <div className="mt-6 grid gap-3">
+          <div className="skeleton-shimmer h-48 rounded-[1.5rem] bg-white/80" />
+          <div className="grid grid-cols-[5rem_1fr] gap-3">
+            <div className="skeleton-shimmer h-20 rounded-[1.25rem] bg-white/80" />
+            <div className="space-y-3">
+              <div className="skeleton-shimmer h-5 rounded-full bg-white/80" />
+              <div className="skeleton-shimmer h-5 w-2/3 rounded-full bg-white/80" />
+              <div className="skeleton-shimmer h-9 rounded-full bg-white/80" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.section>
+  );
+}
+
 function withProductDefaults(product: ProductResult): ProductResult {
   const productWithDefaults = {
     ...product,
@@ -974,10 +1023,7 @@ export default function ProductPage({ params }: ProductPageProps) {
         </Link>
 
         {loading ? (
-          <div className="mt-3 grid gap-3 md:grid-cols-[0.9fr_1.1fr]">
-            <div className="skeleton-shimmer h-[22rem] rounded-[1.8rem] bg-white/70 sm:h-96 sm:rounded-[2rem]" />
-            <div className="skeleton-shimmer h-72 rounded-[2rem] bg-white/70 sm:h-96" />
-          </div>
+          <ProductLoadingState barcode={params.barcode} />
         ) : error ? (
           <div className="mx-auto mt-8 max-w-xl rounded-[2rem] border border-black/5 bg-white p-6 text-center shadow-soft sm:mt-10 sm:p-8">
             <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-rose-50 text-rose-600">
@@ -1005,10 +1051,22 @@ export default function ProductPage({ params }: ProductPageProps) {
             </div>
           </div>
         ) : product ? (
-          <>
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: { opacity: 1 },
+              show: {
+                opacity: 1,
+                transition: { staggerChildren: 0.08 }
+              }
+            }}
+          >
             <motion.section
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
+              variants={{
+                hidden: { opacity: 0, y: 18, scale: 0.99 },
+                show: { opacity: 1, y: 0, scale: 1 }
+              }}
               transition={{ type: "spring", stiffness: 120, damping: 24 }}
               className="mt-2 w-full max-w-full overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/72 shadow-glass backdrop-blur-2xl sm:mt-6 sm:rounded-[2.5rem]"
             >
@@ -1028,11 +1086,17 @@ export default function ProductPage({ params }: ProductPageProps) {
               </div>
             </motion.section>
 
-            <NovaScore novaGroup={product.novaGroup} />
-            <Additives additives={product.additives} />
-            <NutritionInsights product={product} isPremium={isPremium} />
+            <motion.div variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }} transition={{ type: "spring", stiffness: 140, damping: 24 }}>
+              <NovaScore novaGroup={product.novaGroup} />
+            </motion.div>
+            <motion.div variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }} transition={{ type: "spring", stiffness: 140, damping: 24 }}>
+              <Additives additives={product.additives} />
+            </motion.div>
+            <motion.div variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }} transition={{ type: "spring", stiffness: 140, damping: 24 }}>
+              <NutritionInsights product={product} isPremium={isPremium} />
+            </motion.div>
 
-          </>
+          </motion.div>
         ) : null}
       </main>
       {product ? (

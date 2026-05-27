@@ -31,7 +31,7 @@ export function ScoreBadge({ grade, label = "ECO GRADE", size = "sm" }: ScoreBad
     <div className="inline-flex flex-col items-center gap-2 text-center">
       <div
         aria-label={`${label} ${letter}`}
-        className={`grid place-items-center rounded-full bg-white font-black shadow-soft ${large ? "h-[100px] w-[100px] border-[8px] text-5xl" : "h-12 w-12 border-[5px] text-2xl"}`}
+        className={`grid place-items-center rounded-full bg-white font-black shadow-soft ${large ? "motion-score-reveal h-[100px] w-[100px] border-[8px] text-5xl" : "h-12 w-12 border-[5px] text-2xl"}`}
         style={{
           borderColor: color,
           color
