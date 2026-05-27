@@ -3,13 +3,19 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, HeartHandshake, Loader2 } from "lucide-react";
-import { getStoredSupportStatus, getSupporterBadge, isPremiumMetadata } from "@/lib/premium";
+import { getSupporterBadge } from "@/lib/premium";
 import { supabase } from "@/lib/supabase";
 import { SupporterBadge } from "@/components/SupporterBadge";
 
 type SupportCheckoutProps = {
   className?: string;
   activeClassName?: string;
+};
+
+type PremiumStatusResponse = {
+  premium?: boolean;
+  amountNok?: number;
+  badge?: string;
 };
 
 const presets = [50, 100, 250, 500];
@@ -26,15 +32,23 @@ export function SupportCheckout({ className = "", activeClassName }: SupportChec
     let active = true;
 
     async function loadSupporterStatus() {
-      const { data } = (await supabase?.auth.getUser()) ?? { data: { user: null } };
-      const stored = getStoredSupportStatus(data.user?.email);
-      const metadataSupporter = isPremiumMetadata(data.user?.user_metadata);
-      const amountNok = Number(data.user?.user_metadata?.support_amount_nok ?? stored.amountNok);
-      const badge = String(data.user?.user_metadata?.supporter_badge ?? stored.badge ?? getSupporterBadge(amountNok));
+      const { data: sessionData } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
+      const response = sessionData.session?.access_token
+        ? await fetch("/api/stripe/premium-status", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${sessionData.session.access_token}`
+            }
+          }).catch(() => null)
+        : null;
+      const premiumStatus = (await response?.json().catch(() => null)) as PremiumStatusResponse | null;
+      const amountNok = Number(premiumStatus?.amountNok ?? 0);
+      const badge = String(premiumStatus?.badge ?? getSupporterBadge(amountNok));
 
       if (!active) return;
 
-      setIsSupporter(metadataSupporter || stored.isSupporter);
+      setIsSupporter(Boolean(premiumStatus?.premium));
       setSavedAmount(Number.isFinite(amountNok) ? amountNok : 0);
       setSavedBadge(badge);
     }

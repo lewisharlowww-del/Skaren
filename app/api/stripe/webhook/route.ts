@@ -97,7 +97,7 @@ function subscriptionStatusToSupporterStatus(status?: string | null): SupporterS
 async function handleCheckoutCompleted(session: StripeCheckoutSession) {
   const userId = session.client_reference_id ?? session.metadata?.user_id;
   const isSkarenSupport = session.metadata?.app === "skaren" && session.metadata?.type === "support";
-  const isPaid = session.status === "complete" && (session.payment_status === "paid" || session.payment_status === "no_payment_required");
+  const isPaid = session.status === "complete" && session.payment_status === "paid";
 
   if (!userId || !isSkarenSupport || !isPaid) return;
 

@@ -15,7 +15,6 @@ import { getEcoGrade, getNutritionGrade, scoreToGrade } from "@/lib/ecoscore";
 import { calculateHealthGrade, hasNokkelhullLabel, nutritionDataFromKassalapp } from "@/lib/healthscore";
 import { getProductEmoji } from "@/lib/kassalapp";
 import { cacheProductLocally, readLocalProduct } from "@/lib/localProducts";
-import { getStoredSupportStatus, isPremiumMetadata } from "@/lib/premium";
 import { supabase } from "@/lib/supabase";
 import type { GradeLetter, ProductResult } from "@/lib/types";
 
@@ -944,15 +943,38 @@ export default function ProductPage({ params }: ProductPageProps) {
     let active = true;
 
     async function loadPremiumStatus() {
-      const { data } = (await supabase?.auth.getUser()) ?? { data: { user: null } };
-      const storedSupport = getStoredSupportStatus(data.user?.email);
-      if (active) setIsPremium(isPremiumMetadata(data.user?.user_metadata) || storedSupport.isSupporter);
+      const { data: sessionData } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
+      const response = sessionData.session?.access_token
+        ? await fetch("/api/stripe/premium-status", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${sessionData.session.access_token}`
+            }
+          }).catch(() => null)
+        : null;
+      const premiumStatus = (await response?.json().catch(() => null)) as { premium?: boolean } | null;
+      if (active) setIsPremium(Boolean(premiumStatus?.premium));
     }
 
     loadPremiumStatus();
 
     const listener = supabase?.auth.onAuthStateChange((_event, session) => {
-      setIsPremium(isPremiumMetadata(session?.user.user_metadata) || getStoredSupportStatus(session?.user.email).isSupporter);
+      if (!session?.access_token) {
+        setIsPremium(false);
+        return;
+      }
+
+      void fetch("/api/stripe/premium-status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`
+        }
+      })
+        .then((response) => response.json())
+        .then((status: { premium?: boolean }) => setIsPremium(Boolean(status?.premium)))
+        .catch(() => setIsPremium(false));
     });
 
     return () => {

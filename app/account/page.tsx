@@ -7,12 +7,18 @@ import { CheckCircle2, Crown, History, LogOut, Mail, ScanBarcode, ShieldCheck } 
 import { AppHeader } from "@/components/AppHeader";
 import { SkarenMark } from "@/components/SkarenLogo";
 import { SupporterBadge } from "@/components/SupporterBadge";
-import { getStoredSupportStatus, getSupporterBadge, isPremiumMetadata, saveStoredSupportStatus } from "@/lib/premium";
+import { getSupporterBadge } from "@/lib/premium";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 type AccountUser = {
   email?: string;
   created_at?: string;
+};
+
+type PremiumStatusResponse = {
+  premium?: boolean;
+  amountNok?: number;
+  badge?: string;
 };
 
 export default function AccountPage() {
@@ -41,13 +47,9 @@ export default function AccountPage() {
         email: data.user.email ?? undefined,
         created_at: data.user.created_at
       });
-      const metadataPremium = isPremiumMetadata(data.user.user_metadata);
-      const storedSupport = getStoredSupportStatus(data.user.email);
-      const storedAmount = Number(data.user.user_metadata?.support_amount_nok ?? storedSupport.amountNok ?? "0");
-      const storedBadge = String(data.user.user_metadata?.supporter_badge ?? storedSupport.badge ?? getSupporterBadge(storedAmount));
-      setIsPremium(metadataPremium || storedSupport.isSupporter);
-      setSupportAmount(Number.isFinite(storedAmount) ? storedAmount : 0);
-      setSupporterBadge(storedBadge);
+      setIsPremium(false);
+      setSupportAmount(0);
+      setSupporterBadge("Supporter");
       setLoading(false);
 
       setCheckingPremium(true);
@@ -61,27 +63,18 @@ export default function AccountPage() {
             }
           }).catch(() => null)
         : null;
-      const premiumStatus = (await response?.json().catch(() => null)) as { premium?: boolean; amountNok?: number; badge?: string } | null;
+      const premiumStatus = (await response?.json().catch(() => null)) as PremiumStatusResponse | null;
 
       if (active && premiumStatus?.premium) {
         const amountNok = premiumStatus.amountNok ?? 0;
         const badge = premiumStatus.badge ?? getSupporterBadge(amountNok);
-        saveStoredSupportStatus({ email: data.user.email, amountNok, badge });
         setIsPremium(true);
         setSupportAmount(amountNok);
         setSupporterBadge(badge);
-        await supabase?.auth.updateUser({
-          data: {
-            plan: "supporter",
-            premium: true,
-            supporter: true,
-            supporter_badge: badge,
-            support_amount_nok: amountNok,
-            premium_source: "stripe_webhook"
-          }
-        });
-      } else if (active && !metadataPremium && !storedSupport.isSupporter) {
+      } else if (active) {
         setIsPremium(false);
+        setSupportAmount(0);
+        setSupporterBadge("Supporter");
       }
 
       if (active) setCheckingPremium(false);

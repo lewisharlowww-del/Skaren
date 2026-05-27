@@ -11,7 +11,6 @@ import { PhoneFrame } from "@/components/PhoneFrame";
 import { vibrate } from "@/lib/haptics";
 import { cacheProductLocally } from "@/lib/localProducts";
 import { toScanPayload } from "@/lib/openfoodfacts";
-import { getStoredSupportStatus } from "@/lib/premium";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import type { ProductResult } from "@/lib/types";
 
@@ -121,7 +120,7 @@ export default function ScanPage() {
   const [scanSuccess, setScanSuccess] = useState(false);
   const [savedToHistory, setSavedToHistory] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isSupporter, setIsSupporter] = useState(false);
   const [guestScansUsed, setGuestScansUsed] = useState(0);
 
   useEffect(() => {
@@ -131,7 +130,21 @@ export default function ScanPage() {
       const { data } = (await supabase?.auth.getUser()) ?? { data: { user: null } };
       if (active) {
         setIsSignedIn(Boolean(data.user));
-        setUserEmail(data.user?.email ?? null);
+      }
+
+      const { data: sessionData } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
+      if (sessionData.session?.access_token) {
+        const response = await fetch("/api/stripe/premium-status", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionData.session.access_token}`
+          }
+        }).catch(() => null);
+        const premiumStatus = (await response?.json().catch(() => null)) as { premium?: boolean } | null;
+        if (active) setIsSupporter(Boolean(premiumStatus?.premium));
+      } else if (active) {
+        setIsSupporter(false);
       }
     }
 
@@ -140,7 +153,7 @@ export default function ScanPage() {
 
     const listener = supabase?.auth.onAuthStateChange((_event, session) => {
       setIsSignedIn(Boolean(session?.user));
-      setUserEmail(session?.user.email ?? null);
+      setIsSupporter(false);
     });
 
     return () => {
@@ -156,8 +169,7 @@ export default function ScanPage() {
       return;
     }
 
-    const isPremium = Boolean(userEmail) && getStoredSupportStatus(userEmail).isSupporter;
-    const isGuestAtLimit = !isSignedIn && !isPremium && getGuestScanCount() >= freeGuestScanLimit;
+    const isGuestAtLimit = !isSignedIn && !isSupporter && getGuestScanCount() >= freeGuestScanLimit;
 
     if (isGuestAtLimit) {
       setError("Free guest scanning includes 5 scans per month. Log in and support Skaren to unlock unlimited scans.");
@@ -203,11 +215,11 @@ export default function ScanPage() {
           await supabase.from("scans").insert(toScanPayload(product, userData.user.id));
           setSavedToHistory(true);
           vibrate([12, 24, 18]);
-        } else if (!isPremium) {
+        } else if (!isSupporter) {
           recordGuestScan();
           setGuestScansUsed(getGuestScanCount());
         }
-      } else if (!isSignedIn && !isPremium) {
+      } else if (!isSignedIn && !isSupporter) {
         recordGuestScan();
         setGuestScansUsed(getGuestScanCount());
       }
@@ -241,20 +253,21 @@ export default function ScanPage() {
       <AnimatePresence>
         {loading ? <ScanLoadingOverlay barcode={barcode} scanSuccess={scanSuccess} saved={savedToHistory} /> : null}
       </AnimatePresence>
-      <main className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-[430px] gap-4 px-4 pb-36 pt-4 sm:max-w-6xl sm:py-8 md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-8">
+      <main className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-[430px] gap-4 px-4 pb-36 pt-3 sm:max-w-6xl sm:py-8 md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-8">
         <motion.section
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 130, damping: 24 }}
+          className="order-2 md:order-1"
         >
-          <div className="mb-3 grid h-12 w-12 place-items-center rounded-[1.2rem] bg-forest text-cream shadow-glass sm:mb-6 sm:h-16 sm:w-16 sm:rounded-[1.4rem]">
+          <div className="mb-3 hidden h-12 w-12 place-items-center rounded-[1.2rem] bg-forest text-cream shadow-glass sm:mb-6 sm:grid sm:h-16 sm:w-16 sm:rounded-[1.4rem]">
             <ScanBarcode className="h-7 w-7" />
           </div>
-          <h1 className="font-display max-w-xl text-[2.4rem] font-black leading-[0.96] tracking-[-0.055em] text-ink sm:text-6xl">Scan a barcode</h1>
-          <p className="mt-3 max-w-xl text-base font-semibold leading-7 text-soil-600 sm:mt-5 sm:text-lg sm:leading-8">
+          <h1 className="font-display max-w-xl text-[1.75rem] font-black leading-tight tracking-[-0.045em] text-ink sm:text-6xl">Scan a barcode</h1>
+          <p className="mt-2 max-w-xl text-sm font-semibold leading-6 text-soil-600 sm:mt-5 sm:text-lg sm:leading-8">
             Use your phone camera to scan a barcode, or enter it manually when camera access is not available.
           </p>
-          <div className="glass-card mt-4 flex max-w-xl gap-3 rounded-[1.5rem] p-4 text-sm leading-6 text-soil-600 sm:mt-8 sm:rounded-[1.7rem]">
+          <div className="glass-card mt-3 flex max-w-xl gap-3 rounded-[1.25rem] p-3 text-sm leading-6 text-soil-600 sm:mt-8 sm:rounded-[1.7rem] sm:p-4">
             <Info className="mt-0.5 h-5 w-5 flex-none text-forest" />
             <p>Scan with your account to save history, badges, and dashboard stats.</p>
           </div>
@@ -264,15 +277,15 @@ export default function ScanPage() {
           initial={{ opacity: 0, y: 22, scale: 0.985 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ type: "spring", stiffness: 120, damping: 22, delay: 0.08 }}
-          className="mx-auto w-full max-w-[23rem] md:max-w-[22rem]"
+          className="order-1 mx-auto w-full max-w-[23rem] md:order-2 md:max-w-[22rem]"
         >
-        <PhoneFrame>
-          <div className="flex min-h-[27rem] flex-col">
-            <div className="text-center">
-              <p className="text-sm font-bold text-soil-600">Skaren barcode</p>
-              <h2 className="font-display mt-2 text-[1.75rem] font-black tracking-[-0.04em] text-ink sm:text-3xl">Analyze Product</h2>
+        <PhoneFrame className="rounded-[1.8rem] border-2 sm:rounded-[2.25rem] sm:border-[3px]" contentClassName="min-h-0 px-4 pb-5 pt-5 sm:min-h-[34rem] sm:px-7 sm:pb-8 sm:pt-10">
+          <div className="flex flex-col">
+            <div className="text-center sm:block">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-forest sm:text-sm sm:normal-case sm:tracking-normal sm:text-soil-600">Camera ready</p>
+              <h2 className="font-display mt-1 text-[1.45rem] font-black tracking-[-0.04em] text-ink sm:mt-2 sm:text-3xl">Analyze Product</h2>
             </div>
-            <div className="my-4 sm:my-6">
+            <div className="my-3 sm:my-6">
               <BarcodeScanner autoStart disabled={loading} onDetected={(detectedBarcode) => void analyzeBarcode(detectedBarcode)} />
             </div>
 
