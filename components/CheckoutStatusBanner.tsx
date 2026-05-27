@@ -15,6 +15,8 @@ type CheckoutStatusBannerProps = {
 
 type VerifySupportResponse = {
   verified?: boolean;
+  saved?: boolean;
+  belongsToSignedInUser?: boolean;
   amountNok?: number;
   email?: string | null;
   error?: string;
@@ -55,7 +57,15 @@ export function CheckoutStatusBanner({ status, amountNok = 0, sessionId }: Check
       const verification = (await verificationResponse?.json().catch(() => null)) as VerifySupportResponse | null;
 
       if (!verification?.verified) {
-        setVerifyError("Stripe has not confirmed this payment. Your card was not charged, and no supporter badge was added.");
+        if (verification?.error === "support_save_failed") {
+          setVerifyError(
+            "Stripe confirmed this payment, but Skaren could not save the supporter badge yet. Check the Supabase service role key and Stripe webhook setup."
+          );
+        } else if (verification?.error === "payment_belongs_to_different_account") {
+          setVerifyError("This Stripe payment belongs to a different Skaren account.");
+        } else {
+          setVerifyError("Stripe has not confirmed this payment. Your card was not charged, and no supporter badge was added.");
+        }
         setChecking(false);
         return;
       }

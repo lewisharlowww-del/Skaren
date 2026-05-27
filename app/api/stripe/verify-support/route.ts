@@ -87,22 +87,39 @@ export async function POST(request: Request) {
   const resolvedAmount = Number.isFinite(amountNok) ? amountNok : Math.round(Number(session.amount_total ?? 0) / 100);
   const user = await getRequestUser(request);
   const sessionUserId = session.client_reference_id ?? session.metadata?.user_id;
+  const isPaidSupportSession = isPaidSkarenSupportSession(session);
+  let savedRecord = null;
 
-  if (user?.id && sessionUserId === user.id && isPaidSkarenSupportSession(session)) {
-    await upsertSupporterRecord({
-      user_id: user.id,
+  if (sessionUserId && isPaidSupportSession) {
+    savedRecord = await upsertSupporterRecord({
+      user_id: sessionUserId,
       stripe_customer_id: session.customer ?? null,
       subscription_id: session.subscription ?? null,
       supporter_status: getSupporterStatusFromAmount(resolvedAmount),
       current_period_end: null,
       amount_nok: resolvedAmount,
-      customer_email: session.customer_email ?? session.customer_details?.email ?? user.email ?? null,
+      customer_email: session.customer_email ?? session.customer_details?.email ?? session.metadata?.user_email ?? user?.email ?? null,
       checkout_session_id: session.id ?? sessionId
     });
   }
 
+  const belongsToSignedInUser = Boolean(user?.id && sessionUserId === user.id);
+  const saveFailed = Boolean(sessionUserId && isPaidSupportSession && !savedRecord);
+  const belongsToAnotherUser = Boolean(user?.id && sessionUserId !== user.id);
+
+  if (saveFailed) {
+    console.error("[Stripe] Payment was paid but supporter save failed:", {
+      sessionId: session.id ?? sessionId,
+      userId: sessionUserId,
+      amountNok: resolvedAmount
+    });
+  }
+
   return NextResponse.json({
-    verified: isPaidSkarenSupportSession(session),
+    verified: isPaidSupportSession && Boolean(savedRecord) && (!user?.id || belongsToSignedInUser),
+    saved: Boolean(savedRecord),
+    belongsToSignedInUser,
+    error: belongsToAnotherUser ? "payment_belongs_to_different_account" : saveFailed ? "support_save_failed" : undefined,
     amountNok: Number.isFinite(resolvedAmount) ? resolvedAmount : 0,
     email: session.customer_email ?? session.customer_details?.email ?? null,
     sessionId: session.id ?? sessionId
