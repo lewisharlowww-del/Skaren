@@ -36,8 +36,16 @@ export function scoreToGrade(score: number): GradeLetter {
   return "E";
 }
 
-function gradeToScore(grade: GradeLetter) {
+export function gradeLetterToScore(grade: GradeLetter) {
   return { A: 90, B: 75, C: 55, D: 35, E: 15 }[grade];
+}
+
+export function getOverallSkarenGrade(healthGrade?: GradeLetter | null, ecoGrade?: GradeLetter | null): GradeLetter | null {
+  if (healthGrade && ecoGrade) {
+    return scoreToGrade(Math.round((gradeLetterToScore(healthGrade) + gradeLetterToScore(ecoGrade)) / 2));
+  }
+
+  return healthGrade ?? ecoGrade ?? null;
 }
 
 function includesAny(value: string, terms: string[]) {
@@ -174,10 +182,7 @@ export function getNutritionGrade(product: ProductResult): GradeLetter {
 }
 
 export function getOverallGrade(product: ProductResult): GradeLetter {
-  const ecoScore = gradeToScore(product.ecoGradeLetter ?? getEcoGrade(product));
-  const nutritionScore = gradeToScore(product.nutritionGradeLetter ?? getNutritionGrade(product));
-
-  return scoreToGrade(Math.round((ecoScore + nutritionScore) / 2));
+  return getOverallSkarenGrade(product.healthGrade, product.ecoGradeLetter ?? getEcoGrade(product)) ?? "C";
 }
 
 export function getProductSkarenScore(product: ProductResult) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Award, BarChart3, CalendarDays, Flame, Leaf, ScanBarcode, ShieldCheck, Trophy } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
@@ -11,7 +11,9 @@ import { StatCard } from "@/components/StatCard";
 import { useScans } from "@/hooks/useScans";
 import { useStreak } from "@/hooks/useStreak";
 import { useUser } from "@/hooks/useUser";
-import type { ScanRecord } from "@/lib/types";
+import { getEcoGrade, getOverallSkarenGrade, gradeLetterToScore } from "@/lib/ecoscore";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import type { GradeLetter, ProductResult, ScanRecord } from "@/lib/types";
 
 const badges = [
   { name: "First Scan", test: (scans: ScanRecord[]) => scans.length >= 1 },
@@ -26,6 +28,18 @@ function scoreToGrade(score: number) {
   if (score >= 40) return "C";
   if (score >= 20) return "D";
   return "E";
+}
+
+function getScanKey(scan: ScanRecord) {
+  return scan.id ?? `${scan.barcode}-${scan.created_at ?? ""}`;
+}
+
+function getScanGrade(scan: ScanRecord, overrides: Record<string, GradeLetter>) {
+  return overrides[getScanKey(scan)] ?? scan.skaren_grade ?? scoreToGrade(scan.ecoscan_score);
+}
+
+function getScanGradeScore(scan: ScanRecord, overrides: Record<string, GradeLetter>) {
+  return gradeLetterToScore(getScanGrade(scan, overrides));
 }
 
 function gradeTone(score: number) {
@@ -47,6 +61,8 @@ export default function DashboardPage() {
   const { scans, loading: scansLoading } = useScans(user);
   const streak = useStreak(scans);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [gradeOverrides, setGradeOverrides] = useState<Record<string, GradeLetter>>({});
+  const refreshedScansRef = useRef(new Set<string>());
 
   useEffect(() => {
     if (!userLoading && (!isConfigured || !user)) {
@@ -58,6 +74,67 @@ export default function DashboardPage() {
     }
   }, [isConfigured, router, user, userLoading]);
 
+  useEffect(() => {
+    if (scansLoading || scans.length === 0) return;
+
+    let cancelled = false;
+
+    async function refreshLegacyGrades() {
+      const legacyScans = scans
+        .filter((scan) => !scan.skaren_grade && !refreshedScansRef.current.has(getScanKey(scan)))
+        .slice(0, 8);
+
+      for (const scan of legacyScans) {
+        const scanKey = getScanKey(scan);
+        refreshedScansRef.current.add(scanKey);
+
+        try {
+          const cachedProduct = typeof window !== "undefined" ? window.sessionStorage.getItem(`skaren:${scan.barcode}`) : null;
+          let product = cachedProduct ? (JSON.parse(cachedProduct) as ProductResult) : null;
+
+          if (!product) {
+            const response = await fetch("/api/scan", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ barcode: scan.barcode })
+            });
+            const data = (await response.json()) as { product?: ProductResult };
+            product = data.product ?? null;
+          }
+
+          if (!product || cancelled) continue;
+
+          const environmentalGrade = product.ecoGradeLetter ?? getEcoGrade(product);
+          const skarenGrade = getOverallSkarenGrade(product.healthGrade, environmentalGrade);
+
+          if (!skarenGrade || cancelled) continue;
+
+          setGradeOverrides((current) => ({ ...current, [scanKey]: skarenGrade }));
+
+          if (isSupabaseConfigured && supabase && scan.id) {
+            await supabase
+              .from("scans")
+              .update({
+                skaren_grade: skarenGrade,
+                health_grade: product.healthGrade,
+                environmental_grade: environmentalGrade,
+                ecoscan_score: gradeLetterToScore(skarenGrade)
+              })
+              .eq("id", scan.id);
+          }
+        } catch (error) {
+          console.warn("[Dashboard] Could not refresh saved Skaren grade:", error);
+        }
+      }
+    }
+
+    void refreshLegacyGrades();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [scans, scansLoading]);
+
   const monthlyScans = useMemo(() => {
     const now = new Date();
     return scans.filter((scan) => {
@@ -67,10 +144,10 @@ export default function DashboardPage() {
   }, [scans]);
 
   const monthlyAverage = monthlyScans.length
-    ? Math.round(monthlyScans.reduce((total, scan) => total + scan.ecoscan_score, 0) / monthlyScans.length)
+    ? Math.round(monthlyScans.reduce((total, scan) => total + getScanGradeScore(scan, gradeOverrides), 0) / monthlyScans.length)
     : 0;
-  const best = scans.length ? [...scans].sort((a, b) => b.ecoscan_score - a.ecoscan_score)[0] : null;
-  const worst = scans.length ? [...scans].sort((a, b) => a.ecoscan_score - b.ecoscan_score)[0] : null;
+  const best = scans.length ? [...scans].sort((a, b) => getScanGradeScore(b, gradeOverrides) - getScanGradeScore(a, gradeOverrides))[0] : null;
+  const worst = scans.length ? [...scans].sort((a, b) => getScanGradeScore(a, gradeOverrides) - getScanGradeScore(b, gradeOverrides))[0] : null;
   const loading = userLoading || scansLoading;
   const monthGrade = monthlyScans.length ? scoreToGrade(monthlyAverage) : "–";
   const tone = gradeTone(monthlyAverage);
@@ -145,7 +222,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="rounded-2xl bg-white/75 p-3 shadow-sm">
                         <p className="text-xs font-black uppercase tracking-[0.12em] text-soil-500">Best grade</p>
-                        <p className="mt-1 text-2xl font-black text-ink">{best ? scoreToGrade(best.ecoscan_score) : "–"}</p>
+                        <p className="mt-1 text-2xl font-black text-ink">{best ? getScanGrade(best, gradeOverrides) : "–"}</p>
                       </div>
                       <div className="rounded-2xl bg-white/75 p-3 shadow-sm">
                         <p className="text-xs font-black uppercase tracking-[0.12em] text-soil-500">Badges</p>
@@ -163,8 +240,8 @@ export default function DashboardPage() {
             </section>
 
             <section className="mt-4 grid w-full min-w-0 gap-4 sm:grid-cols-2">
-              <StatCard label="Best Skaren Grade" value={best ? `Grade ${scoreToGrade(best.ecoscan_score)}` : "–"} icon={Trophy} detail={best?.product_name ?? "No best product yet"} tone="green" />
-              <StatCard label="Lowest Skaren Grade" value={worst ? `Grade ${scoreToGrade(worst.ecoscan_score)}` : "–"} icon={Leaf} detail={worst?.product_name ?? "No lower-grade product yet"} tone={worst && worst.ecoscan_score < 40 ? "red" : "amber"} />
+              <StatCard label="Best Skaren Grade" value={best ? `Grade ${getScanGrade(best, gradeOverrides)}` : "–"} icon={Trophy} detail={best?.product_name ?? "No best product yet"} tone="green" />
+              <StatCard label="Lowest Skaren Grade" value={worst ? `Grade ${getScanGrade(worst, gradeOverrides)}` : "–"} icon={Leaf} detail={worst?.product_name ?? "No lower-grade product yet"} tone={worst && getScanGradeScore(worst, gradeOverrides) < 40 ? "red" : "amber"} />
             </section>
 
             <section className="mt-4 grid w-full min-w-0 gap-4 sm:mt-6 lg:grid-cols-[0.9fr_1.1fr]">
@@ -195,24 +272,30 @@ export default function DashboardPage() {
                   <BarChart3 className="h-5 w-5 text-forest" />
                 </div>
                 <div className="mt-4 space-y-3">
-                  {scans.slice(0, 6).map((scan) => (
-                    <div key={`${scan.barcode}-${scan.created_at}`} className="flex min-w-0 items-center gap-3 rounded-[1.35rem] border border-black/5 bg-white p-3 shadow-sm">
-                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-leaf-50">
-                        {scan.product_image ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={scan.product_image} alt={`${scan.product_name} packaging`} className="h-full w-full object-contain p-1" loading="lazy" />
-                        ) : null}
+                  {scans.slice(0, 6).map((scan) => {
+                    const grade = getScanGrade(scan, gradeOverrides);
+                    const score = gradeLetterToScore(grade);
+                    const recentTone = gradeTone(score);
+
+                    return (
+                      <div key={`${scan.barcode}-${scan.created_at}`} className="flex min-w-0 items-center gap-3 rounded-[1.35rem] border border-black/5 bg-white p-3 shadow-sm">
+                        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-leaf-50">
+                          {scan.product_image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={scan.product_image} alt={`${scan.product_name} packaging`} className="h-full w-full object-contain p-1" loading="lazy" />
+                          ) : null}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-black text-soil-900">{scan.product_name}</p>
+                          <p className="truncate text-sm font-semibold text-soil-600">{scan.brand || scan.barcode}</p>
+                          <p className="mt-1 text-xs font-bold text-soil-500">{formatDate(scan.created_at)}</p>
+                        </div>
+                        <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full border-[4px] text-lg font-black ${recentTone.text}`} style={{ borderColor: recentTone.ring }}>
+                          {grade}
+                        </span>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-black text-soil-900">{scan.product_name}</p>
-                        <p className="truncate text-sm font-semibold text-soil-600">{scan.brand || scan.barcode}</p>
-                        <p className="mt-1 text-xs font-bold text-soil-500">{formatDate(scan.created_at)}</p>
-                      </div>
-                      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full border-[4px] text-lg font-black ${gradeTone(scan.ecoscan_score).text}`} style={{ borderColor: gradeTone(scan.ecoscan_score).ring }}>
-                        {scoreToGrade(scan.ecoscan_score)}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </section>

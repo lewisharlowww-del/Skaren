@@ -1,5 +1,5 @@
 import { analyzeAdditives } from "@/lib/additives";
-import { getEcoGrade, getNutritionGrade, getProductSkarenScore, normalizeEcoGrade } from "@/lib/ecoscore";
+import { getEcoGrade, getNutritionGrade, getOverallSkarenGrade, getProductSkarenScore, gradeLetterToScore, normalizeEcoGrade } from "@/lib/ecoscore";
 import { calculateHealthGrade } from "@/lib/healthscore";
 import type { ProductResult } from "@/lib/types";
 
@@ -401,13 +401,20 @@ export async function findOpenFoodFactsBarcode(productName: string, brand?: stri
 }
 
 export function toScanPayload(product: ProductResult, userId: string) {
+  const environmentalGrade = product.ecoGradeLetter ?? getEcoGrade(product);
+  const healthGrade = product.healthGrade;
+  const skarenGrade = getOverallSkarenGrade(healthGrade, environmentalGrade);
+
   return {
     user_id: userId,
     barcode: product.barcode,
     product_name: product.name,
     brand: product.brand === "Brand not listed" ? null : product.brand,
     eco_score_grade: product.ecoGrade,
-    ecoscan_score: getProductSkarenScore(product),
+    ecoscan_score: skarenGrade ? gradeLetterToScore(skarenGrade) : getProductSkarenScore(product),
+    skaren_grade: skarenGrade,
+    health_grade: healthGrade,
+    environmental_grade: environmentalGrade,
     product_image: product.displayImage
   };
 }

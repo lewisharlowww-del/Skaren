@@ -30,6 +30,11 @@ function recordGuestScan() {
   window.localStorage.setItem(getGuestScanKey(), String(getGuestScanCount() + 1));
 }
 
+function toLegacyScanPayload(payload: ReturnType<typeof toScanPayload>) {
+  const { skaren_grade, health_grade, environmental_grade, ...legacyPayload } = payload;
+  return legacyPayload;
+}
+
 function ScanLoadingOverlay({ barcode, scanSuccess, saved }: { barcode: string; scanSuccess: boolean; saved: boolean }) {
   const [messageIndex, setMessageIndex] = useState(0);
 
@@ -212,9 +217,24 @@ export default function ScanPage() {
         const { data: userData } = await supabase.auth.getUser();
 
         if (userData.user) {
-          await supabase.from("scans").insert(toScanPayload(product, userData.user.id));
-          setSavedToHistory(true);
-          vibrate([12, 24, 18]);
+          const scanPayload = toScanPayload(product, userData.user.id);
+          const { error: saveError } = await supabase.from("scans").insert(scanPayload);
+          let saved = !saveError;
+
+          if (saveError) {
+            console.warn("[Scan] Extended scan save failed, retrying with legacy scan fields:", saveError);
+            const { error: legacySaveError } = await supabase.from("scans").insert(toLegacyScanPayload(scanPayload));
+            saved = !legacySaveError;
+
+            if (legacySaveError) {
+              console.error("[Scan] Save failed:", legacySaveError);
+            }
+          }
+
+          if (saved) {
+            setSavedToHistory(true);
+            vibrate([12, 24, 18]);
+          }
         } else if (!isSupporter) {
           recordGuestScan();
           setGuestScansUsed(getGuestScanCount());

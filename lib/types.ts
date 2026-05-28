@@ -11,6 +11,9 @@ export type ScanRecord = {
   brand: string | null;
   eco_score_grade: EcoGrade;
   ecoscan_score: number;
+  skaren_grade?: GradeLetter | null;
+  health_grade?: GradeLetter | null;
+  environmental_grade?: GradeLetter | null;
   product_image: string | null;
   created_at?: string;
 };
