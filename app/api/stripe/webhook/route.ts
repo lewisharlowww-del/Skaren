@@ -99,7 +99,15 @@ async function handleCheckoutCompleted(session: StripeCheckoutSession) {
   const isSkarenSupport = session.metadata?.app === "skaren" && session.metadata?.type === "support";
   const isPaid = session.status === "complete" && session.payment_status === "paid";
 
-  if (!userId || !isSkarenSupport || !isPaid) return;
+  if (!isSkarenSupport || !isPaid) return;
+
+  if (!userId) {
+    console.error("[Stripe webhook] Paid support checkout is missing user_id metadata:", {
+      sessionId: session.id,
+      customerEmail: session.customer_email ?? session.customer_details?.email ?? session.metadata?.user_email ?? null
+    });
+    throw new Error("Paid support checkout is missing user_id metadata.");
+  }
 
   const amountNok = Number(session.metadata?.amount_nok ?? centsToNok(session.amount_total));
   const resolvedAmount = Number.isFinite(amountNok) ? amountNok : 0;
@@ -115,7 +123,15 @@ async function handleCheckoutCompleted(session: StripeCheckoutSession) {
     checkout_session_id: session.id
   });
 
-  if (!saved) throw new Error("Could not save checkout supporter status.");
+  if (!saved) {
+    console.error("[Stripe webhook] Could not save checkout supporter status:", {
+      sessionId: session.id,
+      userId,
+      amountNok: resolvedAmount,
+      hasCustomer: Boolean(session.customer)
+    });
+    throw new Error("Could not save checkout supporter status.");
+  }
 }
 
 async function handleSubscription(subscription: StripeSubscription, deleted = false) {
@@ -197,6 +213,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[Stripe webhook] Failed to process event:", event.type, error);
-    return NextResponse.json({ error: "Webhook processing failed." }, { status: 500 });
+    return NextResponse.json({ error: "Webhook processing failed.", eventType: event.type }, { status: 500 });
   }
 }

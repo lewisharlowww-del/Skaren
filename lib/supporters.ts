@@ -55,20 +55,43 @@ export async function upsertSupporterRecord(record: SupporterRecord) {
     return null;
   }
 
+  const payload = {
+    ...record,
+    updated_at: new Date().toISOString()
+  };
   const { data, error } = await supabase
     .from("supporters")
-    .upsert(
-      {
-        ...record,
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: "user_id" }
-    )
+    .upsert(payload, { onConflict: "user_id" })
     .select()
     .single();
 
   if (error) {
     console.error("[Supporters] Could not upsert supporter record:", error);
+
+    if (error.code === "23505" && (record.stripe_customer_id || record.subscription_id)) {
+      console.warn("[Supporters] Retrying supporter save without Stripe unique identifiers.");
+
+      const { data: retryData, error: retryError } = await supabase
+        .from("supporters")
+        .upsert(
+          {
+            ...payload,
+            stripe_customer_id: null,
+            subscription_id: null
+          },
+          { onConflict: "user_id" }
+        )
+        .select()
+        .single();
+
+      if (retryError) {
+        console.error("[Supporters] Retry without Stripe identifiers failed:", retryError);
+        return null;
+      }
+
+      return retryData;
+    }
+
     return null;
   }
 
