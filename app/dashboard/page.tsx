@@ -29,11 +29,11 @@ function scoreToGrade(score: number) {
 }
 
 function gradeTone(score: number) {
-  if (score >= 80) return { text: "text-forest", ring: "#1A5C3A", bg: "from-emerald-50 to-white", label: "Excellent month" };
-  if (score >= 60) return { text: "text-leaf-700", ring: "#4CAF7D", bg: "from-leaf-50 to-white", label: "Good month" };
-  if (score >= 40) return { text: "text-amber-700", ring: "#F4A261", bg: "from-amber-50 to-white", label: "Mixed month" };
-  if (score >= 20) return { text: "text-orange-700", ring: "#E76F51", bg: "from-orange-50 to-white", label: "Needs attention" };
-  return { text: "text-rose-700", ring: "#E63946", bg: "from-rose-50 to-white", label: "Low grade month" };
+  if (score >= 80) return { text: "text-forest", ring: "#1A5C3A", bg: "from-emerald-50 to-white", label: "Skaren Grade A", detail: "Excellent monthly product profile." };
+  if (score >= 60) return { text: "text-leaf-700", ring: "#4CAF7D", bg: "from-leaf-50 to-white", label: "Skaren Grade B", detail: "Good monthly product profile." };
+  if (score >= 40) return { text: "text-amber-700", ring: "#F4A261", bg: "from-amber-50 to-white", label: "Skaren Grade C", detail: "Average monthly product profile." };
+  if (score >= 20) return { text: "text-orange-700", ring: "#E76F51", bg: "from-orange-50 to-white", label: "Skaren Grade D", detail: "Lower monthly product profile." };
+  return { text: "text-rose-700", ring: "#E63946", bg: "from-rose-50 to-white", label: "Skaren Grade E", detail: "Very low monthly product profile." };
 }
 
 function formatDate(value?: string) {
@@ -130,11 +130,13 @@ export default function DashboardPage() {
                   <div>
                     <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-forest shadow-sm">
                       <CalendarDays className="h-4 w-4" />
-                      This month
+                      Monthly Skaren Grade
                     </div>
                     <h2 className="mt-4 font-display text-3xl font-black tracking-[-0.05em] text-ink sm:text-4xl">{tone.label}</h2>
                     <p className="mt-3 text-base font-semibold leading-7 text-soil-600">
-                      Your saved scans average {monthlyAverage || 0}/100 across {monthlyScans.length} product{monthlyScans.length === 1 ? "" : "s"} this month.
+                      {monthlyScans.length
+                        ? `${tone.detail} Based on ${monthlyScans.length} saved product${monthlyScans.length === 1 ? "" : "s"} this month.`
+                        : "Scan this month to build your Skaren Grade trend."}
                     </p>
                     <div className="mt-5 grid grid-cols-3 gap-2">
                       <div className="rounded-2xl bg-white/75 p-3 shadow-sm">
@@ -142,7 +144,7 @@ export default function DashboardPage() {
                         <p className="mt-1 text-2xl font-black text-ink">{monthlyScans.length}</p>
                       </div>
                       <div className="rounded-2xl bg-white/75 p-3 shadow-sm">
-                        <p className="text-xs font-black uppercase tracking-[0.12em] text-soil-500">Best</p>
+                        <p className="text-xs font-black uppercase tracking-[0.12em] text-soil-500">Best grade</p>
                         <p className="mt-1 text-2xl font-black text-ink">{best ? scoreToGrade(best.ecoscan_score) : "–"}</p>
                       </div>
                       <div className="rounded-2xl bg-white/75 p-3 shadow-sm">
@@ -161,8 +163,8 @@ export default function DashboardPage() {
             </section>
 
             <section className="mt-4 grid w-full min-w-0 gap-4 sm:grid-cols-2">
-              <StatCard label="Best saved product" value={best ? `Grade ${scoreToGrade(best.ecoscan_score)}` : "–"} icon={Trophy} detail={best?.product_name ?? "No best product yet"} tone="green" />
-              <StatCard label="Lowest saved product" value={worst ? `Grade ${scoreToGrade(worst.ecoscan_score)}` : "–"} icon={Leaf} detail={worst?.product_name ?? "No lower-grade product yet"} tone={worst && worst.ecoscan_score < 40 ? "red" : "amber"} />
+              <StatCard label="Best Skaren Grade" value={best ? `Grade ${scoreToGrade(best.ecoscan_score)}` : "–"} icon={Trophy} detail={best?.product_name ?? "No best product yet"} tone="green" />
+              <StatCard label="Lowest Skaren Grade" value={worst ? `Grade ${scoreToGrade(worst.ecoscan_score)}` : "–"} icon={Leaf} detail={worst?.product_name ?? "No lower-grade product yet"} tone={worst && worst.ecoscan_score < 40 ? "red" : "amber"} />
             </section>
 
             <section className="mt-4 grid w-full min-w-0 gap-4 sm:mt-6 lg:grid-cols-[0.9fr_1.1fr]">
