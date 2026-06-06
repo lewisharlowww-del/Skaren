@@ -74,16 +74,16 @@ export function DailyIntake({ nutrition }: DailyIntakeProps) {
         <div className="grid h-9 w-9 place-items-center rounded-2xl bg-leaf-50 text-forest">
           <Activity className="h-4 w-4" />
         </div>
-        <h3 className="font-black text-soil-900">Daily intake</h3>
+        <h3 className="type-heading-3 text-soil-900">Daily impact</h3>
       </div>
 
       <div className="space-y-4">
         {rows.map((row) => (
           <div key={row.key}>
-            <div className="mb-2 flex items-center justify-between gap-3 text-[0.95rem]">
-              <p className="font-black text-ink">{row.label}</p>
+            <div className="type-body-sm mb-2 flex items-center justify-between gap-3">
+              <p className="font-bold text-ink">{row.label}</p>
               <p className="text-right font-bold text-soil-600">
-                {formatAmount(row.data.amount, row.data.unit)} = {row.percent}% of daily intake
+                {formatAmount(row.data.amount, row.data.unit)} = {row.percent}% of daily reference
               </p>
             </div>
             <div className="h-3 overflow-hidden rounded-full bg-soil-100">
@@ -93,7 +93,7 @@ export function DailyIntake({ nutrition }: DailyIntakeProps) {
         ))}
       </div>
 
-      <p className="mt-4 text-sm font-semibold leading-6 text-soil-500">Based on a 2000 kcal daily diet per 100g</p>
+      <p className="type-body-sm mt-4 text-soil-500">Based on a 2000 kcal daily diet per 100g</p>
     </div>
   );
 }

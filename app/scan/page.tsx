@@ -15,7 +15,7 @@ import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import type { ProductResult } from "@/lib/types";
 
 const freeGuestScanLimit = 5;
-const loadingMessages = ["Reading barcode...", "Checking ingredients...", "Building Skaren grade...", "Analyzing nutrition..."];
+const loadingMessages = ["Reading barcode...", "Checking ingredients...", "Checking product grades...", "Analyzing nutrition..."];
 
 function getGuestScanKey() {
   const date = new Date();
@@ -81,12 +81,12 @@ function ScanLoadingOverlay({ barcode, scanSuccess, saved }: { barcode: string; 
           </AnimatePresence>
         </div>
 
-        <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-forest">{scanSuccess ? "Found product" : "Skaren scan"}</p>
-        <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-ink">
+        <p className="type-section-label mt-5 text-forest">{scanSuccess ? "Found product" : "Skaren scan"}</p>
+        <h2 className="type-heading-2 mt-2 text-ink">
           {scanSuccess ? "Opening product report" : loadingMessages[messageIndex]}
         </h2>
-        <p className="mt-2 text-sm font-semibold leading-6 text-soil-600">
-          Barcode {barcode || "detected"} is being turned into a clean Skaren grade.
+        <p className="type-body-sm mt-2 text-soil-600">
+          Barcode {barcode || "detected"} is being turned into a clean product report.
         </p>
 
         <div className="mt-6 overflow-hidden rounded-full bg-leaf-50">
@@ -105,7 +105,7 @@ function ScanLoadingOverlay({ barcode, scanSuccess, saved }: { barcode: string; 
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8 }}
-              className="motion-scan-success mt-4 inline-flex items-center gap-2 rounded-full bg-leaf-100 px-4 py-2 text-sm font-black text-forest"
+              className="motion-scan-success type-body-sm mt-4 inline-flex items-center gap-2 rounded-full bg-leaf-100 px-4 py-2 font-bold text-forest"
             >
               <CheckCircle2 className="h-4 w-4" />
               Saved to history
@@ -283,11 +283,11 @@ export default function ScanPage() {
           <div className="mb-3 hidden h-12 w-12 place-items-center rounded-[1.2rem] bg-forest text-cream shadow-glass sm:mb-6 sm:grid sm:h-16 sm:w-16 sm:rounded-[1.4rem]">
             <ScanBarcode className="h-7 w-7" />
           </div>
-          <h1 className="font-display max-w-xl text-[1.75rem] font-black leading-tight tracking-[-0.045em] text-ink sm:text-6xl">Scan a barcode</h1>
-          <p className="mt-2 max-w-xl text-sm font-semibold leading-6 text-soil-600 sm:mt-5 sm:text-lg sm:leading-8">
+          <h1 className="type-display-lg max-w-xl text-ink">Scan a barcode</h1>
+          <p className="type-body-lg mt-2 max-w-xl text-soil-600 sm:mt-5">
             Use your phone camera to scan a barcode, or enter it manually when camera access is not available.
           </p>
-          <div className="glass-card mt-3 flex max-w-xl gap-3 rounded-[1.25rem] p-3 text-sm leading-6 text-soil-600 sm:mt-8 sm:rounded-[1.7rem] sm:p-4">
+          <div className="glass-card type-body-sm mt-3 flex max-w-xl gap-3 rounded-[1.25rem] p-3 text-soil-600 sm:mt-8 sm:rounded-[1.7rem] sm:p-4">
             <Info className="mt-0.5 h-5 w-5 flex-none text-forest" />
             <p>Scan with your account to save history, badges, and dashboard stats.</p>
           </div>
@@ -302,18 +302,23 @@ export default function ScanPage() {
         <PhoneFrame className="rounded-[1.8rem] border-2 sm:rounded-[2.25rem] sm:border-[3px]" contentClassName="min-h-0 px-4 pb-5 pt-5 sm:min-h-[34rem] sm:px-7 sm:pb-8 sm:pt-10">
           <div className="flex flex-col">
             <div className="text-center sm:block">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-forest sm:text-sm sm:normal-case sm:tracking-normal sm:text-soil-600">Camera ready</p>
-              <h2 className="font-display mt-1 text-[1.45rem] font-black tracking-[-0.04em] text-ink sm:mt-2 sm:text-3xl">Analyze Product</h2>
+              <p className="type-section-label text-forest">Camera ready</p>
+              <h2 className="type-heading-2 mt-1 text-ink sm:mt-2">Analyze Product</h2>
             </div>
             <div className="my-3 sm:my-6">
               <BarcodeScanner autoStart disabled={loading} onDetected={(detectedBarcode) => void analyzeBarcode(detectedBarcode)} />
             </div>
 
             <form onSubmit={handleAnalyze} className="space-y-4">
-              <label className="block text-sm font-bold text-ink">
+              <div className="mt-3 flex items-center gap-3">
+                <div className="h-px flex-1 bg-black/8" />
+                <span className="type-caption text-soil-400">or enter manually</span>
+                <div className="h-px flex-1 bg-black/8" />
+              </div>
+              <label className="type-body-sm block font-bold text-ink">
                 Barcode
                 <input
-                  className="focus-ring mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-4 text-center text-lg font-bold"
+                  className="focus-ring type-heading-3 mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-4 text-center"
                   inputMode="numeric"
                   placeholder="3017620422003"
                   value={barcode}
@@ -324,7 +329,7 @@ export default function ScanPage() {
               </label>
               <button
                 disabled={loading}
-                className="focus-ring tap-feedback sticky bottom-24 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 font-black text-white shadow-phone hover:-translate-y-0.5 hover:bg-forest disabled:bg-soil-600 sm:static"
+                className="focus-ring tap-feedback type-button sticky bottom-24 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 text-white shadow-phone hover:-translate-y-0.5 hover:bg-forest disabled:bg-soil-600 sm:static"
               >
                 <AnimatePresence mode="wait" initial={false}>
                   {scanSuccess ? (

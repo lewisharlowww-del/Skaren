@@ -51,9 +51,9 @@ export function OnboardingSlides({ open, onComplete }: OnboardingSlidesProps) {
         <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-leaf-100 text-forest">
           <Icon className="h-10 w-10" />
         </div>
-        <p className="mt-6 text-sm font-bold text-forest">Step {index + 1} of 3</p>
-        <h2 className="mt-2 text-3xl font-black text-ink">{slide.title}</h2>
-        <p className="mt-3 leading-7 text-soil-600">{slide.text}</p>
+        <p className="type-section-label mt-6 text-forest">Step {index + 1} of 3</p>
+        <h2 className="type-heading-1 mt-2 text-ink">{slide.title}</h2>
+        <p className="type-body-lg mt-3 text-soil-600">{slide.text}</p>
 
         <div className="mt-6 flex justify-center gap-2">
           {slides.map((item) => (
@@ -64,7 +64,7 @@ export function OnboardingSlides({ open, onComplete }: OnboardingSlidesProps) {
         <button
           onClick={isLast ? completeOnboarding : () => setIndex((current) => current + 1)}
           disabled={saving}
-          className="focus-ring mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 font-bold text-white shadow-phone disabled:bg-soil-600"
+          className="focus-ring type-button mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 text-white shadow-phone disabled:bg-soil-600"
         >
           {isLast ? (saving ? "Saving..." : "Finish") : "Next"}
           {isLast ? <Check className="h-5 w-5" /> : <ArrowRight className="h-5 w-5" />}

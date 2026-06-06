@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import { colors, radius, typography } from "./styles/tokens";
 
 const config: Config = {
   darkMode: "class",
@@ -10,41 +11,56 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#101512",
-        cream: "#F7F2E9",
-        porcelain: "#F0F7F2",
-        forest: "#1A5C3A",
-        sage: "#A8B8A1",
-        moss: "#566B4F",
-        clay: "#D98E5F",
+        ink: colors.text.primary,
+        cream: colors.brand.mist,
+        porcelain: colors.surface.cardGreen,
+        forest: colors.brand.forest,
+        sage: colors.text.muted,
+        moss: colors.status.neutral,
+        clay: colors.status.warning,
         lime: {
-          50: "#F0F7F2",
-          100: "#DDEFE5",
-          300: "#9ED8B9",
-          400: "#6DC797",
-          500: "#4CAF7D",
-          600: "#32885D",
-          700: "#1A5C3A"
+          50: colors.grade.B.bg,
+          100: colors.grade.A.bg,
+          300: colors.grade.B.border,
+          400: colors.brand.leaf,
+          500: colors.brand.leaf,
+          600: colors.brand.leaf,
+          700: colors.brand.forest
         },
         leaf: {
-          50: "#F0F7F2",
-          100: "#DDEFE5",
-          200: "#BFE3CF",
-          500: "#4CAF7D",
-          600: "#32885D",
-          700: "#1A5C3A",
-          900: "#0F3F28"
+          50: colors.grade.B.bg,
+          100: colors.grade.A.bg,
+          200: colors.grade.A.border,
+          500: colors.brand.leaf,
+          600: colors.brand.leaf,
+          700: colors.brand.forest,
+          900: colors.brand.forest
         },
         soil: {
-          50: "#F8FBF8",
-          100: "#EFE8DC",
-          600: "#777469",
-          900: "#22251F"
+          50: colors.surface.insight,
+          100: colors.brand.mistDark,
+          600: colors.text.secondary,
+          900: colors.text.primary
         }
       },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', '"DM Sans"', "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
-        display: ['"Sora"', '"Plus Jakarta Sans"', "Inter", "ui-sans-serif", "system-ui", "sans-serif"]
+        sans: ["var(--font-manrope)", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["var(--font-manrope)", "ui-sans-serif", "system-ui", "sans-serif"],
+        brand: ["Satoshi", "var(--font-manrope)", "ui-sans-serif", "system-ui", "sans-serif"],
+        manrope: ["var(--font-manrope)", "sans-serif"],
+        satoshi: ["Satoshi", "var(--font-manrope)", "sans-serif"]
+      },
+      fontSize: {
+        "sk-display-xl": typography.size.displayXL,
+        "sk-display-lg": typography.size.displayLg,
+        "sk-h1": typography.size.h1,
+        "sk-h2": typography.size.h2,
+        "sk-h3": typography.size.h3,
+        "sk-body-lg": typography.size.bodyLg,
+        "sk-body": typography.size.body,
+        "sk-body-sm": typography.size.bodySm,
+        "sk-caption": typography.size.caption,
+        "sk-label": typography.size.label
       },
       boxShadow: {
         soft: "0 24px 70px rgba(26, 92, 58, 0.10)",
@@ -52,8 +68,12 @@ const config: Config = {
         glass: "0 18px 55px rgba(26, 92, 58, 0.12)"
       },
       borderRadius: {
-        "4xl": "2rem",
-        "5xl": "2.5rem"
+        "4xl": radius.xl,
+        "5xl": "40px",
+        sk: radius.sm,
+        "sk-md": radius.md,
+        "sk-lg": radius.lg,
+        "sk-xl": radius.xl
       }
     }
   },

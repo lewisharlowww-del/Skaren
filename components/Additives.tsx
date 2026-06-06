@@ -35,12 +35,12 @@ export function Additives({ additives }: AdditivesProps) {
 
   if (additives.length === 0) {
     return (
-      <section className="mt-4 w-full max-w-full rounded-[1.75rem] border border-emerald-100 bg-white p-5 shadow-soft sm:mt-5 sm:rounded-[2rem] sm:p-6">
+      <section className="w-full max-w-full rounded-[1.75rem] border border-emerald-100 bg-white p-5 shadow-soft sm:rounded-[2rem] sm:p-6">
         <div className="flex items-start gap-3">
           <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-xl">✅</div>
           <div>
-            <h2 className="font-display text-2xl font-black tracking-[-0.04em] text-ink">Additives</h2>
-            <p className="mt-2 text-[0.98rem] font-bold leading-6 text-emerald-800">No additives detected</p>
+            <h2 className="type-heading-2 text-ink">Additives</h2>
+            <p className="type-body mt-2 font-bold text-emerald-800">No additives detected</p>
           </div>
         </div>
       </section>
@@ -51,14 +51,14 @@ export function Additives({ additives }: AdditivesProps) {
   const summary = `${additives.length} additive${additives.length === 1 ? "" : "s"} found — ${avoidCount} to avoid`;
 
   return (
-    <section className="mt-4 w-full max-w-full rounded-[1.75rem] border border-black/5 bg-white p-5 shadow-soft sm:mt-5 sm:rounded-[2rem] sm:p-6">
+    <section className="w-full max-w-full rounded-[1.75rem] border border-black/5 bg-white p-5 shadow-soft sm:rounded-[2rem] sm:p-6">
       <div className="mb-4 flex items-start gap-3">
         <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-leaf-50 text-forest">
           <FlaskConical className="h-5 w-5" />
         </div>
         <div>
-          <h2 className="font-display text-2xl font-black tracking-[-0.04em] text-ink">Additives</h2>
-          <p className="mt-1 text-[0.98rem] font-bold leading-6 text-soil-600">{summary}</p>
+          <h2 className="type-heading-2 text-ink">Additives</h2>
+          <p className="type-body mt-1 font-bold text-soil-600">{summary}</p>
         </div>
       </div>
 
@@ -72,14 +72,14 @@ export function Additives({ additives }: AdditivesProps) {
               <button
                 type="button"
                 onClick={() => setOpenCode(isOpen ? null : additive.code)}
-                className={`flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl border px-4 py-2 text-left text-[0.95rem] font-black transition active:scale-[0.99] sm:w-auto ${style.pill}`}
+                className={`type-body-sm flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl border px-4 py-2 text-left font-bold transition active:scale-[0.99] sm:w-auto ${style.pill}`}
               >
                 <span>{additiveTitle(additive)}</span>
                 <ChevronDown className={`h-4 w-4 shrink-0 transition ${isOpen ? "rotate-180" : ""}`} />
               </button>
               {isOpen ? (
-                <div className={`mt-2 rounded-2xl border p-3 text-[0.92rem] font-semibold leading-6 shadow-sm ${style.panel}`}>
-                  <p className="font-black">{style.label}</p>
+                <div className={`type-body-sm mt-2 rounded-2xl border p-3 shadow-sm ${style.panel}`}>
+                  <p className="font-bold">{style.label}</p>
                   <p className="mt-1">{additive.description}</p>
                 </div>
               ) : null}

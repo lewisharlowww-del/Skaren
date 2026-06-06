@@ -11,7 +11,7 @@ import { StatCard } from "@/components/StatCard";
 import { useScans } from "@/hooks/useScans";
 import { useStreak } from "@/hooks/useStreak";
 import { useUser } from "@/hooks/useUser";
-import { getEcoGrade, getOverallSkarenGrade, gradeLetterToScore } from "@/lib/ecoscore";
+import { getEcoGrade, gradeLetterToScore, hasEcoData } from "@/lib/ecoscore";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import type { GradeLetter, ProductResult, ScanRecord } from "@/lib/types";
 
@@ -35,7 +35,7 @@ function getScanKey(scan: ScanRecord) {
 }
 
 function getScanGrade(scan: ScanRecord, overrides: Record<string, GradeLetter>) {
-  return overrides[getScanKey(scan)] ?? scan.skaren_grade ?? scoreToGrade(scan.ecoscan_score);
+  return overrides[getScanKey(scan)] ?? scan.health_grade ?? scan.environmental_grade ?? scoreToGrade(scan.ecoscan_score);
 }
 
 function getScanGradeScore(scan: ScanRecord, overrides: Record<string, GradeLetter>) {
@@ -43,11 +43,11 @@ function getScanGradeScore(scan: ScanRecord, overrides: Record<string, GradeLett
 }
 
 function gradeTone(score: number) {
-  if (score >= 80) return { text: "text-forest", ring: "#1A5C3A", bg: "from-emerald-50 to-white", label: "Skaren Grade A", detail: "Excellent monthly product profile." };
-  if (score >= 60) return { text: "text-leaf-700", ring: "#4CAF7D", bg: "from-leaf-50 to-white", label: "Skaren Grade B", detail: "Good monthly product profile." };
-  if (score >= 40) return { text: "text-amber-700", ring: "#F4A261", bg: "from-amber-50 to-white", label: "Skaren Grade C", detail: "Average monthly product profile." };
-  if (score >= 20) return { text: "text-orange-700", ring: "#E76F51", bg: "from-orange-50 to-white", label: "Skaren Grade D", detail: "Lower monthly product profile." };
-  return { text: "text-rose-700", ring: "#E63946", bg: "from-rose-50 to-white", label: "Skaren Grade E", detail: "Very low monthly product profile." };
+  if (score >= 80) return { text: "text-forest", ring: "var(--sk-brand-forest)", bg: "from-emerald-50 to-white", label: "Health Grade A", detail: "Excellent monthly health profile." };
+  if (score >= 60) return { text: "text-leaf-700", ring: "var(--sk-brand-leaf)", bg: "from-leaf-50 to-white", label: "Health Grade B", detail: "Good monthly health profile." };
+  if (score >= 40) return { text: "text-amber-700", ring: "var(--sk-grade-d-text)", bg: "from-amber-50 to-white", label: "Health Grade C", detail: "Average monthly health profile." };
+  if (score >= 20) return { text: "text-orange-700", ring: "var(--sk-grade-d-text)", bg: "from-orange-50 to-white", label: "Health Grade D", detail: "Lower monthly health profile." };
+  return { text: "text-rose-700", ring: "var(--sk-grade-e-text)", bg: "from-rose-50 to-white", label: "Health Grade E", detail: "Very low monthly health profile." };
 }
 
 function formatDate(value?: string) {
@@ -81,7 +81,7 @@ export default function DashboardPage() {
 
     async function refreshLegacyGrades() {
       const legacyScans = scans
-        .filter((scan) => !scan.skaren_grade && !refreshedScansRef.current.has(getScanKey(scan)))
+        .filter((scan) => !scan.health_grade && !refreshedScansRef.current.has(getScanKey(scan)))
         .slice(0, 8);
 
       for (const scan of legacyScans) {
@@ -104,26 +104,26 @@ export default function DashboardPage() {
 
           if (!product || cancelled) continue;
 
-          const environmentalGrade = product.ecoGradeLetter ?? getEcoGrade(product);
-          const skarenGrade = getOverallSkarenGrade(product.healthGrade, environmentalGrade);
+          const environmentalGrade = hasEcoData(product) ? product.ecoGradeLetter ?? getEcoGrade(product) : null;
+          const healthGrade = product.healthGrade;
 
-          if (!skarenGrade || cancelled) continue;
+          if (!healthGrade || cancelled) continue;
 
-          setGradeOverrides((current) => ({ ...current, [scanKey]: skarenGrade }));
+          setGradeOverrides((current) => ({ ...current, [scanKey]: healthGrade }));
 
           if (isSupabaseConfigured && supabase && scan.id) {
             await supabase
               .from("scans")
               .update({
-                skaren_grade: skarenGrade,
-                health_grade: product.healthGrade,
+                skaren_grade: null,
+                health_grade: healthGrade,
                 environmental_grade: environmentalGrade,
-                ecoscan_score: gradeLetterToScore(skarenGrade)
+                ecoscan_score: gradeLetterToScore(healthGrade)
               })
               .eq("id", scan.id);
           }
         } catch (error) {
-          console.warn("[Dashboard] Could not refresh saved Skaren grade:", error);
+          console.warn("[Dashboard] Could not refresh saved health grade:", error);
         }
       }
     }
@@ -161,15 +161,15 @@ export default function DashboardPage() {
       <main className="page-fade-up mx-auto w-full max-w-[430px] overflow-x-hidden px-4 pb-44 pt-4 sm:max-w-6xl sm:py-8">
         <div className="flex w-full min-w-0 flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div className="min-w-0">
-            <p className="text-sm font-black uppercase tracking-[0.16em] text-forest">Your Skaren overview</p>
-            <h1 className="mt-1 font-display text-[2.45rem] font-black leading-none tracking-[-0.055em] text-ink sm:mt-2 sm:text-4xl">Stats</h1>
-            <p className="mt-2 max-w-xl text-base font-semibold leading-7 text-soil-600">
+            <p className="type-section-label text-forest">Your Skaren overview</p>
+            <h1 className="type-display-lg mt-1 text-ink sm:mt-2">Stats</h1>
+            <p className="type-body-lg mt-2 max-w-xl text-soil-600">
               See your scan rhythm, saved product history, and the grades you are choosing most often.
             </p>
           </div>
           <button
             onClick={() => router.push("/scan")}
-            className="focus-ring tap-feedback inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 font-black text-white shadow-soft"
+            className="focus-ring tap-feedback type-button inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-white shadow-soft"
           >
             <ScanBarcode className="h-5 w-5" />
             New scan
@@ -196,37 +196,37 @@ export default function DashboardPage() {
                     <div
                       className="grid h-36 w-36 place-items-center rounded-full bg-white shadow-soft"
                       style={{
-                        background: `conic-gradient(${tone.ring} ${monthProgress * 3.6}deg, #EEF3EC 0deg)`
+                        background: `conic-gradient(${tone.ring} ${monthProgress * 3.6}deg, var(--sk-brand-mist-dark) 0deg)`
                       }}
                     >
                       <div className="grid h-28 w-28 place-items-center rounded-full bg-white">
-                        <span className={`font-display text-6xl font-black ${tone.text}`}>{monthGrade}</span>
+                        <span className={`type-grade text-6xl ${tone.text}`}>{monthGrade}</span>
                       </div>
                     </div>
                   </div>
                   <div>
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-forest shadow-sm">
+                    <div className="type-section-label inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-2 text-forest shadow-sm">
                       <CalendarDays className="h-4 w-4" />
-                      Monthly Skaren Grade
+                      Monthly Health Grade
                     </div>
-                    <h2 className="mt-4 font-display text-3xl font-black tracking-[-0.05em] text-ink sm:text-4xl">{tone.label}</h2>
-                    <p className="mt-3 text-base font-semibold leading-7 text-soil-600">
+                    <h2 className="type-heading-1 mt-4 text-ink">{tone.label}</h2>
+                    <p className="type-body-lg mt-3 text-soil-600">
                       {monthlyScans.length
                         ? `${tone.detail} Based on ${monthlyScans.length} saved product${monthlyScans.length === 1 ? "" : "s"} this month.`
-                        : "Scan this month to build your Skaren Grade trend."}
+                        : "Scan this month to build your Health Grade trend."}
                     </p>
                     <div className="mt-5 grid grid-cols-3 gap-2">
                       <div className="rounded-2xl bg-white/75 p-3 shadow-sm">
-                        <p className="text-xs font-black uppercase tracking-[0.12em] text-soil-500">Scans</p>
-                        <p className="mt-1 text-2xl font-black text-ink">{monthlyScans.length}</p>
+                        <p className="type-section-label text-soil-500">Scans</p>
+                        <p className="type-heading-2 mt-1 text-ink">{monthlyScans.length}</p>
                       </div>
                       <div className="rounded-2xl bg-white/75 p-3 shadow-sm">
-                        <p className="text-xs font-black uppercase tracking-[0.12em] text-soil-500">Best grade</p>
-                        <p className="mt-1 text-2xl font-black text-ink">{best ? getScanGrade(best, gradeOverrides) : "–"}</p>
+                        <p className="type-section-label text-soil-500">Best grade</p>
+                        <p className="type-heading-2 mt-1 text-ink">{best ? getScanGrade(best, gradeOverrides) : "–"}</p>
                       </div>
                       <div className="rounded-2xl bg-white/75 p-3 shadow-sm">
-                        <p className="text-xs font-black uppercase tracking-[0.12em] text-soil-500">Badges</p>
-                        <p className="mt-1 text-2xl font-black text-ink">{earnedBadges}/{badges.length}</p>
+                        <p className="type-section-label text-soil-500">Badges</p>
+                        <p className="type-heading-2 mt-1 text-ink">{earnedBadges}/{badges.length}</p>
                       </div>
                     </div>
                   </div>
@@ -240,18 +240,18 @@ export default function DashboardPage() {
             </section>
 
             <section className="mt-4 grid w-full min-w-0 gap-4 sm:grid-cols-2">
-              <StatCard label="Best Skaren Grade" value={best ? `Grade ${getScanGrade(best, gradeOverrides)}` : "–"} icon={Trophy} detail={best?.product_name ?? "No best product yet"} tone="green" />
-              <StatCard label="Lowest Skaren Grade" value={worst ? `Grade ${getScanGrade(worst, gradeOverrides)}` : "–"} icon={Leaf} detail={worst?.product_name ?? "No lower-grade product yet"} tone={worst && getScanGradeScore(worst, gradeOverrides) < 40 ? "red" : "amber"} />
+              <StatCard label="Best Health Grade" value={best ? `Grade ${getScanGrade(best, gradeOverrides)}` : "–"} icon={Trophy} detail={best?.product_name ?? "No best product yet"} tone="green" />
+              <StatCard label="Lowest Health Grade" value={worst ? `Grade ${getScanGrade(worst, gradeOverrides)}` : "–"} icon={Leaf} detail={worst?.product_name ?? "No lower-grade product yet"} tone={worst && getScanGradeScore(worst, gradeOverrides) < 40 ? "red" : "amber"} />
             </section>
 
             <section className="mt-4 grid w-full min-w-0 gap-4 sm:mt-6 lg:grid-cols-[0.9fr_1.1fr]">
               <div className="min-w-0 overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-glass backdrop-blur-xl">
                 <div className="flex min-w-0 items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-xs font-black uppercase tracking-[0.15em] text-forest">Milestones</p>
-                    <h2 className="font-display mt-1 text-2xl font-black tracking-[-0.04em] text-ink">Badges</h2>
+                    <p className="type-section-label text-forest">Milestones</p>
+                    <h2 className="type-heading-2 mt-1 text-ink">Badges</h2>
                   </div>
-                  <span className="rounded-full bg-leaf-50 px-3 py-1 text-sm font-black text-forest">{earnedBadges}/{badges.length}</span>
+                  <span className="type-body-sm rounded-full bg-leaf-50 px-3 py-1 font-bold text-forest">{earnedBadges}/{badges.length}</span>
                 </div>
                 <div className="mt-4 grid min-w-0 gap-3">
                   {badges.map((badge) => {
@@ -266,8 +266,8 @@ export default function DashboardPage() {
               <div className="min-w-0 overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-glass backdrop-blur-xl">
                 <div className="flex min-w-0 items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-xs font-black uppercase tracking-[0.15em] text-forest">Latest products</p>
-                    <h2 className="font-display mt-1 text-2xl font-black tracking-[-0.04em] text-ink">Recent scans</h2>
+                    <p className="type-section-label text-forest">Latest products</p>
+                    <h2 className="type-heading-2 mt-1 text-ink">Recent scans</h2>
                   </div>
                   <BarChart3 className="h-5 w-5 text-forest" />
                 </div>
@@ -286,11 +286,11 @@ export default function DashboardPage() {
                           ) : null}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-black text-soil-900">{scan.product_name}</p>
-                          <p className="truncate text-sm font-semibold text-soil-600">{scan.brand || scan.barcode}</p>
-                          <p className="mt-1 text-xs font-bold text-soil-500">{formatDate(scan.created_at)}</p>
+                          <p className="type-heading-3 truncate text-soil-900">{scan.product_name}</p>
+                          <p className="type-body-sm truncate text-soil-600">{scan.brand || scan.barcode}</p>
+                          <p className="type-caption mt-1 text-soil-500">{formatDate(scan.created_at)}</p>
                         </div>
-                        <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full border-[4px] text-lg font-black ${recentTone.text}`} style={{ borderColor: recentTone.ring }}>
+                        <span className={`type-grade grid h-11 w-11 shrink-0 place-items-center rounded-full border-[4px] text-lg ${recentTone.text}`} style={{ borderColor: recentTone.ring }}>
                           {grade}
                         </span>
                       </div>

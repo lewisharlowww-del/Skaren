@@ -128,7 +128,7 @@ export function PwaShell() {
       ) : null}
 
       {!online ? (
-        <div className="fixed inset-x-4 top-[calc(0.8rem+env(safe-area-inset-top))] z-[70] mx-auto flex max-w-[430px] items-center gap-3 rounded-2xl border border-white/10 bg-[#101b14]/95 px-4 py-3 text-sm font-bold text-white shadow-phone backdrop-blur-xl">
+        <div className="fixed inset-x-4 top-[calc(0.8rem+env(safe-area-inset-top))] z-[70] mx-auto flex max-w-[430px] items-center gap-3 rounded-2xl border border-white/10 bg-[var(--sk-text-primary)]/95 px-4 py-3 text-sm font-bold text-white shadow-phone backdrop-blur-xl">
           <WifiOff className="h-5 w-5 text-leaf-200" />
           Offline mode. Recent pages and images may still work.
         </div>
@@ -147,7 +147,7 @@ export function PwaShell() {
           <div className="flex gap-3 pr-8">
             <SkarenMark className="h-12 w-12 shrink-0 rounded-[1rem]" iconClassName="h-7 w-7 text-white" />
             <div>
-              <p className="font-black text-ink">Install Skaren</p>
+              <p className="type-heading-3 text-ink">Install Skaren</p>
               <p className="mt-1 text-sm font-semibold leading-5 text-soil-600">
                 Open faster, scan from your home screen, and keep recent reports available.
               </p>
@@ -157,7 +157,7 @@ export function PwaShell() {
             <button
               type="button"
               onClick={() => void installApp()}
-              className="focus-ring tap-feedback mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-ink px-4 py-3 font-black text-white"
+              className="focus-ring tap-feedback type-button mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-ink px-4 py-3 text-white"
             >
               <Download className="h-5 w-5" />
               Install app

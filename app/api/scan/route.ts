@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getEcoGrade, getNutritionGrade, getProductSkarenScore } from "@/lib/ecoscore";
+import { getEcoGrade, getNutritionGrade } from "@/lib/ecoscore";
 import { calculateHealthGrade, hasNokkelhullLabel, nutritionDataFromKassalapp } from "@/lib/healthscore";
 import { fetchKassalappProduct, getVerifiedDisplayImage } from "@/lib/kassalapp";
 import { generateAiSummary } from "@/lib/openai";
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       console.error("[Scan] AI cache error:", error);
       return null;
     });
-    const aiSummary = cachedAi?.aiSummary ?? await generateAiSummary(productWithGrades, getProductSkarenScore(productWithGrades)).catch((error) => {
+    const aiSummary = cachedAi?.aiSummary ?? await generateAiSummary(productWithGrades).catch((error) => {
       console.error("[Scan] AI summary error:", error);
       return [];
     });

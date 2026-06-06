@@ -14,7 +14,7 @@ function getBadgeTone(badge: string) {
     return {
       Icon: Gem,
       eyebrow: "Top supporter",
-      shell: "border-amber-200 bg-[radial-gradient(circle_at_20%_0%,#FFF7D6,transparent_32%),linear-gradient(135deg,#1A5C3A,#09130E)] text-white shadow-[0_22px_60px_rgba(26,92,58,0.28)]",
+      shell: "border-amber-200 bg-[radial-gradient(circle_at_20%_0%,var(--sk-grade-c-bg),transparent_32%),linear-gradient(135deg,var(--sk-brand-forest),var(--sk-text-primary))] text-white shadow-[0_22px_60px_rgba(26,92,58,0.28)]",
       icon: "bg-amber-100 text-amber-700 ring-4 ring-white/20",
       text: "text-amber-100",
       shine: true
@@ -49,7 +49,7 @@ export function SupporterBadge({ badge, amountNok = 0, compact = false, classNam
   if (compact) {
     return (
       <span
-        className={`relative inline-flex min-h-11 items-center gap-2 overflow-hidden rounded-full border px-4 py-2 font-black ${tone.shell} ${className}`}
+        className={`type-button relative inline-flex min-h-11 items-center gap-2 overflow-hidden rounded-full border px-4 py-2 ${tone.shell} ${className}`}
       >
         {tone.shine ? <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent" /> : null}
         <span className={`relative grid h-8 w-8 place-items-center rounded-full ${tone.icon}`}>
@@ -73,9 +73,9 @@ export function SupporterBadge({ badge, amountNok = 0, compact = false, classNam
           <Icon className="h-7 w-7" />
         </span>
         <div className="min-w-0">
-          <p className={`text-xs font-black uppercase tracking-[0.16em] ${tone.text}`}>{tone.eyebrow}</p>
-          <p className="mt-1 text-xl font-black">{badge}</p>
-          {amountNok > 0 ? <p className={`mt-1 text-sm font-bold ${tone.text}`}>{amountNok} kr support received</p> : null}
+          <p className={`type-section-label ${tone.text}`}>{tone.eyebrow}</p>
+          <p className="type-heading-2 mt-1">{badge}</p>
+          {amountNok > 0 ? <p className={`type-body-sm mt-1 font-bold ${tone.text}`}>{amountNok} kr support received</p> : null}
         </div>
         {tone.shine ? <Sparkles className="ml-auto h-6 w-6 shrink-0 text-amber-200" /> : null}
       </div>

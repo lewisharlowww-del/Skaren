@@ -25,8 +25,8 @@ export default function PricingPage({ searchParams }: PricingPageProps) {
         <CheckoutStatusBanner status={checkoutStatus} amountNok={Number.isFinite(supportAmount) ? supportAmount : 0} sessionId={sessionId} />
 
         <div className="mx-auto max-w-2xl text-center">
-          <p className="font-bold text-forest">Support Skaren</p>
-          <h1 className="mt-2 font-display text-[2.4rem] font-black leading-[0.98] tracking-[-0.055em] text-ink sm:text-4xl">Help us keep Skaren independent and improving</h1>
+          <p className="type-section-label text-forest">Support Skaren</p>
+          <h1 className="type-display-lg mt-2 text-ink">Help us keep Skaren independent and improving</h1>
           <p className="mt-3 text-[0.98rem] font-semibold leading-7 text-soil-600 sm:mt-4">
             Free is for quick checks. Supporters help fund better product data, clearer insights, and future features. Support once from 50 kr and help shape what Skaren becomes.
           </p>
@@ -41,7 +41,7 @@ export default function PricingPage({ searchParams }: PricingPageProps) {
               }`}
             >
               <div className="flex items-center justify-between">
-                <h2 className={`text-2xl font-black ${plan.name === "Support Skaren" ? "text-white" : "text-soil-900"}`}>{plan.name}</h2>
+                <h2 className={`type-heading-2 ${plan.name === "Support Skaren" ? "text-white" : "text-soil-900"}`}>{plan.name}</h2>
                 {plan.name === "Support Skaren" ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-lime-100 px-3 py-1 text-sm font-bold text-ink">
                     <Sparkles className="h-4 w-4" />
@@ -57,7 +57,7 @@ export default function PricingPage({ searchParams }: PricingPageProps) {
               <p className={`mt-3 min-h-12 text-sm font-medium leading-6 ${plan.name === "Support Skaren" ? "text-white/70" : "text-soil-600"}`}>
                 {plan.description}
               </p>
-              <p className={`mt-4 text-4xl font-black ${plan.name === "Support Skaren" ? "text-white" : "text-soil-900"}`}>{plan.price}</p>
+              <p className={`type-display-lg mt-4 ${plan.name === "Support Skaren" ? "text-white" : "text-soil-900"}`}>{plan.price}</p>
               <ul className="mt-6 space-y-3">
                 {plan.features.map((feature) => (
                   <li key={feature} className={`flex items-center gap-3 ${plan.name === "Support Skaren" ? "text-white/80" : "text-soil-600"}`}>

@@ -97,7 +97,7 @@ export function CheckoutStatusBanner({ status, amountNok = 0, sessionId }: Check
         <span className={`mx-auto grid h-14 w-14 place-items-center rounded-full shadow-sm ${saved ? "bg-forest text-white" : verifyError ? "bg-amber-50 text-amber-700" : "bg-leaf-50 text-forest"}`}>
           {checking ? <Loader2 className="h-7 w-7 animate-spin" /> : saved ? <Check className="h-7 w-7" /> : <XCircle className="h-7 w-7" />}
         </span>
-        <h1 className="mt-4 text-3xl font-black text-ink">
+        <h1 className="type-heading-1 mt-4 text-ink">
           {saved ? "Thank you for supporting Skaren" : checking ? "Checking your payment" : "Payment not confirmed"}
         </h1>
         <p className="mt-3 text-base font-medium leading-7 text-soil-600">
@@ -115,7 +115,7 @@ export function CheckoutStatusBanner({ status, amountNok = 0, sessionId }: Check
         )}
         <Link
           href="/account"
-          className="mt-6 inline-flex min-h-14 w-full items-center justify-center rounded-full bg-ink px-5 py-4 font-black text-white shadow-phone transition hover:bg-forest sm:w-auto"
+          className="type-button mt-6 inline-flex min-h-14 w-full items-center justify-center rounded-full bg-ink px-5 py-4 text-white shadow-phone transition hover:bg-forest sm:w-auto"
         >
           View account
         </Link>
@@ -129,7 +129,7 @@ export function CheckoutStatusBanner({ status, amountNok = 0, sessionId }: Check
         <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-white text-amber-700 shadow-sm">
           <XCircle className="h-7 w-7" />
         </span>
-        <h1 className="mt-4 text-3xl font-black text-ink">Checkout cancelled</h1>
+        <h1 className="type-heading-1 mt-4 text-ink">Checkout cancelled</h1>
         <p className="mt-3 text-base font-medium leading-7 text-soil-600">
           No worries. Your free Skaren access still works, and you can support the app whenever you are ready.
         </p>

@@ -1,6 +1,6 @@
 # Skaren MVP
 
-Skaren is a mobile-first Next.js MVP that lets users enter a product barcode, fetch Norwegian product data from Kassalapp, combine it with eco data from Open Food Facts, estimate a Skaren score, and optionally sign up to save scan history and review progress in a dashboard.
+Skaren is a mobile-first Next.js MVP that lets users enter a product barcode, fetch Norwegian product data from Kassalapp, combine it with eco data from Open Food Facts, show Health and Eco grades, and optionally sign up to save scan history and review progress in a dashboard.
 
 ## Tech Stack
 
@@ -194,16 +194,13 @@ Kassalapp provides product name, brand, official product image, EAN, and Norwegi
 
 Skaren only displays verified Kassalapp product images. If Kassalapp does not provide an image, Skaren shows a clean placeholder with a large category emoji and product name on a green gradient.
 
-## Skaren Score Logic
+## Product Grade Logic
 
-Skaren score is an easy-to-understand estimate based on available product data. It is not claimed to be scientifically perfect.
+Skaren shows separate Health and Eco grades instead of one combined score.
 
-- Eco-Score A = 90
-- Eco-Score B = 75
-- Eco-Score C = 55
-- Eco-Score D = 35
-- Eco-Score E = 15
-- Unknown = 50 with a limited data warning
+- Health uses available nutrition data, Nutri-Score, and the Norwegian Nøkkelhull label.
+- Eco uses official Open Food Facts Eco-Score data when available.
+- Missing Eco data is shown as unavailable instead of lowering another grade.
 
 ## Important Files
 
@@ -215,7 +212,7 @@ Skaren score is an easy-to-understand estimate based on available product data. 
 - `app/pricing/page.tsx` - Stripe-powered Support Skaren page
 - `lib/kassalapp.ts` - Norwegian product lookup, official image handling, and store prices
 - `lib/openfoodfacts.ts` - Open Food Facts eco data mapping
-- `lib/ecoscore.ts` - score mapping and suggestion logic
+- `lib/ecoscore.ts` - Eco grade and nutrition grade mapping
 - `lib/supabase.ts` - Supabase browser client
 
 ## Stripe Support Payments

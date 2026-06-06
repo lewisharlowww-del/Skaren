@@ -12,8 +12,8 @@ export function BadgeCard({ name, earned, icon: Icon }: BadgeCardProps) {
       <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl ${earned ? "bg-forest text-white" : "bg-white text-soil-500"}`}>
         <Icon className="h-5 w-5" />
       </span>
-      <span className="min-w-0 flex-1 truncate font-black">{name}</span>
-      <span className={`ml-auto shrink-0 rounded-full px-3 py-1 text-xs font-black ${earned ? "bg-emerald-100 text-emerald-800" : "bg-white text-soil-500"}`}>
+      <span className="type-body min-w-0 flex-1 truncate font-bold">{name}</span>
+      <span className={`type-caption ml-auto shrink-0 rounded-full px-3 py-1 ${earned ? "bg-emerald-100 text-emerald-800" : "bg-white text-soil-500"}`}>
         {earned ? "Earned" : "Locked"}
       </span>
     </div>

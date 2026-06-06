@@ -2,6 +2,10 @@ import type { AdditiveAnalysis } from "@/lib/additives";
 
 export type EcoGrade = "a" | "b" | "c" | "d" | "e" | "unknown";
 export type GradeLetter = "A" | "B" | "C" | "D" | "E";
+export type ProductInsight = {
+  type: "positive" | "warning" | "info";
+  text: string;
+};
 
 export type ScanRecord = {
   id?: string;
@@ -16,6 +20,12 @@ export type ScanRecord = {
   environmental_grade?: GradeLetter | null;
   product_image: string | null;
   created_at?: string;
+};
+
+export type StatsScanRecord = ScanRecord & {
+  additives_total?: number | null;
+  additives_to_avoid?: number | null;
+  additives_moderate?: number | null;
 };
 
 export type ProductResult = {
@@ -46,7 +56,7 @@ export type ProductResult = {
   kassalappNutrition: KassalappNutrition[];
   additives: AdditiveAnalysis[];
   novaGroup: 1 | 2 | 3 | 4 | null;
-  aiSummary: string[];
+  aiSummary: Array<string | ProductInsight>;
 };
 
 export type ProductStore = {

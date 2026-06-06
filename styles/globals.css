@@ -1,0 +1,136 @@
+:root {
+  --sk-brand-forest: #2d4a26;
+  --sk-brand-leaf: #4a8c5c;
+  --sk-brand-mist: #f5f0e8;
+  --sk-brand-mist-dark: #ede7dc;
+  --sk-brand-mist-card: #f0ebe2;
+
+  --sk-grade-a-bg: #eaf5ec;
+  --sk-grade-a-border: #c8e8cc;
+  --sk-grade-a-text: #2d4a26;
+  --sk-grade-b-bg: #f0f8f2;
+  --sk-grade-b-border: #c0ddc8;
+  --sk-grade-b-text: #4a8c5c;
+  --sk-grade-c-bg: #f8f6e8;
+  --sk-grade-c-border: #ddd8b0;
+  --sk-grade-c-text: #8a7a30;
+  --sk-grade-d-bg: #fdf0e8;
+  --sk-grade-d-border: #f0cdb8;
+  --sk-grade-d-text: #b85c2a;
+  --sk-grade-e-bg: #fdf0f0;
+  --sk-grade-e-border: #f0c8c8;
+  --sk-grade-e-text: #9a2a1a;
+
+  --sk-surface-white: #ffffff;
+  --sk-surface-card: #fafaf8;
+  --sk-surface-card-green: #f8fdf8;
+  --sk-surface-card-amber: #fdf7f3;
+  --sk-surface-card-red: #fdf8f4;
+  --sk-surface-insight: #f8faf6;
+
+  --sk-border-default: #e8e0d4;
+  --sk-border-green: #d8eddc;
+  --sk-border-amber: #f0ddd0;
+  --sk-border-red: #f0d8c8;
+  --sk-border-muted: #f0e8dc;
+
+  --sk-text-primary: #1e1e18;
+  --sk-text-secondary: #5a4a38;
+  --sk-text-muted: #a09080;
+  --sk-text-faint: #b0a898;
+  --sk-text-green: #2d4a26;
+  --sk-text-amber: #b85c2a;
+  --sk-text-red: #9a2a1a;
+  --sk-text-on-dark: #f5f0e8;
+  --sk-text-on-dark-muted: rgba(245, 240, 232, 0.45);
+
+  --sk-status-positive: #2d4a26;
+  --sk-status-warning: #b85c2a;
+  --sk-status-danger: #9a2a1a;
+  --sk-status-neutral: #8a7a68;
+
+  --sk-radius-sm: 10px;
+  --sk-radius-md: 12px;
+  --sk-radius-lg: 16px;
+  --sk-radius-xl: 24px;
+  --sk-radius-pill: 20px;
+  --sk-radius-full: 9999px;
+
+  --sk-space-xs: 4px;
+  --sk-space-sm: 8px;
+  --sk-space-md: 12px;
+  --sk-space-lg: 16px;
+  --sk-space-xl: 20px;
+  --sk-space-xxl: 24px;
+
+  --sk-font-ui: var(--font-manrope), sans-serif;
+  --sk-font-brand: "Satoshi", var(--font-manrope), sans-serif;
+  --sk-type-display-xl: 48px;
+  --sk-type-display-lg: 36px;
+  --sk-type-h1: 28px;
+  --sk-type-h2: 24px;
+  --sk-type-h3: 18px;
+  --sk-type-body-lg: 16px;
+  --sk-type-body: 14px;
+  --sk-type-body-sm: 13px;
+  --sk-type-caption: 11px;
+  --sk-type-label: 10px;
+  --sk-weight-light: 300;
+  --sk-weight-regular: 400;
+  --sk-weight-medium: 500;
+  --sk-weight-semibold: 600;
+  --sk-weight-bold: 700;
+  --sk-weight-extrabold: 800;
+  --sk-tracking-brand: 0.18em;
+  --sk-tracking-section: 0.12em;
+  --sk-tracking-caption: 0.06em;
+  --sk-tracking-tight: -0.03em;
+  --sk-tracking-tighter: -0.04em;
+}
+
+.sk-bg-mist { background-color: var(--sk-brand-mist); }
+.sk-bg-forest { background-color: var(--sk-brand-forest); }
+.sk-text-forest { color: var(--sk-brand-forest); }
+.sk-text-muted { color: var(--sk-text-faint); }
+.sk-border { border: 0.5px solid var(--sk-border-default); }
+.sk-border-green { border: 0.5px solid var(--sk-border-green); }
+.sk-border-amber { border: 0.5px solid var(--sk-border-amber); }
+.sk-label {
+  color: var(--sk-text-faint);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.sk-verdict {
+  color: var(--sk-brand-forest);
+  font-size: 13px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.45;
+}
+.sk-pill {
+  border-radius: var(--sk-radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 11px;
+}
+.sk-pill-green {
+  background: var(--sk-grade-a-bg);
+  border: 0.5px solid var(--sk-grade-a-border);
+  color: var(--sk-grade-a-text);
+}
+.sk-pill-amber {
+  background: var(--sk-grade-d-bg);
+  border: 0.5px solid var(--sk-grade-d-border);
+  color: var(--sk-grade-d-text);
+}
+.sk-pill-dark {
+  background: var(--sk-brand-forest);
+  color: var(--sk-text-on-dark);
+}
+.sk-grade-a { background: var(--sk-grade-a-bg); border-color: var(--sk-grade-a-border); color: var(--sk-grade-a-text); }
+.sk-grade-b { background: var(--sk-grade-b-bg); border-color: var(--sk-grade-b-border); color: var(--sk-grade-b-text); }
+.sk-grade-c { background: var(--sk-grade-c-bg); border-color: var(--sk-grade-c-border); color: var(--sk-grade-c-text); }
+.sk-grade-d { background: var(--sk-grade-d-bg); border-color: var(--sk-grade-d-border); color: var(--sk-grade-d-text); }
+.sk-grade-e { background: var(--sk-grade-e-bg); border-color: var(--sk-grade-e-border); color: var(--sk-grade-e-text); }

@@ -46,7 +46,7 @@ export function NovaScore({ novaGroup }: NovaScoreProps) {
   return (
     <section className={`mt-4 w-full max-w-full overflow-hidden rounded-[1.75rem] border bg-gradient-to-br p-5 shadow-soft sm:mt-5 sm:rounded-[2rem] sm:p-6 ${content.background}`}>
       <div className="flex min-w-0 items-center gap-4">
-        <div className={`grid h-20 w-20 shrink-0 place-items-center rounded-[1.6rem] bg-white text-5xl font-black shadow-sm ${content.color}`}>
+        <div className={`type-grade grid h-20 w-20 shrink-0 place-items-center rounded-[1.6rem] bg-white text-5xl shadow-sm ${content.color}`}>
           {novaGroup}
         </div>
         <div className="min-w-0">
@@ -54,9 +54,9 @@ export function NovaScore({ novaGroup }: NovaScoreProps) {
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-soil-600">
                 <Layers3 className="h-4 w-4 shrink-0" />
-                <p className="text-xs font-black uppercase tracking-[0.16em]">NOVA processing level</p>
+                <p className="type-section-label">NOVA processing level</p>
               </div>
-              <h2 className={`mt-1 break-words font-display text-2xl font-black tracking-[-0.04em] ${content.color}`}>{content.label}</h2>
+              <h2 className={`type-heading-2 mt-1 break-words ${content.color}`}>{content.label}</h2>
             </div>
             <button
               type="button"
@@ -67,13 +67,13 @@ export function NovaScore({ novaGroup }: NovaScoreProps) {
               <CircleHelp className="h-5 w-5" />
             </button>
           </div>
-          <p className="mt-2 text-[0.98rem] font-semibold leading-6 text-soil-700">{content.description}</p>
+          <p className="type-body mt-2 text-soil-700">{content.description}</p>
         </div>
       </div>
       {showExplanation ? (
         <div className="mt-4 rounded-3xl border border-white/80 bg-white/80 p-4 shadow-sm">
-          <p className="text-sm font-black uppercase tracking-[0.14em] text-forest">What is NOVA?</p>
-          <p className="mt-2 text-[0.95rem] font-semibold leading-6 text-soil-700">
+          <p className="type-section-label text-forest">What is NOVA?</p>
+          <p className="type-body-sm mt-2 text-soil-700">
             NOVA is a 1-4 processing scale. It helps explain how close a food is to a simple whole food, or how industrially processed it is.
           </p>
           <div className="mt-3 grid gap-2 text-sm font-semibold leading-6 text-soil-700">

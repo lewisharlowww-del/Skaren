@@ -1,4 +1,4 @@
-import type { ProductResult } from "@/lib/types";
+import type { ProductInsight, ProductResult } from "@/lib/types";
 
 type OpenAiTextBlock = {
   type?: string;
@@ -57,48 +57,127 @@ async function callOpenAi(prompt: string, maxTokens: number, instructions: strin
   }
 }
 
-function productContext(product: ProductResult, score: number) {
-  return [
-    `Product name: ${product.name}`,
-    `Brand: ${product.brand}`,
-    `Categories: ${product.categories}`,
-    `Ingredients: ${product.ingredients}`,
-    `Nutri-Score: ${product.nutriGrade}`,
-    `Eco-Score grade: ${product.ecoGrade}`,
-    `Skaren score: ${score}`,
-    `Packaging: ${product.packaging}`,
-    `Origins: ${product.origins}`
-  ].join("\n");
+export async function generateWeeklyStatsInsight(stats: {
+  totalScans: number;
+  avgHealthGrade: string;
+  trendVsLast: number;
+  gradeBreakdown: Record<string, number>;
+  additivesTotal: number;
+  additivesToAvoid: number;
+  additivesModerate: number;
+  mostScanned: Array<{
+    name: string;
+    count: number;
+    healthGrade: string;
+  }>;
+}) {
+  const systemPrompt = `You write one sentence weekly food insights for a Norwegian health app.
+- Maximum 20 words
+- Reference the user's actual scan data
+- Tone: warm, direct, never preachy
+- No emojis, no exclamation marks
+- End with one gentle actionable observation`;
+
+  const prompt = `Weekly scan data:
+Total scans: ${stats.totalScans}
+Average health grade: ${stats.avgHealthGrade}
+Change versus last week: ${stats.trendVsLast}%
+Grade breakdown: ${Object.entries(stats.gradeBreakdown)
+    .map(([grade, count]) => `${grade}: ${count}`)
+    .join(", ")}
+Additives found: ${stats.additivesTotal}
+Additives to avoid: ${stats.additivesToAvoid}
+Moderate additives: ${stats.additivesModerate}
+Most scanned products: ${
+    stats.mostScanned
+      .map(
+        (product) =>
+          `${product.name} (${product.count}, grade ${product.healthGrade})`
+      )
+      .join(", ") || "none"
+  }`;
+
+  const text = await callOpenAi(prompt, 80, systemPrompt);
+  if (!text) return null;
+
+  return text
+    .replace(/^["']|["']$/g, "")
+    .split(/\s+/)
+    .slice(0, 20)
+    .join(" ");
 }
 
-export async function generateAiSummary(product: ProductResult, score: number) {
-  const instructions = `You are a friendly, straight-talking food advisor helping people make smarter choices in a Norwegian supermarket.
-Explain products simply, like a knowledgeable friend — not a doctor or nutritionist.
+function getNutritionValue(product: ProductResult, terms: string[], excludes: string[] = []) {
+  const match = product.kassalappNutrition.find((entry) => {
+    const text = `${entry.code} ${entry.displayName}`.toLowerCase();
+    return terms.some((term) => text.includes(term)) && !excludes.some((exclude) => text.includes(exclude));
+  });
+
+  return match ? String(match.amount) : "unknown";
+}
+
+function getFatValue(product: ProductResult) {
+  const structuredFat = getNutritionValue(product, ["fat", "fett"], ["saturated", "mettede", "mettet"]);
+  if (structuredFat !== "unknown") return structuredFat;
+
+  const fatFromName = product.name.match(/(\d+(?:[.,]\d+)?)\s*%/);
+  return fatFromName ? fatFromName[1].replace(",", ".") : "unknown";
+}
+
+function normalizeInsightType(value: unknown): ProductInsight["type"] {
+  return value === "positive" || value === "warning" || value === "info" ? value : "info";
+}
+
+export async function generateAiSummary(product: ProductResult) {
+  const systemPrompt = `You write short food insights for Skaren, a Norwegian food scanning app.
+
+Your job is to help everyday Norwegian shoppers quickly understand if a product is good for them.
 
 Rules:
-- Write like you're texting a friend, not writing a health report
-- Maximum 15 words per bullet point
-- No jargon
-- Replace "saturated fat" with "unhealthy fat"
-- Replace "ultra-processed" with "heavily processed"
-- Replace "additives" with "added chemicals"
-- Be direct and honest — if something is bad, say so clearly but kindly
-- If something is good, celebrate it
-- Never use these words: intake, consumption, formulation, nutritional profile, macro
-- Always write in English even if product data is in Norwegian
-- Return exactly 3 bullet points as a JSON array of strings
-- Return ONLY JSON, no other text.`;
+- Write exactly 3 insights per product
+- Each insight is one sentence, maximum 15 words
+- Lead with what it means for the user, not the raw data point
+- Tone: knowledgeable friend who happens to know nutrition — warm, direct, never preachy
+- No emojis, no exclamation marks, no hedging words like "mentioned", "seems", or "appears"
+- Reference actual numbers when relevant (e.g. "14% fat", "32% of daily saturated fat")
+- If a data field is missing, briefly say why and move on — never write "N/A", "Unknown", "Limited", or "Not listed" as standalone text
+- Assume Norwegian dietary context and habits
+- Never repeat what the grade already says — add new information or meaning
+- Do not mention Skaren, Skåren, Nutri-Score, Eco-Score, or numeric app scores in the insights
+- Write in English
 
-  const prompt = `Product: ${product.name}, Brand: ${product.brand}, Category: ${product.categories},
-Nutri-Score: ${product.nutriGrade}, Eco-Score: ${product.ecoGrade},
-Packaging: ${product.packaging}, Origins: ${product.origins},
-Ingredients: ${product.ingredients}
+Insight types to cover (pick the 3 most relevant for this product):
+- Processing level (NOVA) — what it means in plain terms
+- Additives — reassuring if clean, specific if concerning
+- Fat / saturated fat — only if notably high or low
+- Protein — only if notably high (e.g. sports/fitness relevant)
+- Sugar — only if notably high
+- Eco / origin — only if data is available; if missing, one sentence explaining why
+- Allergens — only if present
 
-Skaren score: ${score}
-Context:
-${productContext(product, score)}`;
+Output format — return a JSON array, nothing else:
+[
+  { "type": "positive" | "warning" | "info", "text": "..." },
+  { "type": "positive" | "warning" | "info", "text": "..." },
+  { "type": "positive" | "warning" | "info", "text": "..." }
+]`;
 
-  const text = await callOpenAi(prompt, 700, instructions);
+  const userMessage = `
+Product: ${product.name}
+Brand: ${product.brand}
+NOVA level: ${product.novaGroup ?? "unknown"}
+Ingredients: ${product.ingredients ?? "not available"}
+Additives: ${product.additives.map((additive) => additive.code).join(", ") || "none detected"}
+Fat: ${getFatValue(product)}g per 100g
+Saturated fat: ${getNutritionValue(product, ["saturated", "mettede", "mettet"])}g per 100g
+Protein: ${getNutritionValue(product, ["protein", "proteins"])}g per 100g
+Sugar: ${getNutritionValue(product, ["sugars", "sugar", "sukker", "sukkerarter"])}g per 100g
+Ecoscore grade: ${product.ecoGrade ?? "not available"}
+Origin: ${product.origins ?? "not listed"}
+Allergens: ${product.allergens.join(", ") || "none listed"}
+`;
+
+  const text = await callOpenAi(userMessage, 700, systemPrompt);
 
   if (!text) return [];
 
@@ -111,8 +190,19 @@ ${productContext(product, score)}`;
     if (!Array.isArray(parsed)) return [];
 
     return parsed
-      .filter((item) => typeof item === "string" && item.trim())
-      .map((item) => item.trim())
+      .map((item): ProductInsight | null => {
+        if (typeof item === "string" && item.trim()) return { type: "info", text: item.trim() };
+        if (!item || typeof item !== "object") return null;
+
+        const insight = item as { type?: unknown; text?: unknown };
+        if (typeof insight.text !== "string" || !insight.text.trim()) return null;
+
+        return {
+          type: normalizeInsightType(insight.type),
+          text: insight.text.trim()
+        };
+      })
+      .filter((item): item is ProductInsight => Boolean(item))
       .slice(0, 3);
   } catch {
     return [];

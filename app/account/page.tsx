@@ -105,9 +105,9 @@ export default function AccountPage() {
           <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:text-left">
             <SkarenMark className="h-12 w-12 shrink-0 sm:h-16 sm:w-16" iconClassName="h-7 w-7 text-white sm:h-9 sm:w-9" />
             <div className="min-w-0">
-              <p className="font-black uppercase tracking-[0.16em] text-forest">Account</p>
-              <h1 className="mt-1 font-display text-[2.25rem] font-black leading-[0.96] tracking-[-0.055em] text-ink sm:mt-2 sm:text-4xl">You are logged in</h1>
-              <p className="mt-2 text-base font-medium leading-7 text-soil-600 sm:mt-3">
+              <p className="type-section-label text-forest">Account</p>
+              <h1 className="type-heading-1 mt-1 text-ink sm:mt-2">You are logged in</h1>
+              <p className="type-body-lg mt-2 text-soil-600 sm:mt-3">
                 Your Skaren scans can be saved, synced, and reviewed across devices.
               </p>
             </div>
@@ -125,19 +125,19 @@ export default function AccountPage() {
                   <Mail className="h-5 w-5" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-xs font-black uppercase tracking-[0.14em] text-soil-500">Signed in as</p>
-                  <p className="truncate text-lg font-black text-ink">{user?.email ?? "Skaren user"}</p>
+                  <p className="type-section-label text-soil-500">Signed in as</p>
+                  <p className="type-heading-3 truncate text-ink">{user?.email ?? "Skaren user"}</p>
                 </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-[1.5rem] border border-black/5 bg-white p-4 shadow-sm">
                   {isPremium ? <Crown className="h-6 w-6 text-forest" /> : <CheckCircle2 className="h-6 w-6 text-forest" />}
-                  <p className="mt-3 text-sm font-black uppercase tracking-[0.14em] text-soil-500">Status</p>
-                  <p className="mt-1 text-xl font-black text-ink">
+                  <p className="type-section-label mt-3 text-soil-500">Status</p>
+                  <p className="type-heading-2 mt-1 text-ink">
                     {checkingPremium ? "Checking support..." : isPremium ? supporterBadge : "Free account"}
                   </p>
-                  <p className="mt-2 text-sm font-bold leading-5 text-soil-600">
+                  <p className="type-body-sm mt-2 font-bold text-soil-600">
                     {checkingPremium
                       ? "Looking for your completed Stripe support payment."
                       : isPremium
@@ -148,8 +148,8 @@ export default function AccountPage() {
                 </div>
                 <div className="rounded-[1.5rem] border border-black/5 bg-white p-4 shadow-sm">
                   <ShieldCheck className="h-6 w-6 text-forest" />
-                  <p className="mt-3 text-sm font-black uppercase tracking-[0.14em] text-soil-500">Joined</p>
-                  <p className="mt-1 text-xl font-black text-ink">{joinedDate}</p>
+                  <p className="type-section-label mt-3 text-soil-500">Joined</p>
+                  <p className="type-heading-2 mt-1 text-ink">{joinedDate}</p>
                 </div>
               </div>
             </div>
@@ -158,7 +158,7 @@ export default function AccountPage() {
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
             <Link
               href="/history"
-              className="focus-ring tap-feedback inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 font-black text-white shadow-phone"
+              className="focus-ring tap-feedback type-button inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 text-white shadow-phone"
             >
               <History className="h-5 w-5" />
               View history
@@ -168,7 +168,7 @@ export default function AccountPage() {
             ) : (
               <Link
                 href="/pricing"
-                className="focus-ring tap-feedback inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-leaf-100 px-5 py-4 font-black text-forest shadow-sm"
+                className="focus-ring tap-feedback type-button inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-leaf-100 px-5 py-4 text-forest shadow-sm"
               >
                 <Crown className="h-5 w-5" />
                 Support Skaren
@@ -176,7 +176,7 @@ export default function AccountPage() {
             )}
             <Link
               href="/scan"
-              className="focus-ring tap-feedback inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-white px-5 py-4 font-black text-ink shadow-sm"
+              className="focus-ring tap-feedback type-button inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-white px-5 py-4 text-ink shadow-sm"
             >
               <ScanBarcode className="h-5 w-5" />
               Scan product
@@ -185,7 +185,7 @@ export default function AccountPage() {
               type="button"
               onClick={() => void signOut()}
               disabled={!isSupabaseConfigured}
-              className="focus-ring tap-feedback inline-flex min-h-14 items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-5 py-4 font-black text-soil-700 shadow-sm disabled:opacity-50"
+              className="focus-ring tap-feedback type-button inline-flex min-h-14 items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-5 py-4 text-soil-700 shadow-sm disabled:opacity-50"
             >
               <LogOut className="h-5 w-5" />
               Sign out

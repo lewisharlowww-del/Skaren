@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const protectedRoutes = ["/dashboard", "/history", "/account"];
+const protectedRoutes = ["/dashboard", "/stats", "/history", "/account"];
 
 function hasSupabaseSession(request: NextRequest) {
   return request.cookies.getAll().some((cookie) => cookie.name.startsWith("sb-") && cookie.name.endsWith("-auth-token"));
@@ -22,5 +22,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/history/:path*", "/account/:path*"]
+  matcher: ["/dashboard/:path*", "/stats/:path*", "/history/:path*", "/account/:path*"]
 };

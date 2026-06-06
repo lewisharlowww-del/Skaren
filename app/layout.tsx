@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { AppFooter } from "@/components/AppFooter";
 import { PwaShell } from "@/components/PwaShell";
+import { colors } from "@/styles/tokens";
 import "./globals.css";
+import "@/styles/globals.css";
 
 export const metadata: Metadata = {
   applicationName: "Skaren",
@@ -29,13 +31,13 @@ export const metadata: Metadata = {
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-title": "Skaren",
     "apple-mobile-web-app-status-bar-style": "default",
-    "msapplication-TileColor": "#0E5A34",
+    "msapplication-TileColor": colors.brand.forest,
     "msapplication-tap-highlight": "no"
   }
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0E5A34"
+  themeColor: colors.brand.forest
 };
 
 export default function RootLayout({
@@ -44,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="no">
       <body className="min-h-screen antialiased">
         <PwaShell />
         {children}

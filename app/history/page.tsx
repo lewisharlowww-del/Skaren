@@ -37,15 +37,15 @@ export default function HistoryPage() {
               <div className="mb-3 grid h-11 w-11 place-items-center rounded-[1.15rem] bg-forest text-cream sm:mb-4 sm:h-12 sm:w-12">
                 <History className="h-6 w-6" />
               </div>
-              <p className="text-sm font-black uppercase tracking-[0.16em] text-forest">Scan history</p>
-              <h1 className="mt-1 font-display text-[2.35rem] font-black tracking-[-0.05em] text-ink sm:mt-2 sm:text-4xl">Your products</h1>
-              <p className="mt-2 max-w-xl text-sm font-medium leading-6 text-soil-600 sm:mt-3">
+              <p className="type-section-label text-forest">Scan history</p>
+              <h1 className="type-display-lg mt-1 text-ink sm:mt-2">Your products</h1>
+              <p className="type-body mt-2 max-w-xl text-soil-600 sm:mt-3">
                 Every saved scan in one simple list, newest first.
               </p>
             </div>
             <Link
               href="/scan"
-              className="focus-ring tap-feedback inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 font-black text-white shadow-soft"
+              className="focus-ring tap-feedback type-button inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-white shadow-soft"
             >
               <ScanBarcode className="h-5 w-5" />
               Scan
@@ -80,9 +80,9 @@ export default function HistoryPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="line-clamp-2 font-black leading-5 text-ink">{item.name}</p>
-                  <p className="mt-1 truncate text-sm font-semibold text-soil-600">{item.brand || item.barcode}</p>
-                  <p className="mt-1 text-xs font-bold text-soil-500">Saved on this device</p>
+                  <p className="type-heading-3 line-clamp-2 text-ink">{item.name}</p>
+                  <p className="type-body-sm mt-1 truncate text-soil-600">{item.brand || item.barcode}</p>
+                  <p className="type-caption mt-1 text-soil-500">Saved on this device</p>
                 </div>
                 <ArrowRight className="h-4 w-4 shrink-0 text-soil-400 transition group-hover:translate-x-0.5" />
               </Link>
@@ -102,8 +102,8 @@ export default function HistoryPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="line-clamp-2 font-black leading-5 text-ink">{scan.product_name}</p>
-                  <p className="mt-1 truncate text-sm font-semibold text-soil-600">{scan.brand || scan.barcode}</p>
+                  <p className="type-heading-3 line-clamp-2 text-ink">{scan.product_name}</p>
+                  <p className="type-body-sm mt-1 truncate text-soil-600">{scan.brand || scan.barcode}</p>
                   {scan.created_at ? (
                     <p className="mt-1 text-xs font-bold text-soil-500">
                       {new Date(scan.created_at).toLocaleDateString("en", {
@@ -115,7 +115,7 @@ export default function HistoryPage() {
                   ) : null}
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-2">
-                  <span className="rounded-full bg-leaf-100 px-3 py-1 text-sm font-black text-forest">
+                  <span className="type-body-sm rounded-full bg-leaf-100 px-3 py-1 font-bold text-forest">
                     {scan.ecoscan_score}
                   </span>
                   <ArrowRight className="h-4 w-4 text-soil-400 transition group-hover:translate-x-0.5" />

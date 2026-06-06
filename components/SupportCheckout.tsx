@@ -101,7 +101,7 @@ export function SupportCheckout({ className = "", activeClassName }: SupportChec
     return (
       <Link
         href="/account"
-        className={`focus-ring inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full px-5 py-4 font-black shadow-phone transition ${
+        className={`focus-ring type-button inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full px-5 py-4 shadow-phone transition ${
           activeClassName ?? "bg-forest text-white hover:bg-ink"
         }`}
       >
@@ -115,8 +115,8 @@ export function SupportCheckout({ className = "", activeClassName }: SupportChec
     <div className={`rounded-[1.75rem] border border-white/10 bg-white/10 p-4 ${className}`}>
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-black uppercase tracking-[0.14em] text-leaf-200">Support amount</p>
-          <p className="mt-1 text-4xl font-black text-white">{amount} kr</p>
+          <p className="type-section-label text-leaf-200">Support amount</p>
+          <p className="type-display-lg mt-1 text-white">{amount} kr</p>
         </div>
         <SupporterBadge badge={getSupporterBadge(amount)} amountNok={amount} compact />
       </div>
@@ -138,7 +138,7 @@ export function SupportCheckout({ className = "", activeClassName }: SupportChec
             key={preset}
             type="button"
             onClick={() => setAmount(preset)}
-            className={`min-h-10 rounded-full px-3 text-sm font-black transition ${
+            className={`type-button min-h-10 rounded-full px-3 transition ${
               amount === preset ? "bg-white text-ink" : "bg-white/10 text-white hover:bg-white/20"
             }`}
           >
@@ -151,7 +151,7 @@ export function SupportCheckout({ className = "", activeClassName }: SupportChec
         type="button"
         onClick={() => void startCheckout()}
         disabled={loading}
-        className="focus-ring mt-5 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-4 font-black text-ink shadow-phone transition hover:bg-leaf-50 disabled:cursor-wait disabled:bg-soil-100"
+        className="focus-ring type-button mt-5 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-4 text-ink shadow-phone transition hover:bg-leaf-50 disabled:cursor-wait disabled:bg-soil-100"
       >
         {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <HeartHandshake className="h-5 w-5" />}
         {loading ? "Opening Stripe..." : `Support with ${amount} kr`}

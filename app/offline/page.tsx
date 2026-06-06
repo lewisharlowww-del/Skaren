@@ -11,13 +11,13 @@ export default function OfflinePage() {
           <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-leaf-100 text-forest">
             <WifiOff className="h-8 w-8" />
           </div>
-          <h1 className="mt-5 font-display text-3xl font-black tracking-[-0.04em] text-ink">You are offline</h1>
-          <p className="mt-3 text-base font-semibold leading-7 text-soil-600">
+          <h1 className="type-heading-1 mt-5 text-ink">You are offline</h1>
+          <p className="type-body-lg mt-3 text-soil-600">
             Skaren can still open recently viewed pages and cached product images. Reconnect to scan new products.
           </p>
           <Link
             href="/scan"
-            className="focus-ring tap-feedback mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 font-black text-white"
+            className="focus-ring tap-feedback type-button mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-white"
           >
             <ScanBarcode className="h-5 w-5" />
             Back to scan

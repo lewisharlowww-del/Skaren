@@ -7,11 +7,11 @@ type ScoreBadgeProps = {
 };
 
 const gradeColors: Record<GradeLetter, string> = {
-  A: "#1A5C3A",
-  B: "#4CAF7D",
-  C: "#F4A261",
-  D: "#E76F51",
-  E: "#E63946"
+  A: "var(--sk-brand-forest)",
+  B: "var(--sk-brand-leaf)",
+  C: "var(--sk-grade-d-text)",
+  D: "var(--sk-grade-d-text)",
+  E: "var(--sk-grade-e-text)"
 };
 
 export const gradeDescriptions: Record<GradeLetter, string> = {
@@ -24,14 +24,14 @@ export const gradeDescriptions: Record<GradeLetter, string> = {
 
 export function ScoreBadge({ grade, label = "ECO GRADE", size = "sm" }: ScoreBadgeProps) {
   const large = size === "lg";
-  const color = grade ? gradeColors[grade] : "#9CA3AF";
+  const color = grade ? gradeColors[grade] : "var(--sk-text-muted)";
   const letter = grade ?? "–";
 
   return (
     <div className="inline-flex flex-col items-center gap-2 text-center">
       <div
         aria-label={`${label} ${letter}`}
-        className={`grid place-items-center rounded-full bg-white font-black shadow-soft ${large ? "motion-score-reveal h-[100px] w-[100px] border-[8px] text-5xl" : "h-12 w-12 border-[5px] text-2xl"}`}
+        className={`type-grade grid place-items-center rounded-full bg-white shadow-soft ${large ? "motion-score-reveal h-[100px] w-[100px] border-[8px] text-5xl" : "h-12 w-12 border-[5px] text-2xl"}`}
         style={{
           borderColor: color,
           color
@@ -39,10 +39,10 @@ export function ScoreBadge({ grade, label = "ECO GRADE", size = "sm" }: ScoreBad
       >
         {letter}
       </div>
-      <span className={`font-black uppercase leading-tight tracking-[0.14em] text-soil-700 ${large ? "text-[0.82rem]" : "text-[0.78rem]"}`}>
+      <span className="type-section-label text-soil-700">
         {label}
       </span>
-      {large && grade ? <span className="text-[0.95rem] font-black text-ink">{gradeDescriptions[grade]}</span> : null}
+      {large && grade ? <span className="type-body font-bold text-ink">{gradeDescriptions[grade]}</span> : null}
     </div>
   );
 }

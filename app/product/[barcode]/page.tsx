@@ -5,18 +5,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { AlertCircle, ArrowLeft, Barcode, ChevronDown, CircleHelp, Leaf, MapPin, Package, RotateCcw, Share2, ShoppingBag, Tags } from "lucide-react";
+import { AlertCircle, ArrowLeft, Barcode, ChevronDown, Leaf, MapPin, RotateCcw, ShoppingBag, Tags } from "lucide-react";
 import { Additives } from "@/components/Additives";
-import { AppHeader } from "@/components/AppHeader";
 import { DailyIntake } from "@/components/DailyIntake";
-import { NovaScore } from "@/components/NovaScore";
-import { ScoreBadge, gradeDescriptions } from "@/components/ScoreBadge";
-import { getEcoGrade, getNutritionGrade, scoreToGrade } from "@/lib/ecoscore";
+import { getEcoGrade, getNutritionGrade } from "@/lib/ecoscore";
 import { calculateHealthGrade, hasNokkelhullLabel, nutritionDataFromKassalapp } from "@/lib/healthscore";
 import { getProductEmoji } from "@/lib/kassalapp";
 import { cacheProductLocally, readLocalProduct } from "@/lib/localProducts";
 import { supabase } from "@/lib/supabase";
-import type { GradeLetter, ProductResult } from "@/lib/types";
+import type { GradeLetter, ProductInsight, ProductResult } from "@/lib/types";
+import { ProductPageLayout } from "@/components/ProductPageLayout";
 
 type ProductPageProps = {
   params: {
@@ -29,7 +27,7 @@ type ProductError = {
   type: "not-found" | "retry";
 };
 
-const productLoadingMessages = ["Checking product data...", "Checking ingredients...", "Building Skaren grade...", "Analyzing nutrition..."];
+const productLoadingMessages = ["Checking product data...", "Checking ingredients...", "Checking product grades...", "Analyzing nutrition..."];
 
 function ProductLoadingState({ barcode }: { barcode: string }) {
   const [messageIndex, setMessageIndex] = useState(0);
@@ -270,25 +268,9 @@ function getQuickFacts(product: ProductResult) {
   }).filter((fact): fact is { label: string; value: string; tone: string } => Boolean(fact));
 }
 
-function hasEcoSignal(product: ProductResult) {
-  return product.ecoGrade !== "unknown"
-    || product.packaging !== "Packaging info unavailable"
-    || product.origins !== "Origin unknown"
-    || product.categories !== "General Product";
-}
-
 function hasNutritionSignal(product: ProductResult) {
   const nutri = product.nutriGrade.toLowerCase();
   return ["a", "b", "c", "d", "e"].includes(nutri) || product.kassalappNutrition.length > 0 || product.norwegianDataStatus === "kassalapp";
-}
-
-function gradeToScore(grade: GradeLetter) {
-  return { A: 90, B: 75, C: 55, D: 35, E: 15 }[grade];
-}
-
-function getOverallSkarenGrade(healthGrade: GradeLetter | null, ecoGrade: GradeLetter | null) {
-  if (healthGrade && ecoGrade) return scoreToGrade(Math.round((gradeToScore(healthGrade) + gradeToScore(ecoGrade)) / 2));
-  return healthGrade ?? ecoGrade;
 }
 
 function getHealthGradeReason(product: ProductResult, grade: GradeLetter | null) {
@@ -302,88 +284,6 @@ function getEcoGradeReason(product: ProductResult, grade: GradeLetter | null) {
   if (!grade) return "Environmental grade needs official Eco-Score, packaging, origin, or category data.";
   if (product.ecoGrade !== "unknown") return "Based on the official Open Food Facts Eco-Score for this product.";
   return "Estimated from available packaging, origin, product category, and ingredient signals.";
-}
-
-function getOverallGradeReason(healthGrade: GradeLetter | null, ecoGrade: GradeLetter | null) {
-  if (healthGrade && ecoGrade) return "Combines the health grade and environmental grade into one simple Skaren view.";
-  if (healthGrade) return "Uses the health grade because environmental data is limited for this product.";
-  if (ecoGrade) return "Uses the environmental grade because nutrition data is limited for this product.";
-  return "Not enough product data to calculate a reliable Skaren grade yet.";
-}
-
-function ProductGradeCard({ product }: { product: ProductResult }) {
-  const [showExplanation, setShowExplanation] = useState(false);
-  const ecoGrade = hasEcoSignal(product) ? product.ecoGradeLetter ?? getEcoGrade(product) : null;
-  const healthGrade = hasNutritionSignal(product) ? product.healthGrade : null;
-  const overallGrade = getOverallSkarenGrade(healthGrade, ecoGrade);
-  const facts = getQuickFacts(product);
-  const overallExplanation = overallGrade
-    ? `${gradeDescriptions[overallGrade]} overall profile. ${getOverallGradeReason(healthGrade, ecoGrade)}`
-    : getOverallGradeReason(healthGrade, ecoGrade);
-
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 16, scale: 0.985 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ type: "spring", stiffness: 150, damping: 24, delay: 0.05 }}
-      className="rounded-[1.65rem] border border-black/5 bg-white p-5 shadow-soft sm:rounded-[2rem] sm:p-6"
-    >
-      <div className="relative flex flex-col items-center text-center">
-        <button
-          type="button"
-          onClick={() => setShowExplanation((open) => !open)}
-          aria-label="How Skaren grades are calculated"
-          className={`absolute right-0 top-0 grid h-11 w-11 place-items-center rounded-full transition ${showExplanation ? "bg-forest text-white" : "bg-soil-50 text-soil-600"}`}
-        >
-          <CircleHelp className="h-5 w-5" />
-        </button>
-        <ScoreBadge grade={overallGrade} label="SKAREN GRADE" size="lg" />
-        {showExplanation ? (
-          <div className="mt-4 w-full rounded-3xl border border-leaf-100 bg-leaf-50 p-4 text-left shadow-sm">
-            <p className="text-sm font-black uppercase tracking-[0.14em] text-forest">How this grade works</p>
-            <p className="mt-2 text-[0.95rem] font-semibold leading-6 text-soil-700">{overallExplanation}</p>
-            <div className="mt-3 grid gap-2">
-              <div className="rounded-2xl bg-white p-3">
-                <p className="text-sm font-black text-ink">Health grade</p>
-                <p className="mt-1 text-sm font-semibold leading-6 text-soil-600">{getHealthGradeReason(product, healthGrade)}</p>
-              </div>
-              <div className="rounded-2xl bg-white p-3">
-                <p className="text-sm font-black text-ink">Environmental grade</p>
-                <p className="mt-1 text-sm font-semibold leading-6 text-soil-600">{getEcoGradeReason(product, ecoGrade)}</p>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="my-5 h-px bg-black/5 sm:my-6" />
-
-      <div className="grid gap-2.5 sm:gap-3">
-        <div className="rounded-2xl border border-black/5 bg-white p-4 text-center shadow-sm">
-          <ScoreBadge grade={healthGrade} label="🥗 Health" />
-          {product.hasNokkelhull ? (
-            <span className="mt-3 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800">
-              🔑 Nøkkelhull certified
-            </span>
-          ) : null}
-        </div>
-        <div className="rounded-2xl border border-black/5 bg-white p-4 text-center shadow-sm">
-          <ScoreBadge grade={ecoGrade} label="🌍 Environmental" />
-        </div>
-      </div>
-
-      {facts.length > 0 ? (
-          <div className="-mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:mt-5">
-          {facts.map((fact) => (
-            <div key={fact.label} className={`min-h-11 min-w-fit rounded-full border px-4 py-2 ${fact.tone}`}>
-              <p className="text-[0.94rem] font-black leading-5">{fact.label}</p>
-              <p className="mt-0.5 whitespace-nowrap text-base font-black">{fact.value}</p>
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </motion.section>
-  );
 }
 
 function inferProductCategory(product: ProductResult) {
@@ -426,33 +326,10 @@ function getNutriSignal(product: ProductResult) {
   };
 }
 
-function getPackagingSignal(product: ProductResult) {
-  if (product.packaging === "Packaging info unavailable") {
-    return {
-      value: "Not listed",
-      tone: "bg-soil-100 text-soil-700",
-      note: "Packaging data is missing, so Skaren uses a neutral packaging assumption."
-    };
-  }
-
-  const packaging = product.packaging.toLowerCase();
-  const impact = packaging.includes("plastic")
-    ? "Plastic packaging can lower the score."
-    : packaging.includes("glass") || packaging.includes("paper") || packaging.includes("cardboard")
-      ? "This packaging type is usually easier to recycle."
-      : "Packaging was included in the estimate.";
-
-  return {
-    value: product.packaging,
-    tone: packaging.includes("plastic") ? "bg-rose-100 text-rose-700" : "bg-lime-100 text-lime-800",
-    note: impact
-  };
-}
-
 function getOriginSignal(product: ProductResult) {
   if (product.origins === "Origin unknown") {
     return {
-      value: "Unknown",
+      value: "Origin unknown",
       tone: "bg-soil-100 text-soil-700",
       note: "Origin data is missing, so transport impact is estimated conservatively."
     };
@@ -472,7 +349,6 @@ function getOriginSignal(product: ProductResult) {
 function ProductSignals({ product }: { product: ProductResult }) {
   const category = inferProductCategory(product);
   const nutri = getNutriSignal(product);
-  const packaging = getPackagingSignal(product);
   const origin = getOriginSignal(product);
   const signals = [
     {
@@ -488,13 +364,6 @@ function ProductSignals({ product }: { product: ProductResult }) {
       note: nutri.note,
       icon: Leaf,
       tone: nutri.tone
-    },
-    {
-      label: "Packaging",
-      value: packaging.value,
-      note: packaging.note,
-      icon: Package,
-      tone: packaging.tone
     },
     {
       label: "Origin",
@@ -521,7 +390,7 @@ function ProductSignals({ product }: { product: ProductResult }) {
           <h2 className="font-display mt-1 text-2xl font-black tracking-[-0.04em] text-ink">What we know</h2>
         </div>
         <span className="hidden rounded-full bg-soil-50 px-3 py-1 text-xs font-bold text-soil-600 sm:inline-flex">
-          Used in the Skaren estimate
+          Used in product checks
         </span>
       </div>
 
@@ -703,7 +572,8 @@ const insightBadKeywords = [
   "high sodium",
   "palm oil",
   "artificial",
-  "high fat"
+  "high fat",
+  "weak eco score"
 ];
 
 function getInsightTone(insight: string) {
@@ -730,10 +600,23 @@ function getInsightTone(insight: string) {
   return { icon: "ℹ️", className: "border-soil-100 bg-white text-soil-800" };
 }
 
-function getKeyInsights(product: ProductResult) {
+function getKeyInsights(product: ProductResult): ProductInsight[] {
+  const productFatPercent = product.name.match(/(\d+(?:[.,]\d+)?)\s*%/)?.[1]?.replace(",", ".");
+  const repeatsVisibleGrade = (text: string) => {
+    const normalized = text
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    return normalized.includes("skaren") || normalized.includes("nutri-score") || normalized.includes("ecoscore");
+  };
   const scoredInsights = product.aiSummary
     .map((insight, index) => {
-      const text = insight.replace(/^[-•\d.\s]+/, "").trim();
+      const rawText = (typeof insight === "string" ? insight : insight.text).replace(/^[-•\d.\s]+/, "").trim();
+      const text = productFatPercent && rawText.startsWith("% fat")
+        ? `${productFatPercent}${rawText}`
+        : rawText;
+      const type = typeof insight === "string" ? null : insight.type;
       const lower = text.toLowerCase();
       const tone = getInsightTone(lower);
       const isBad = tone.className.includes("rose");
@@ -741,14 +624,18 @@ function getKeyInsights(product: ProductResult) {
 
       return {
         text,
-        priority: isBad ? 0 : isGood ? 1 : 2,
+        type: type ?? (isBad ? "warning" as const : isGood ? "positive" as const : "info" as const),
+        priority: type === "warning" || isBad ? 0 : type === "positive" || isGood ? 1 : 2,
         index
       };
     })
-    .filter((insight) => insight.text.length > 0)
+    .filter((insight) => insight.text.length > 0 && !repeatsVisibleGrade(insight.text))
     .sort((a, b) => a.priority - b.priority || a.index - b.index);
 
-  return scoredInsights.slice(0, 3).map((insight) => insight.text);
+  return scoredInsights.slice(0, 3).map((insight) => ({
+    type: insight.type,
+    text: insight.text
+  }));
 }
 
 function NutritionInsights({ product, isPremium }: { product: ProductResult; isPremium: boolean }) {
@@ -799,12 +686,12 @@ function NutritionInsights({ product, isPremium }: { product: ProductResult; isP
             <h3 className="font-black text-soil-900">Key insights</h3>
             <ul className="mt-3 space-y-2">
               {insights.map((insight) => {
-                const tone = getInsightTone(insight);
+                const tone = getInsightTone(insight.text);
 
                 return (
-                  <li key={insight} className={`flex gap-3 rounded-2xl border p-3 text-[0.95rem] font-semibold leading-6 ${tone.className}`}>
+                  <li key={insight.text} className={`flex gap-3 rounded-2xl border p-3 text-[0.95rem] font-semibold leading-6 ${tone.className}`}>
                     <span className="mt-0.5" aria-hidden="true">{tone.icon}</span>
-                    <span>{insight}</span>
+                    <span>{insight.text}</span>
                   </li>
                 );
               })}
@@ -855,7 +742,6 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [product, setProduct] = useState<ProductResult | null>(null);
   const [error, setError] = useState<ProductError | null>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
 
   async function loadProduct(options: { skipCache?: boolean } = {}) {
@@ -1025,25 +911,9 @@ export default function ProductPage({ params }: ProductPageProps) {
     };
   }, [product]);
 
-  async function handleShare() {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
-    } catch {
-      setCopied(false);
-    }
-  }
-
   return (
     <>
-      <AppHeader />
-      <main className="page-fade-up mx-auto w-full max-w-[430px] overflow-x-hidden px-3 pb-48 pt-3 sm:max-w-2xl sm:px-4 sm:py-8 md:max-w-6xl">
-        <Link href="/scan" className="tap-feedback inline-flex min-h-10 items-center gap-2 rounded-full px-1 text-sm font-bold text-soil-600 hover:text-ink">
-          <ArrowLeft className="h-4 w-4" />
-          Scan another product
-        </Link>
-
+      <main className="w-full">
         {loading ? (
           <ProductLoadingState barcode={params.barcode} />
         ) : error ? (
@@ -1073,72 +943,16 @@ export default function ProductPage({ params }: ProductPageProps) {
             </div>
           </div>
         ) : product ? (
-          <motion.div
-            initial="hidden"
-            animate="show"
-            variants={{
-              hidden: { opacity: 1 },
-              show: {
-                opacity: 1,
-                transition: { staggerChildren: 0.08 }
-              }
-            }}
-          >
-            <motion.section
-              variants={{
-                hidden: { opacity: 0, y: 18, scale: 0.99 },
-                show: { opacity: 1, y: 0, scale: 1 }
-              }}
-              transition={{ type: "spring", stiffness: 120, damping: 24 }}
-              className="mt-2 w-full max-w-full overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/72 shadow-glass backdrop-blur-2xl sm:mt-6 sm:rounded-[2.5rem]"
-            >
-              <div className="grid min-w-0 gap-2.5 p-2 md:grid-cols-[1.05fr_0.95fr] md:gap-5 md:p-5">
-                <div className="min-w-0">
-                  <ProductVisual product={product} />
-                </div>
-
-                <div className="min-w-0 space-y-2.5 md:flex md:min-h-[38rem] md:flex-col md:justify-center md:space-y-3">
-                  <ProductGradeCard product={product} />
-                  <div className="rounded-[1.65rem] border border-white/70 bg-white/90 p-4 shadow-soft backdrop-blur-xl sm:rounded-[2rem] sm:p-5">
-                    <div>
-                      <NorwayDataBadge status={product.norwegianDataStatus} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.section>
-
-            <motion.div variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }} transition={{ type: "spring", stiffness: 140, damping: 24 }}>
-              <NovaScore novaGroup={product.novaGroup} />
-            </motion.div>
-            <motion.div variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }} transition={{ type: "spring", stiffness: 140, damping: 24 }}>
-              <Additives additives={product.additives} />
-            </motion.div>
-            <motion.div variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }} transition={{ type: "spring", stiffness: 140, damping: 24 }}>
-              <NutritionInsights product={product} isPremium={isPremium} />
-            </motion.div>
-
-          </motion.div>
+          <ProductPageLayout
+            product={product}
+            getKeyInsights={getKeyInsights}
+            getNutritionRows={getNutritionRows}
+            visibleIngredients={visibleIngredients}
+            hasNutritionSignal={hasNutritionSignal}
+            getEcoGrade={getEcoGrade}
+          />
         ) : null}
       </main>
-      {product ? (
-        <div className="fixed inset-x-3 bottom-[6.4rem] z-40 grid grid-cols-2 gap-2 rounded-[1.5rem] border border-white/70 bg-white/90 p-2 shadow-phone backdrop-blur-2xl sm:hidden">
-          <button
-            onClick={() => void handleShare()}
-            className="focus-ring tap-feedback inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-ink px-4 py-3 text-[0.95rem] font-black text-white"
-          >
-            <Share2 className="h-5 w-5" />
-            {copied ? "Copied" : "Share"}
-          </button>
-          <Link
-            href="/scan"
-            className="focus-ring tap-feedback inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-leaf-100 px-4 py-3 text-[0.95rem] font-black text-forest"
-          >
-            <Barcode className="h-5 w-5" />
-            Scan another
-          </Link>
-        </div>
-      ) : null}
     </>
   );
 }

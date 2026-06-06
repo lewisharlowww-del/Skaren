@@ -3,7 +3,7 @@ import { LegalPage } from "@/components/LegalPage";
 
 export const metadata: Metadata = {
   title: "Disclaimer | Skaren",
-  description: "Important limits of Skaren grades, product data, nutrition information, and environmental estimates."
+  description: "Important limits of product grades, product data, nutrition information, and environmental estimates."
 };
 
 export default function DisclaimerPage() {

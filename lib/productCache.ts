@@ -1,7 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
+import type { ProductInsight } from "@/lib/types";
 
 type CachedAiAnalysis = {
-  aiSummary: string[];
+  aiSummary: Array<string | ProductInsight>;
   aiCachedAt: string;
 };
 
@@ -27,8 +28,17 @@ function getServerSupabase() {
   });
 }
 
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string");
+function isProductInsight(value: unknown): value is ProductInsight {
+  if (!value || typeof value !== "object") return false;
+  const insight = value as { type?: unknown; text?: unknown };
+  return (
+    (insight.type === "positive" || insight.type === "warning" || insight.type === "info") &&
+    typeof insight.text === "string"
+  );
+}
+
+function isInsightArray(value: unknown): value is Array<string | ProductInsight> {
+  return Array.isArray(value) && value.every((item) => typeof item === "string" || isProductInsight(item));
 }
 
 export async function getCachedAiAnalysis(barcode: string): Promise<CachedAiAnalysis | null> {
@@ -45,7 +55,7 @@ export async function getCachedAiAnalysis(barcode: string): Promise<CachedAiAnal
 
   const cachedAt = new Date(data.ai_cached_at).getTime();
   if (!Number.isFinite(cachedAt) || Date.now() - cachedAt > maxCacheAgeMs) return null;
-  if (!isStringArray(data.ai_summary)) return null;
+  if (!isInsightArray(data.ai_summary)) return null;
 
   return {
     aiSummary: data.ai_summary,
@@ -58,7 +68,7 @@ export async function saveCachedAiAnalysis({
   aiSummary
 }: {
   barcode: string;
-  aiSummary: string[];
+  aiSummary: Array<string | ProductInsight>;
 }) {
   const supabase = getServerSupabase();
   if (!supabase) return;
