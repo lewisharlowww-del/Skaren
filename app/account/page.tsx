@@ -26,8 +26,10 @@ import {
   TriangleAlert,
   X,
 } from "lucide-react";
+import { BadgesSection } from "@/components/BadgesSection";
 import { BottomNav } from "@/components/BottomNav";
 import { SkarenLoader } from "@/components/SkarenLoader";
+import { computeBadges, earnedCount, type ScanSummary } from "@/lib/badges";
 import { t, type Language } from "@/lib/i18n";
 import { useLang } from "@/lib/language-context";
 import { useTheme } from "@/lib/theme-context";
@@ -426,6 +428,7 @@ export default function AccountPage() {
   const [langOpen, setLangOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const [badgesOpen, setBadgesOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
@@ -437,6 +440,7 @@ export default function AccountPage() {
   const [checkingPremium, setCheckingPremium] = useState(false);
   const [streakDays, setStreakDays] = useState(0);
   const [scanCount, setScanCount] = useState(0);
+  const [scanSummaries, setScanSummaries] = useState<ScanSummary[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -471,17 +475,18 @@ export default function AccountPage() {
         });
         setIsPremium(false);
 
-        // Load scan count + streak for gamification chips
+        // Load scan data for gamification + badges
         if (isSupabaseConfigured && supabase) {
           const { data: scansData } = await supabase
             .from("scans")
-            .select("created_at")
+            .select("created_at, health_grade, additives_to_avoid, additives_moderate")
             .eq("user_id", data.user.id)
             .order("created_at", { ascending: false });
 
           if (active && scansData) {
             setScanCount(scansData.length);
             setStreakDays(computeStreak(scansData.map((s) => s.created_at)));
+            setScanSummaries(scansData as ScanSummary[]);
           }
         }
 
@@ -863,6 +868,37 @@ export default function AccountPage() {
                 </div>
               )}
             </div>
+            <Divider />
+            {/* Badges accordion */}
+            {(() => {
+              const badges = computeBadges({ scans: scanSummaries, streakDays, joinedAt: user?.created_at });
+              const earned = earnedCount(badges);
+              return (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setBadgesOpen((o) => !o)}
+                    className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
+                      <span style={{ fontSize: 16, lineHeight: 1 }}>🏅</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>Badges</p>
+                      <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{earned} of {badges.length} earned</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: badgesOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
+                  </button>
+                  {badgesOpen && (
+                    <div className="px-4 pb-5" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
+                      <div className="pt-4">
+                        <BadgesSection badges={badges} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* ── Data & Privacy ── */}
