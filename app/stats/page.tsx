@@ -3,15 +3,22 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
+  AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
   CheckCircle2,
+  ChevronDown,
   Minus,
-  ScanBarcode
+  ScanBarcode,
+  ShieldAlert
 } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 import { SkarenLoader } from "@/components/SkarenLoader";
-import { useStats, type StatsRange } from "@/hooks/useStats";
+import {
+  useStats,
+  type StatsAdditiveDetail,
+  type StatsRange
+} from "@/hooks/useStats";
 import { useLang } from "@/lib/language-context";
 import type { GradeLetter } from "@/lib/types";
 
@@ -63,10 +70,16 @@ const copy = {
     weakerChoice: "weaker",
     choices: "choices",
     noFlagged: "No flagged additives",
+    flaggedFound: "Flagged additives",
     across: "Across",
     selectedScans: "selected scans",
     toAvoid: "To avoid",
     moderate: "Moderate",
+    occurrence: "occurrence",
+    occurrences: "occurrences",
+    whatItDoes: "What it does",
+    loadMore: "Load more",
+    noAdditiveDetails: "Details are unavailable for older history entries.",
     noScans: "No scans yet",
     noScansSuffix: { week: "this week", month: "this month", all: "" },
     emptyHelp: "Scan your first product to see your stats.",
@@ -103,10 +116,16 @@ const copy = {
     weakerChoice: "svakere",
     choices: "valg",
     noFlagged: "Ingen markerte tilsetningsstoffer",
+    flaggedFound: "Markerte tilsetningsstoffer",
     across: "På tvers av",
     selectedScans: "valgte skanninger",
     toAvoid: "Bør unngås",
     moderate: "Moderate",
+    occurrence: "forekomst",
+    occurrences: "forekomster",
+    whatItDoes: "Hva det gjør",
+    loadMore: "Vis flere",
+    noAdditiveDetails: "Detaljer er ikke tilgjengelige for eldre historikk.",
     noScans: "Ingen skanninger ennå",
     noScansSuffix: { week: "denne uken", month: "denne måneden", all: "" },
     emptyHelp: "Skann ditt første produkt for å se statistikken.",
@@ -218,6 +237,134 @@ function StatsSkeleton() {
   );
 }
 
+function AdditiveDisclosure({
+  id,
+  label,
+  count,
+  details,
+  tone,
+  text
+}: {
+  id: "avoid" | "moderate";
+  label: string;
+  count: number;
+  details: StatsAdditiveDetail[];
+  tone: "danger" | "warning";
+  text: StatsCopy;
+}) {
+  const [visibleCount, setVisibleCount] = useState(3);
+  const isDanger = tone === "danger";
+  const Icon = isDanger ? ShieldAlert : AlertTriangle;
+  const color = isDanger
+    ? "var(--sk-grade-e-text)"
+    : "var(--sk-grade-c-text)";
+  const background = isDanger
+    ? "var(--sk-grade-e-bg)"
+    : "var(--sk-grade-c-bg)";
+  const border = isDanger
+    ? "var(--sk-grade-e-border)"
+    : "var(--sk-grade-c-border)";
+  const panelId = `additive-${id}-details`;
+  const visibleDetails = details.slice(0, visibleCount);
+  const remainingCount = Math.max(0, details.length - visibleCount);
+  const header = (
+    <>
+      <span
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/70"
+        style={{ color }}
+      >
+        <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[13px] font-bold" style={{ color }}>
+          {label}
+        </span>
+        <span className="mt-0.5 block text-[10px] text-[var(--sk-text-secondary)]">
+          {count} {count === 1 ? text.occurrence : text.occurrences}
+        </span>
+      </span>
+      <span
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/65 transition-transform duration-200 group-open:rotate-180"
+        style={{ color }}
+      >
+        <ChevronDown className="h-4 w-4" aria-hidden="true" />
+      </span>
+    </>
+  );
+
+  if (count === 0) {
+    return (
+      <div
+        className="flex min-h-14 w-full items-center gap-3 rounded-[var(--sk-radius-md)] border px-3.5 py-3 opacity-45"
+        style={{ background, borderColor: border }}
+      >
+        {header}
+      </div>
+    );
+  }
+
+  return (
+    <details
+      className="group overflow-hidden rounded-[var(--sk-radius-md)] border"
+      style={{ borderColor: border }}
+    >
+      <summary
+        className="focus-ring flex min-h-14 cursor-pointer list-none items-center gap-3 px-3.5 py-3 text-left [&::-webkit-details-marker]:hidden"
+        style={{ background }}
+      >
+        {header}
+      </summary>
+      <div id={panelId} className="divide-y divide-[var(--sk-border-muted)] bg-white">
+        {details.length > 0 ? (
+          <>
+            {visibleDetails.map((additive) => (
+              <div key={`${id}-${additive.code}`} className="px-4 py-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-bold text-[var(--sk-text-primary)]">
+                      {additive.code} · {additive.name}
+                    </p>
+                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.08em]" style={{ color }}>
+                      {text.whatItDoes}
+                    </p>
+                  </div>
+                  {additive.count > 1 && (
+                    <span
+                      className="shrink-0 rounded-full px-2 py-1 text-[10px] font-bold"
+                      style={{ background, color }}
+                    >
+                      ×{additive.count}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1.5 text-[12px] leading-relaxed text-[var(--sk-text-secondary)]">
+                  {additive.description}
+                </p>
+              </div>
+            ))}
+            {remainingCount > 0 && (
+              <div className="px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((current) => current + 3)}
+                  className="focus-ring min-h-10 w-full rounded-[var(--sk-radius-md)] border text-[12px] font-bold"
+                  style={{ borderColor: border, background, color }}
+                >
+                  {text.loadMore} · {remainingCount}
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="px-4 py-4 text-[12px] text-[var(--sk-text-muted)]">
+            {text.noAdditiveDetails}
+          </p>
+        )}
+      </div>
+    </details>
+  );
+}
+
 export default function StatsPage() {
   const [range, setRange] = useState<StatsRange>("week");
   const { lang } = useLang();
@@ -235,12 +382,6 @@ export default function StatsPage() {
         : strongCount > weakerCount
           ? text.strong
           : text.balanced;
-  const avoidWidth = stats.additivesTotal
-    ? (stats.additivesToAvoid / stats.additivesTotal) * 100
-    : 0;
-  const moderateWidth = stats.additivesTotal
-    ? (stats.additivesModerate / stats.additivesTotal) * 100
-    : 0;
   const flaggedAdditives =
     stats.additivesToAvoid + stats.additivesModerate;
 
@@ -394,46 +535,35 @@ export default function StatsPage() {
                 </Card>
               ) : (
                 <Card className="p-4">
-                  <div className="flex items-end justify-between gap-4">
+                  <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="sk-label">{text.additives}</p>
-                      <p className="mt-3 text-[32px] font-bold leading-none tracking-[-0.03em]">
-                        {stats.additivesTotal}
+                      <p className="sk-label">{text.flaggedFound}</p>
+                      <p className="mt-2 text-[30px] font-bold leading-none tracking-[-0.03em]">
+                        {flaggedAdditives}
                       </p>
                     </div>
-                    <p className="pb-1 text-[11px] text-[var(--sk-text-muted)]">
+                    <p className="pt-1 text-right text-[10px] leading-relaxed text-[var(--sk-text-muted)]">
                       {text.across} {stats.totalScans} {text.selectedScans}
                     </p>
                   </div>
 
-                  <div className="mt-5 space-y-4">
-                    {[
-                      {
-                        label: text.toAvoid,
-                        value: stats.additivesToAvoid,
-                        width: avoidWidth,
-                        color: "var(--sk-grade-e-text)"
-                      },
-                      {
-                        label: text.moderate,
-                        value: stats.additivesModerate,
-                        width: moderateWidth,
-                        color: "var(--sk-grade-d-text)"
-                      }
-                    ].map((item) => (
-                      <div key={item.label}>
-                        <div className="flex justify-between text-[11px] font-semibold">
-                          <span style={{ color: item.color }}>{item.label}</span>
-                          <span>{item.value}</span>
-                        </div>
-                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--sk-brand-mist-dark)]">
-                          <div
-                            className="h-full rounded-full"
-                            style={{ width: `${item.width}%`, background: item.color }}
-                          />
-                        </div>
-                      </div>
-                    ))}
+                  <div className="mt-4 space-y-2.5">
+                    <AdditiveDisclosure
+                      id="avoid"
+                      label={text.toAvoid}
+                      count={stats.additivesToAvoid}
+                      details={stats.additiveDetails.avoid}
+                      tone="danger"
+                      text={text}
+                    />
+                    <AdditiveDisclosure
+                      id="moderate"
+                      label={text.moderate}
+                      count={stats.additivesModerate}
+                      details={stats.additiveDetails.moderate}
+                      tone="warning"
+                      text={text}
+                    />
                   </div>
                 </Card>
               )}

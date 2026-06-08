@@ -19,12 +19,9 @@ export function consumeSearchProductHistoryMarker(barcode: string) {
 }
 
 function toLegacyScanPayload(payload: ReturnType<typeof toScanPayload>) {
-  const {
-    skaren_grade,
-    health_grade,
-    environmental_grade,
-    ...legacyPayload
-  } = payload;
+  // Only strip the grade columns that may not exist on older DB schemas.
+  // Additive count columns are now present and should always be saved.
+  const { skaren_grade, health_grade, environmental_grade, ...legacyPayload } = payload;
   return legacyPayload;
 }
 
@@ -35,16 +32,34 @@ export async function saveProductToHistory(product: ProductResult) {
   if (!userData.user) return false;
 
   const payload = toScanPayload(product, userData.user.id);
+
+  // Insert the new scan record
   const { error } = await supabase.from("scans").insert(payload);
-  if (!error) return true;
+  if (error) {
+    const { error: legacyError } = await supabase
+      .from("scans")
+      .insert(toLegacyScanPayload(payload));
 
-  const { error: legacyError } = await supabase
-    .from("scans")
-    .insert(toLegacyScanPayload(payload));
+    if (legacyError) {
+      console.error("[History] Product view could not be saved:", legacyError);
+      return false;
+    }
+  }
 
-  if (legacyError) {
-    console.error("[History] Product view could not be saved:", legacyError);
-    return false;
+  // Sync health_grade on any previous scan records for this product that have
+  // a stale grade (e.g. saved before the scoring formula was updated).
+  if (payload.health_grade) {
+    await supabase
+      .from("scans")
+      .update({
+        health_grade: payload.health_grade,
+        additives_total: payload.additives_total,
+        additives_to_avoid: payload.additives_to_avoid,
+        additives_moderate: payload.additives_moderate,
+      })
+      .eq("user_id", userData.user.id)
+      .eq("barcode", payload.barcode)
+      .neq("health_grade", payload.health_grade);
   }
 
   return true;

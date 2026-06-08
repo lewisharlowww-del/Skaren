@@ -66,7 +66,9 @@ export async function POST(request: Request) {
       healthGrade: calculateHealthGrade({
         nutrition: nutritionDataFromKassalapp(product.kassalappNutrition),
         labels: product.labels,
-        category: product.categories
+        category: product.categories,
+        novaGroup: product.novaGroup,
+        additives: product.additives
       }),
       hasNokkelhull: hasNokkelhullLabel(product.labels)
     };

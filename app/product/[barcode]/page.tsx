@@ -60,7 +60,9 @@ function withProductDefaults(product: ProductResult): ProductResult {
     healthGrade: product.healthGrade ?? calculateHealthGrade({
       nutrition: nutritionDataFromKassalapp(productWithDefaults.kassalappNutrition),
       labels: productWithDefaults.labels,
-      category: productWithDefaults.categories
+      category: productWithDefaults.categories,
+      novaGroup: productWithDefaults.novaGroup,
+      additives: productWithDefaults.additives
     })
   };
 }
@@ -724,7 +726,7 @@ export default function ProductPage({ params }: ProductPageProps) {
         return;
       }
 
-      const cached = sessionStorage.getItem(`skaren:${params.barcode}`);
+      const cached = sessionStorage.getItem(`skaren:v2:${params.barcode}`);
       if (cached && !options.skipCache) {
         const cachedProduct = withProductDefaults(JSON.parse(cached) as ProductResult);
         const canUseCachedProduct = cachedProduct.displayImageSource === "kassalapp" || !navigator.onLine;

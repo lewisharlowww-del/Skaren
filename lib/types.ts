@@ -21,6 +21,7 @@ export type ScanRecord = {
   additives_total?: number | null;
   additives_to_avoid?: number | null;
   additives_moderate?: number | null;
+  additives_details?: AdditiveAnalysis[] | null;
   product_image: string | null;
   created_at?: string;
 };

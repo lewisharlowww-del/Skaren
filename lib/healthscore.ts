@@ -15,6 +15,8 @@ export type HealthScoreInput = {
   nutrition: NutritionData;
   labels: string[];
   category: string;
+  novaGroup?: 1 | 2 | 3 | 4 | null;
+  additives?: Array<{ risk: "safe" | "moderate" | "avoid" }>;
 };
 
 function scoreToHealthGrade(score: number): GradeLetter {
@@ -47,7 +49,7 @@ function isButterOrCreamCategory(category: string) {
   return /(butter|smør|smoer|cream|fløte|flote|crème|creme)/i.test(text);
 }
 
-export function calculateHealthScore({ nutrition, labels, category }: HealthScoreInput) {
+export function calculateHealthScore({ nutrition, labels, category, novaGroup, additives }: HealthScoreInput) {
   let score = 50;
 
   if (hasNokkelhullLabel(labels)) score += 30;
@@ -118,6 +120,20 @@ export function calculateHealthScore({ nutrition, labels, category }: HealthScor
 
   if (isButterOrCreamCategory(category) && hasHighFat) {
     score -= 18;
+  }
+
+  // ── NOVA processing level penalty ────────────────────────────────────────
+  if (novaGroup === 4) score -= 25;
+  else if (novaGroup === 3) score -= 10;
+
+  // ── Additive risk penalties ───────────────────────────────────────────────
+  if (additives && additives.length > 0) {
+    const avoidCount = additives.filter((a) => a.risk === "avoid").length;
+    const moderateCount = additives.filter((a) => a.risk === "moderate").length;
+    // Each "avoid" additive: -12, capped at -24 total
+    score -= Math.min(avoidCount * 12, 24);
+    // Each "moderate" additive above the first: -4, capped at -12 total
+    score -= Math.min(Math.max(0, moderateCount - 1) * 4, 12);
   }
 
   return Math.max(0, Math.min(100, score));

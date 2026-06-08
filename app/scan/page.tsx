@@ -57,7 +57,7 @@ function ScanLoadingOverlay({ barcode, scanSuccess, saved }: { barcode: string; 
 
   return (
     <motion.div
-      className="fixed inset-0 z-[80] grid place-items-center bg-mint/86 px-5 backdrop-blur-xl"
+      className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-[var(--sk-brand-mist)] px-5 py-8"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -68,7 +68,7 @@ function ScanLoadingOverlay({ barcode, scanSuccess, saved }: { barcode: string; 
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 8, scale: 0.98 }}
         transition={{ type: "spring", stiffness: 170, damping: 24 }}
-        className="w-full max-w-sm rounded-[2.25rem] border border-white/70 bg-white/92 p-6 text-center shadow-glass"
+        className="w-full max-w-sm rounded-[2rem] border border-[var(--sk-border-default)] bg-white p-6 text-center shadow-[0_24px_70px_rgba(45,74,38,0.14)]"
       >
         <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full ${scanSuccess ? "bg-leaf-100 text-forest" : "bg-forest text-cream"} shadow-phone scan-glow`}>
           <AnimatePresence mode="wait">
@@ -278,49 +278,47 @@ export default function ScanPage() {
       <div className="flex h-screen flex-col bg-[#f7f2ea]">
         {/* Scanner panel */}
         <div
-          className="relative flex flex-col items-center justify-center overflow-hidden px-5 pb-6 pt-4"
+          className="relative overflow-hidden"
           style={{
             height: "46vh",
-            background:
-              "radial-gradient(circle at 50% 34%, #52734b 0%, #3d6037 28%, #2d4a26 62%, #243d20 100%)",
+            background: "#111",
           }}
         >
-          {/* Viewfinder frame */}
-          <div className="relative mb-3" style={{ width: "160px", height: "140px" }}>
+          {/* Real camera feed fills the full area */}
+          <div className="absolute inset-0">
+            <BarcodeScanner
+              autoStart
+              hideControls
+              disabled={loading}
+              onDetected={(detectedBarcode) => void analyzeBarcode(detectedBarcode)}
+            />
+          </div>
+
+          {/* Decorative overlay: dark vignette + corner brackets + text */}
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+            {/* Vignette */}
+            <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.55) 100%)" }} />
+
             {/* Corner brackets */}
-            <div className="absolute left-0 top-0 h-8 w-8 rounded-tl-xl" style={{ borderTop: "3px solid rgba(255,255,255,.92)", borderLeft: "3px solid rgba(255,255,255,.92)" }} />
-            <div className="absolute right-0 top-0 h-8 w-8 rounded-tr-xl" style={{ borderTop: "3px solid rgba(255,255,255,.92)", borderRight: "3px solid rgba(255,255,255,.92)" }} />
-            <div className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-xl" style={{ borderBottom: "3px solid rgba(255,255,255,.92)", borderLeft: "3px solid rgba(255,255,255,.92)" }} />
-            <div className="absolute bottom-0 right-0 h-8 w-8 rounded-br-xl" style={{ borderBottom: "3px solid rgba(255,255,255,.92)", borderRight: "3px solid rgba(255,255,255,.92)" }} />
-            {/* Scanner line */}
-            <div className="absolute left-4 right-4 top-1/2" style={{ height: 2, background: "#88bb88" }} />
-            {/* Hidden BarcodeScanner still listens for scans */}
-            <div className="absolute inset-0 overflow-hidden rounded-2xl opacity-0 pointer-events-none">
-              <BarcodeScanner autoStart disabled={loading} onDetected={(detectedBarcode) => void analyzeBarcode(detectedBarcode)} />
+            <div className="relative z-10" style={{ width: 200, height: 150 }}>
+              <div className="absolute left-0 top-0 h-9 w-9 rounded-tl-xl" style={{ borderTop: "3px solid rgba(255,255,255,.9)", borderLeft: "3px solid rgba(255,255,255,.9)" }} />
+              <div className="absolute right-0 top-0 h-9 w-9 rounded-tr-xl" style={{ borderTop: "3px solid rgba(255,255,255,.9)", borderRight: "3px solid rgba(255,255,255,.9)" }} />
+              <div className="absolute bottom-0 left-0 h-9 w-9 rounded-bl-xl" style={{ borderBottom: "3px solid rgba(255,255,255,.9)", borderLeft: "3px solid rgba(255,255,255,.9)" }} />
+              <div className="absolute bottom-0 right-0 h-9 w-9 rounded-br-xl" style={{ borderBottom: "3px solid rgba(255,255,255,.9)", borderRight: "3px solid rgba(255,255,255,.9)" }} />
+              {/* Animated scan line */}
+              <div className="absolute left-3 right-3" style={{ top: "50%", height: 2, background: "#88bb88", boxShadow: "0 0 10px rgba(136,187,136,0.9)" }} />
+            </div>
+
+            {/* Text below brackets */}
+            <div className="relative z-10 mt-4 flex flex-col items-center gap-1">
+              <p className="text-[18px] font-black text-white" style={{ fontFamily: "Satoshi, sans-serif" }}>
+                {t('scan_title', lang)}
+              </p>
+              <p className="text-[12px]" style={{ color: "rgba(220,238,221,.72)" }}>
+                {t('scan_subtitle', lang)}
+              </p>
             </div>
           </div>
-          <p className="text-[20px] font-black text-white" style={{ fontFamily: "Satoshi, sans-serif" }}>
-            {t('scan_title', lang)}
-          </p>
-          <p className="mt-0.5 text-[12px]" style={{ color: "rgba(220,238,221,.72)" }}>{t('scan_subtitle', lang)}</p>
-          {/* Tap to scan button */}
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => {
-              const scanner = document.querySelector('video');
-              if (scanner) scanner.click();
-            }}
-            className="mt-4 flex items-center gap-2 rounded-full px-5 py-2.5 text-[12px] font-bold"
-            style={{
-              background: "rgba(255,255,255,.16)",
-              border: "1px solid rgba(255,255,255,.18)",
-              color: "#ffffff",
-            }}
-          >
-            <ScanBarcode className="h-4 w-4" />
-            {t('scan_tap_camera', lang)}
-          </button>
         </div>
         {/* Bottom section */}
         <div className="flex-1 overflow-hidden px-5 pb-24 pt-4">

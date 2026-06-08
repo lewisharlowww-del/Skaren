@@ -23,13 +23,14 @@ export function SkarenLoader({ message = 'Loading' }: { message?: string }) {
       }}
     >
       <Image
-        src="/skaren-logo.png"
+        src="/skaren-logo.png?v=2"
         alt="Skaren"
         width={120}
         height={120}
+        unoptimized
         style={{
           animation: 'pulse 2s ease-in-out infinite',
-          filter: 'brightness(0) saturate(100%) invert(20%) sepia(40%) saturate(800%) hue-rotate(90deg)',
+          borderRadius: 28,
         }}
       />
       <p style={{

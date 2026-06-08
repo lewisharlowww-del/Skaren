@@ -49,11 +49,11 @@ function getHealthGrade(scan: ScanRecord): Grade {
   return scan.health_grade ?? scoreToGrade(scan.ecoscan_score)
 }
 
-function getEcoGrade(scan: ScanRecord): Grade {
+function getEcoGrade(scan: ScanRecord): Grade | null {
   if (scan.environmental_grade) return scan.environmental_grade
   const eco = scan.eco_score_grade
   if (eco && eco !== 'unknown') return eco.toUpperCase() as Grade
-  return scoreToGrade(scan.ecoscan_score)
+  return null
 }
 
 function getDateLabel(dateStr: string, todayLabel: string, yesterdayLabel: string): string {
@@ -88,12 +88,14 @@ function formatTime(dateStr?: string): string {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function GradeBadge({ grade }: { grade: Grade }) {
+function GradeBadge({ grade, label }: { grade: Grade; label: string }) {
   const s = GRADE_STYLES[grade]
   return (
     <span
       className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-black"
       style={{ background: s.bg, color: s.color }}
+      aria-label={`${label}: ${grade}`}
+      title={`${label}: ${grade}`}
     >
       {grade}
     </span>
@@ -141,8 +143,8 @@ function ScanRow({ scan, isLast }: { scan: ScanRecord; isLast: boolean }) {
       {/* Grades + time */}
       <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
         <div className="flex gap-1.5">
-          <GradeBadge grade={healthGrade} />
-          <GradeBadge grade={ecoGrade} />
+          <GradeBadge grade={healthGrade} label="Health grade" />
+          {ecoGrade ? <GradeBadge grade={ecoGrade} label="Eco grade" /> : null}
         </div>
         <span className="text-[10px] text-[#b0a090]">{time}</span>
       </div>

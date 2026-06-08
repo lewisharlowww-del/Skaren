@@ -10,6 +10,9 @@ export function useUser() {
 
   useEffect(() => {
     let active = true;
+    const timeout = window.setTimeout(() => {
+      if (active) setLoading(false);
+    }, 4000);
 
     async function loadUser() {
       if (!isSupabaseConfigured || !supabase) {
@@ -17,11 +20,16 @@ export function useUser() {
         return;
       }
 
-      const { data } = await supabase.auth.getUser();
-
-      if (active) {
-        setUser(data.user);
-        setLoading(false);
+      try {
+        // The local session is enough for UI state and avoids a blocking
+        // network validation request on every page navigation.
+        const { data } = await supabase.auth.getSession();
+        if (active) setUser(data.session?.user ?? null);
+      } finally {
+        if (active) {
+          window.clearTimeout(timeout);
+          setLoading(false);
+        }
       }
     }
 
@@ -34,6 +42,7 @@ export function useUser() {
 
     return () => {
       active = false;
+      window.clearTimeout(timeout);
       listener?.data.subscription.unsubscribe();
     };
   }, []);

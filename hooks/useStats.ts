@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@/hooks/useUser";
+import type { AdditiveAnalysis, AdditiveRisk } from "@/lib/additives";
 import { gradeLetterToScore } from "@/lib/ecoscore";
 import type { Language } from "@/lib/i18n";
 import { readLocalProduct } from "@/lib/localProducts";
@@ -9,6 +10,13 @@ import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import type { GradeLetter, StatsScanRecord } from "@/lib/types";
 
 export type StatsRange = "week" | "month" | "all";
+
+export type StatsAdditiveDetail = Pick<
+  AdditiveAnalysis,
+  "code" | "name" | "description" | "risk"
+> & {
+  count: number;
+};
 
 export type StatsData = {
   totalScans: number;
@@ -20,6 +28,10 @@ export type StatsData = {
   additivesTotal: number;
   additivesToAvoid: number;
   additivesModerate: number;
+  additiveDetails: {
+    avoid: StatsAdditiveDetail[];
+    moderate: StatsAdditiveDetail[];
+  };
   mostScanned: Array<{
     name: string;
     count: number;
@@ -38,6 +50,7 @@ const emptyStats: StatsData = {
   additivesTotal: 0,
   additivesToAvoid: 0,
   additivesModerate: 0,
+  additiveDetails: { avoid: [], moderate: [] },
   mostScanned: [],
   weeklyInsight: ""
 };
@@ -171,10 +184,16 @@ export function useStats(range: StatsRange, language: Language = "en") {
   useEffect(() => {
     if (userLoading) return;
     let active = true;
+    const timeout = window.setTimeout(() => {
+      if (active) setLoading(false);
+    }, 6000);
 
     async function loadScans() {
       if (!isSupabaseConfigured || !supabase || !user) {
-        if (active) setLoading(false);
+        if (active) {
+          window.clearTimeout(timeout);
+          setLoading(false);
+        }
         return;
       }
 
@@ -191,6 +210,7 @@ export function useStats(range: StatsRange, language: Language = "en") {
 
         if (!historyResult.error && historyResult.data) {
           setScans(historyResult.data);
+          window.clearTimeout(timeout);
           setLoading(false);
           return;
         }
@@ -203,16 +223,21 @@ export function useStats(range: StatsRange, language: Language = "en") {
 
         if (active) {
           setScans((scansResult.data ?? []) as StatsScanRecord[]);
+          window.clearTimeout(timeout);
           setLoading(false);
         }
       } catch {
-        if (active) setLoading(false);
+        if (active) {
+          window.clearTimeout(timeout);
+          setLoading(false);
+        }
       }
     }
 
     void loadScans();
     return () => {
       active = false;
+      window.clearTimeout(timeout);
     };
   }, [user, userLoading]);
 
@@ -242,6 +267,7 @@ export function useStats(range: StatsRange, language: Language = "en") {
     let additivesTotal = 0;
     let additivesToAvoid = 0;
     let additivesModerate = 0;
+    const additiveDetails = new Map<string, StatsAdditiveDetail>();
     const productCounts = new Map<
       string,
       {
@@ -257,28 +283,60 @@ export function useStats(range: StatsRange, language: Language = "en") {
       gradeBreakdown[grade] += 1;
       gradeScoreTotal += gradeLetterToScore(grade);
 
-      // If additive counts weren't saved (pre-migration scans), fall back to
-      // the locally cached product data to derive them on the fly.
       let scanAdditivesToAvoid = scan.additives_to_avoid ?? null;
       let scanAdditivesModerate = scan.additives_moderate ?? null;
       let scanAdditivesTotal = scan.additives_total ?? null;
+      const cached = readLocalProduct(scan.barcode);
+      const cachedAdditivesToAvoid =
+        cached?.additives?.filter((additive) => additive.risk === "avoid")
+          .length ?? 0;
+      const cachedAdditivesModerate =
+        cached?.additives?.filter((additive) => additive.risk === "moderate")
+          .length ?? 0;
+      const cachedAdditivesTotal = cached?.additives?.length ?? 0;
+      const storedFlaggedCount =
+        (scanAdditivesToAvoid ?? 0) + (scanAdditivesModerate ?? 0);
+      const cachedFlaggedCount =
+        cachedAdditivesToAvoid + cachedAdditivesModerate;
 
-      if (scanAdditivesToAvoid === null || scanAdditivesModerate === null) {
-        const cached = readLocalProduct(scan.barcode);
-        if (cached?.additives?.length) {
-          scanAdditivesToAvoid = cached.additives.filter((a) => a.risk === "avoid").length;
-          scanAdditivesModerate = cached.additives.filter((a) => a.risk === "moderate").length;
-          scanAdditivesTotal = cached.additives.length;
-        } else {
-          scanAdditivesToAvoid = 0;
-          scanAdditivesModerate = 0;
-          scanAdditivesTotal = 0;
-        }
+      if (
+        scanAdditivesToAvoid === null ||
+        scanAdditivesModerate === null ||
+        (storedFlaggedCount === 0 && cachedFlaggedCount > 0)
+      ) {
+        scanAdditivesToAvoid = cachedAdditivesToAvoid;
+        scanAdditivesModerate = cachedAdditivesModerate;
+        scanAdditivesTotal = cachedAdditivesTotal;
       }
 
-      additivesTotal += scanAdditivesTotal ?? (scanAdditivesToAvoid + scanAdditivesModerate);
-      additivesToAvoid += scanAdditivesToAvoid;
-      additivesModerate += scanAdditivesModerate;
+      additivesTotal +=
+        scanAdditivesTotal ??
+        (scanAdditivesToAvoid ?? 0) + (scanAdditivesModerate ?? 0);
+      additivesToAvoid += scanAdditivesToAvoid ?? 0;
+      additivesModerate += scanAdditivesModerate ?? 0;
+
+      const scanAdditiveDetails =
+        scan.additives_details?.length
+          ? scan.additives_details
+          : cached?.additives ?? [];
+
+      scanAdditiveDetails
+        .filter(
+          (additive): additive is AdditiveAnalysis & {
+            risk: Extract<AdditiveRisk, "avoid" | "moderate">;
+          } => additive.risk === "avoid" || additive.risk === "moderate"
+        )
+        .forEach((additive) => {
+          const key = `${additive.risk}:${additive.code}`;
+          const existing = additiveDetails.get(key);
+          additiveDetails.set(key, {
+            code: additive.code.toUpperCase(),
+            name: additive.name,
+            description: additive.description,
+            risk: additive.risk,
+            count: (existing?.count ?? 0) + 1
+          });
+        });
 
       const key = scan.barcode || scan.product_name.toLowerCase();
       const existing = productCounts.get(key);
@@ -333,6 +391,14 @@ export function useStats(range: StatsRange, language: Language = "en") {
       additivesTotal,
       additivesToAvoid,
       additivesModerate,
+      additiveDetails: {
+        avoid: Array.from(additiveDetails.values())
+          .filter((additive) => additive.risk === "avoid")
+          .sort((a, b) => b.count - a.count || a.code.localeCompare(b.code)),
+        moderate: Array.from(additiveDetails.values())
+          .filter((additive) => additive.risk === "moderate")
+          .sort((a, b) => b.count - a.count || a.code.localeCompare(b.code))
+      },
       mostScanned: Array.from(productCounts.values())
         .sort(
           (a, b) =>

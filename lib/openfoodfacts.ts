@@ -297,7 +297,9 @@ export function normalizeOpenFoodFactsProduct(barcode: string, product: OpenFood
     healthGrade: calculateHealthGrade({
       nutrition: {},
       labels: [],
-      category: normalizedProduct.categories
+      category: normalizedProduct.categories,
+      novaGroup: normalizedProduct.novaGroup,
+      additives: normalizedProduct.additives
     })
   };
 }
@@ -423,6 +425,7 @@ export function toScanPayload(product: ProductResult, userId: string) {
     additives_total: product.additives.length,
     additives_to_avoid: additivesToAvoid,
     additives_moderate: additivesModerate,
+    additives_details: product.additives,
     product_image: product.displayImage
   };
 }
