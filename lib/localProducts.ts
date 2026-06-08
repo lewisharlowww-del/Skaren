@@ -2,7 +2,7 @@ import type { ProductResult } from "@/lib/types";
 
 const productPrefix = "skaren:product:";
 const recentKey = "skaren:recent-products";
-const maxRecentProducts = 5;
+const maxRecentProducts = 100;
 
 type CachedProduct = {
   product: ProductResult;
