@@ -224,19 +224,20 @@ function ProCard({ isPremium, lang }: { isPremium: boolean; lang: Language }) {
 
 function SectionLabel({ label }: { label: string }) {
   return (
-    <p className="text-[11px] font-bold uppercase mb-2 px-1" style={{ color: "#9a8e7e", letterSpacing: "0.07em", fontFamily: "Manrope, sans-serif" }}>
+    <p className="text-[11px] font-bold uppercase mb-2 px-1" style={{ color: "var(--sk-text-muted)", letterSpacing: "0.07em", fontFamily: "Manrope, sans-serif" }}>
       {label}
     </p>
   );
 }
 
 function Divider() {
-  return <div className="mx-5 h-px bg-[#f0ebe0]" />;
+  return <div className="mx-5 h-px" style={{ background: "var(--sk-border-muted)" }} />;
 }
 
 interface SettingsRowProps {
   icon: React.ReactNode;
   iconBg: string;
+  iconBgDark?: string;
   label: string;
   subtitle: string;
   href?: string;
@@ -254,17 +255,16 @@ function SettingsRow({ icon, iconBg, label, subtitle, href, onClick, danger }: S
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className={`text-[14px] font-bold ${danger ? "text-[#aa1818]" : "text-[#2d3028]"}`}>
+        <p className="text-[14px] font-bold" style={{ color: danger ? "var(--sk-status-danger)" : "var(--sk-text-primary)" }}>
           {label}
         </p>
-        <p className="mt-0.5 text-[11px] text-[#9a8e7e] truncate">{subtitle}</p>
+        <p className="mt-0.5 text-[11px] truncate" style={{ color: "var(--sk-text-muted)" }}>{subtitle}</p>
       </div>
-      <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "#b0a090" }} />
+      <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-faint)" }} />
     </>
   );
 
-  const cls =
-    "flex w-full items-center gap-3.5 px-5 py-4 text-left active:bg-[#faf7f2] transition-colors";
+  const cls = "flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors";
 
   if (href) {
     return (
@@ -480,7 +480,7 @@ export default function AccountPage() {
 
           {/* ── Preferences ── */}
           <SectionLabel label={t('account_preferences', lang)} />
-          <div className="mb-4 overflow-hidden rounded-2xl border border-[#e0d8cc] bg-white">
+          <div className="mb-4 overflow-hidden rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}>
             <SettingsRow
               icon={<Bell className="h-4 w-4 text-[#2d4a26]" />}
               iconBg="#eaf3de"
@@ -543,7 +543,7 @@ export default function AccountPage() {
 
           {/* ── Data & Privacy ── */}
           <SectionLabel label={t('account_data_privacy', lang)} />
-          <div className="mb-4 overflow-hidden rounded-2xl border border-[#e0d8cc] bg-white">
+          <div className="mb-4 overflow-hidden rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}>
             <SettingsRow
               icon={<Download className="h-4 w-4 text-[#2d4a26]" />}
               iconBg="#eaf3de"
@@ -562,7 +562,7 @@ export default function AccountPage() {
 
           {/* ── Account actions ── */}
           <SectionLabel label={t('account_title', lang)} />
-          <div className="overflow-hidden rounded-2xl border border-[#e0d8cc] bg-white">
+          <div className="overflow-hidden rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}>
             <SettingsRow
               icon={<LogOut className="h-4 w-4 text-[#9a8e7e]" />}
               iconBg="#f0ebe0"

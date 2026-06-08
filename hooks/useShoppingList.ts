@@ -280,6 +280,82 @@ export function useShoppingList() {
     [updateItems, user]
   );
 
+  const updateItem = useCallback(
+    async (
+      id: string,
+      changes: Partial<
+        Pick<ShoppingListItem, "name" | "quantity" | "category" | "healthGrade">
+      >
+    ) => {
+      const cleanChanges: Partial<
+        Pick<ShoppingListItem, "name" | "quantity" | "category" | "healthGrade">
+      > = {};
+      if (changes.name !== undefined) cleanChanges.name = changes.name.trim();
+      if (changes.quantity !== undefined) {
+        cleanChanges.quantity = changes.quantity.trim() || undefined;
+      }
+      if (changes.category !== undefined) cleanChanges.category = changes.category;
+      if (changes.healthGrade !== undefined) {
+        cleanChanges.healthGrade = changes.healthGrade;
+      }
+
+      updateItems((current) =>
+        current.map((item) =>
+          item.id === id ? { ...item, ...cleanChanges } : item
+        )
+      );
+
+      if (isSupabaseConfigured && supabase && user) {
+        try {
+          const remoteChanges: {
+            name?: string;
+            quantity?: string | null;
+            category?: string | null;
+            health_grade?: ShoppingListItem["healthGrade"] | null;
+          } = {};
+          if (changes.name !== undefined) remoteChanges.name = cleanChanges.name;
+          if (changes.quantity !== undefined) {
+            remoteChanges.quantity = cleanChanges.quantity ?? null;
+          }
+          if (changes.category !== undefined) {
+            remoteChanges.category = cleanChanges.category ?? null;
+          }
+          if (changes.healthGrade !== undefined) {
+            remoteChanges.health_grade = cleanChanges.healthGrade ?? null;
+          }
+
+          await supabase
+            .from("shopping_list")
+            .update(remoteChanges)
+            .eq("id", id)
+            .eq("user_id", user.id);
+        } catch {
+          // Local storage remains the active fallback.
+        }
+      }
+    },
+    [updateItems, user]
+  );
+
+  const restoreItems = useCallback(
+    async (restoredItems: ShoppingListItem[]) => {
+      if (restoredItems.length === 0) return;
+
+      updateItems((current) => [...restoredItems, ...current]);
+
+      if (isSupabaseConfigured && supabase && user) {
+        try {
+          await supabase
+            .from("shopping_list")
+            .upsert(restoredItems.map((item) => toRow(item, user.id)));
+        } catch {
+          // Local storage remains the active fallback.
+        }
+      }
+    },
+    [updateItems, user]
+  );
+
   const clearChecked = useCallback(async () => {
     const checkedIds = items
       .filter((item) => item.checked)
@@ -311,6 +387,8 @@ export function useShoppingList() {
     addItem,
     toggleItem,
     deleteItem,
-    clearChecked
+    clearChecked,
+    updateItem,
+    restoreItems
   };
 }

@@ -26,10 +26,10 @@ function extractAdditivesFromIngredients(ingredients: string): string[] {
 }
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const PAGE_BG   = "#faf7f2";
-const CARD_BG   = "#ffffff";
-const CARD_BORDER = "#e0d8cc";
-const MUTED     = "#9a8e7e";
+const PAGE_BG     = "var(--sk-brand-mist)";
+const CARD_BG     = "var(--sk-surface-white)";
+const CARD_BORDER = "var(--sk-border-default)";
+const MUTED       = "var(--sk-text-muted)";
 
 type Props = {
   product: ProductResult;
@@ -42,35 +42,35 @@ type Props = {
 };
 
 const GRADE_COLORS: Record<string, string> = {
-  A: "#2a5030",
-  B: "#486020",
-  C: "#706030",
-  D: "#704830",
-  E: "#703030",
+  A: "var(--sk-grade-a-text)",
+  B: "var(--sk-grade-b-text)",
+  C: "var(--sk-grade-c-text)",
+  D: "var(--sk-grade-d-text)",
+  E: "var(--sk-grade-e-text)",
 };
 
 const GRADE_BACKGROUNDS: Record<string, string> = {
-  A: "#ddeedd",
-  B: "#e8f0dc",
-  C: "#f0e8d0",
-  D: "#ece0d4",
-  E: "#e8d8d4",
+  A: "var(--sk-grade-a-bg)",
+  B: "var(--sk-grade-b-bg)",
+  C: "var(--sk-grade-c-bg)",
+  D: "var(--sk-grade-d-bg)",
+  E: "var(--sk-grade-e-bg)",
 };
 
 const GRADE_BORDERS: Record<string, string> = {
-  A: "#88bb88",
-  B: "#a8c880",
-  C: "#c8a860",
-  D: "#c09878",
-  E: "#c09090",
+  A: "var(--sk-grade-a-border)",
+  B: "var(--sk-grade-b-border)",
+  C: "var(--sk-grade-c-border)",
+  D: "var(--sk-grade-d-border)",
+  E: "var(--sk-grade-e-border)",
 };
 
 // NOVA labels are built inside the component from translations (see novaLabels array in component body)
 const NOVA_TONES: Record<number, { bg: string; text: string; border: string }> = {
-  1: { bg: "#ddeedd", text: "#2a5030", border: "#88bb88" },
-  2: { bg: "#e8f0dc", text: "#486020", border: "#a8c880" },
-  3: { bg: "#f0e8d0", text: "#706030", border: "#c8a860" },
-  4: { bg: "#e8d8d4", text: "#703030", border: "#c09090" },
+  1: { bg: "var(--sk-grade-a-bg)", text: "var(--sk-grade-a-text)", border: "var(--sk-grade-a-border)" },
+  2: { bg: "var(--sk-grade-b-bg)", text: "var(--sk-grade-b-text)", border: "var(--sk-grade-b-border)" },
+  3: { bg: "var(--sk-grade-c-bg)", text: "var(--sk-grade-c-text)", border: "var(--sk-grade-c-border)" },
+  4: { bg: "var(--sk-grade-e-bg)", text: "var(--sk-grade-e-text)", border: "var(--sk-grade-e-border)" },
 };
 // novaSegmentLabels populated at render time from translations
 
@@ -127,12 +127,12 @@ function getGradeSummary(
 
 function getTypedInsightTone(type: ProductInsight["type"]) {
   if (type === "positive") {
-    return { icon: CheckCircle2, bg: "#ddeedd", border: "#88bb88", text: "#2a5030" };
+    return { icon: CheckCircle2, bg: "var(--sk-grade-a-bg)", border: "var(--sk-grade-a-border)", text: "var(--sk-grade-a-text)" };
   }
   if (type === "warning") {
-    return { icon: AlertTriangle, bg: "#e8d8d4", border: "#c09090", text: "#703030" };
+    return { icon: AlertTriangle, bg: "var(--sk-grade-e-bg)", border: "var(--sk-grade-e-border)", text: "var(--sk-grade-e-text)" };
   }
-  return { icon: Info, bg: PAGE_BG, border: CARD_BORDER, text: "#5a4a38" };
+  return { icon: Info, bg: PAGE_BG, border: CARD_BORDER, text: "var(--sk-text-secondary)" };
 }
 
 function polishInsightText(text: string) {
@@ -183,16 +183,16 @@ function PremiumNudge({ label }: { label: string }) {
     <Link
       href="/pricing"
       className="flex items-center gap-3 rounded-2xl border px-4 py-3.5"
-      style={{ borderColor: "#e8d080", backgroundColor: "#fff8e6" }}
+      style={{ borderColor: "var(--sk-grade-c-border)", backgroundColor: "var(--sk-grade-c-bg)" }}
     >
-      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-amber-100">
-        <Crown className="h-4 w-4 text-amber-600" />
+      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl" style={{ background: "var(--sk-grade-d-bg)" }}>
+        <Crown className="h-4 w-4" style={{ color: "var(--sk-grade-d-text)" }} />
       </div>
       <div className="flex-1">
-        <p className="type-body-sm font-bold" style={{ color: "#7a5800" }}>Pro feature</p>
-        <p className="type-caption" style={{ color: "#9a7830" }}>{label} · Upgrade to unlock</p>
+        <p className="type-body-sm font-bold" style={{ color: "var(--sk-grade-d-text)" }}>Pro feature</p>
+        <p className="type-caption" style={{ color: MUTED }}>{label} · Upgrade to unlock</p>
       </div>
-      <ChevronRight className="h-4 w-4 text-amber-400" />
+      <ChevronRight className="h-4 w-4" style={{ color: "var(--sk-grade-c-text)" }} />
     </Link>
   );
 }
@@ -374,14 +374,14 @@ export function ProductPageLayout({
           href="/scan"
           aria-label="Back to scanner"
           className="grid h-10 w-10 place-items-center rounded-full transition hover:bg-black/5"
-          style={{ color: "#2d4a26" }}
+          style={{ color: "var(--sk-text-green)" }}
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div ref={compactHeaderRef} style={{ opacity: 0, display: "flex", alignItems: "center", gap: 6, position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", willChange: "opacity" }}>
           <span
             className="truncate max-w-[160px]"
-            style={{ color: "#2d3028", fontSize: 13, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}
+            style={{ color: "var(--sk-text-primary)", fontSize: 13, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}
           >
             {product.name}
           </span>
@@ -585,16 +585,16 @@ export function ProductPageLayout({
           <div
             style={{ position: "absolute", right: 0, top: 54, zIndex: 30, width: "min(18rem, calc(100vw - 3rem))", background: CARD_BG, borderRadius: 16, border: `0.5px solid ${CARD_BORDER}`, padding: 16, boxShadow: "0 18px 60px rgba(50,42,31,0.15)", textAlign: "left" }}
           >
-            <p className="type-section-label" style={{ color: "#2d4a26", marginBottom: 12 }}>
+            <p className="type-section-label" style={{ color: "var(--sk-text-green)", marginBottom: 12 }}>
               {t('product_how_grades_work', lang)}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <p style={{ fontSize: 13, color: "#5a4a38" }}>
-                <span style={{ fontWeight: 700, color: "#1e1e18" }}>{t('product_health', lang)}: </span>
+              <p style={{ fontSize: 13, color: "var(--sk-text-secondary)" }}>
+                <span style={{ fontWeight: 700, color: "var(--sk-text-primary)" }}>{t('product_health', lang)}: </span>
                 {getHealthGradeBasis(product, Boolean(healthGrade))}
               </p>
-              <p style={{ fontSize: 13, color: "#5a4a38" }}>
-                <span style={{ fontWeight: 700, color: "#1e1e18" }}>{t('product_eco', lang)}: </span>
+              <p style={{ fontSize: 13, color: "var(--sk-text-secondary)" }}>
+                <span style={{ fontWeight: 700, color: "var(--sk-text-primary)" }}>{t('product_eco', lang)}: </span>
                 {getEcoGradeBasis(hasOfficialEcoData)}
               </p>
             </div>
@@ -662,7 +662,7 @@ export function ProductPageLayout({
                         color:
                           product.novaGroup === index + 1
                             ? NOVA_TONES[product.novaGroup]?.text
-                            : "#9a8e7e",
+                            : MUTED,
                         fontWeight: product.novaGroup === index + 1 ? 700 : 400,
                       }}
                     >
@@ -692,15 +692,15 @@ export function ProductPageLayout({
                 >
                   <span style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>{getAllergenEmoji(a)}</span>
                   <div style={{ minWidth: 0 }}>
-                    <p className="type-body-sm" style={{ fontWeight: 700, color: "#3a2820" }}>{a}</p>
-                    <p className="type-caption" style={{ color: "#9a8e7e", marginTop: 2, textTransform: "none", letterSpacing: 0 }}>{t('product_contains', lang)} {a.toLowerCase()}</p>
+                    <p className="type-body-sm" style={{ fontWeight: 700, color: "var(--sk-text-primary)" }}>{a}</p>
+                    <p className="type-caption" style={{ color: MUTED, marginTop: 2, textTransform: "none", letterSpacing: 0 }}>{t('product_contains', lang)} {a.toLowerCase()}</p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div style={{ background: "#ddeedd", borderRadius: 16, border: "0.5px solid #88bb88", padding: "12px 16px" }}>
-              <p className="type-body-sm" style={{ fontWeight: 600, color: "#2a5030" }}>{t('product_no_allergens', lang)}</p>
+            <div style={{ background: "var(--sk-grade-a-bg)", borderRadius: 16, border: "0.5px solid var(--sk-grade-a-border)", padding: "12px 16px" }}>
+              <p className="type-body-sm" style={{ fontWeight: 600, color: "var(--sk-grade-a-text)" }}>{t('product_no_allergens', lang)}</p>
             </div>
           )}
         </div>
@@ -716,7 +716,7 @@ export function ProductPageLayout({
                   className="flex min-h-12 items-center justify-between px-4 py-3"
                   style={index < nutritionRows.length - 1 ? { borderBottom: `1px solid ${CARD_BORDER}` } : undefined}
                 >
-                  <span className="type-body-sm" style={{ fontWeight: 600, color: "#1e1e18" }}>{row.label}</span>
+                  <span className="type-body-sm" style={{ fontWeight: 600, color: "var(--sk-text-primary)" }}>{row.label}</span>
                   <span className={`type-body-sm rounded-full px-3 py-1 font-bold ${row.tone}`}>
                     {row.displayAmount}
                   </span>
@@ -775,7 +775,7 @@ export function ProductPageLayout({
               <PremiumNudge label={t('product_ingredients', lang)} />
             ) : ingredients ? (
               <div style={{ background: CARD_BG, borderRadius: 14, border: `0.5px solid ${CARD_BORDER}`, padding: "12px 14px" }}>
-                <p style={{ fontSize: 13, color: "#5a4a38", lineHeight: 1.6 }}>{ingredients}</p>
+                <p style={{ fontSize: 13, color: "var(--sk-text-secondary)", lineHeight: 1.6 }}>{ingredients}</p>
               </div>
             ) : null}
           </div>
@@ -797,7 +797,7 @@ export function ProductPageLayout({
           type="button"
           onClick={() => router.push("/scan")}
           className="type-button flex items-center justify-center rounded-2xl py-3.5 transition active:scale-95"
-          style={{ background: PAGE_BG, color: "#2d4a26", border: `1px solid ${CARD_BORDER}` }}
+          style={{ background: PAGE_BG, color: "var(--sk-text-green)", border: `1px solid ${CARD_BORDER}` }}
         >
           {t('scan_again', lang)}
         </button>
@@ -819,8 +819,8 @@ export function ProductPageLayout({
           className="type-button flex items-center justify-center gap-2 rounded-2xl py-3.5 transition active:scale-95"
           style={
             addedToList
-              ? { background: "#ddeedd", color: "#2a5030", border: "1px solid #88bb88" }
-              : { background: "#2d4a26", color: "#dceedd" }
+              ? { background: "var(--sk-grade-a-bg)", color: "var(--sk-grade-a-text)", border: "1px solid var(--sk-grade-a-border)" }
+              : { background: "var(--sk-brand-forest)", color: "var(--sk-text-on-dark)" }
           }
         >
           {addedToList ? (

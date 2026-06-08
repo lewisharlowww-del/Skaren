@@ -134,3 +134,163 @@
 .sk-grade-c { background: var(--sk-grade-c-bg); border-color: var(--sk-grade-c-border); color: var(--sk-grade-c-text); }
 .sk-grade-d { background: var(--sk-grade-d-bg); border-color: var(--sk-grade-d-border); color: var(--sk-grade-d-text); }
 .sk-grade-e { background: var(--sk-grade-e-bg); border-color: var(--sk-grade-e-border); color: var(--sk-grade-e-text); }
+
+/* ── Dark theme ─────────────────────────────────────────────────────────────── */
+
+html.dark {
+  color-scheme: dark;
+
+  --sk-brand-forest: #6abf58;
+  --sk-brand-leaf:   #88cc70;
+  --sk-brand-mist:        #0e1509;
+  --sk-brand-mist-dark:   #141e0f;
+  --sk-brand-mist-card:   #111b0d;
+
+  --sk-grade-a-bg:     #1a2e18; --sk-grade-a-border: #2a4828; --sk-grade-a-text: #88cc70;
+  --sk-grade-b-bg:     #182818; --sk-grade-b-border: #284030; --sk-grade-b-text: #70b870;
+  --sk-grade-c-bg:     #262010; --sk-grade-c-border: #3a3010; --sk-grade-c-text: #c8a840;
+  --sk-grade-d-bg:     #281808; --sk-grade-d-border: #482808; --sk-grade-d-text: #e0885a;
+  --sk-grade-e-bg:     #2a1010; --sk-grade-e-border: #481818; --sk-grade-e-text: #e07070;
+
+  --sk-surface-white:      #182214;
+  --sk-surface-card:       #1a2616;
+  --sk-surface-card-green: #182014;
+  --sk-surface-card-amber: #201a10;
+  --sk-surface-card-red:   #201010;
+  --sk-surface-insight:    #1a2416;
+
+  --sk-border-default: #283c20;
+  --sk-border-green:   #2a4828;
+  --sk-border-amber:   #402a10;
+  --sk-border-red:     #401818;
+  --sk-border-muted:   #243018;
+
+  --sk-text-primary:       #ddeedd;
+  --sk-text-secondary:     #8aaa80;
+  --sk-text-muted:         #607858;
+  --sk-text-faint:         #506848;
+  --sk-text-green:         #6abf58;
+  --sk-text-amber:         #e0885a;
+  --sk-text-red:           #e07070;
+  --sk-text-on-dark:       #ddeedd;
+  --sk-text-on-dark-muted: rgba(221,238,221,0.45);
+
+  --sk-status-positive: #6abf58;
+  --sk-status-warning:  #e0885a;
+  --sk-status-danger:   #e07070;
+  --sk-status-neutral:  #7a9870;
+}
+
+/* Page & body background */
+html.dark body {
+  background: #0e1509;
+}
+
+/* White surface overrides (cards, panels, inputs) */
+html.dark .bg-white,
+html.dark .bg-white\/90 {
+  background-color: #182214 !important;
+}
+
+/* Common hardcoded page backgrounds */
+html.dark .bg-\[\#faf7f2\],
+html.dark .bg-\[\#f7f2ea\],
+html.dark .bg-\[\#f0ebe0\],
+html.dark .bg-\[var\(--sk-brand-mist\)\] {
+  background-color: #0e1509 !important;
+}
+
+/* Border overrides */
+html.dark .border-\[\#e0d8cc\],
+html.dark .border-\[\#f0ebe0\],
+html.dark .border-\[\#e8e0d4\] {
+  border-color: #283c20 !important;
+}
+
+/* Text overrides */
+html.dark .text-\[\#2d4a26\],
+html.dark .text-\[\#1e1e18\] {
+  color: #ddeedd !important;
+}
+html.dark .text-\[\#9a8e7e\],
+html.dark .text-\[\#b0a898\],
+html.dark .text-\[\#b0a090\] {
+  color: #607858 !important;
+}
+
+/* Bottom nav (legacy override kept for safety) */
+html.dark nav.bg-white\/90 {
+  background-color: rgba(24, 34, 20, 0.92) !important;
+  border-color: rgba(40, 60, 32, 0.5) !important;
+}
+
+/* ── Base text color for dark mode ──────────────────────────────────────── */
+html.dark body {
+  color: var(--sk-text-primary);
+}
+
+/* ── Thumbnail / icon tint backgrounds ──────────────────────────────────── */
+html.dark .bg-\[\#eaf3de\],
+html.dark .bg-\[\#e8f0dc\] {
+  background-color: #152210 !important;
+}
+
+/* ── Press / hover states ───────────────────────────────────────────────── */
+html.dark .active\:bg-\[\#f7f2ea\]:active {
+  background-color: #1e2e18 !important;
+}
+html.dark .hover\:bg-soil-50\/60:hover {
+  background-color: rgba(106, 191, 88, 0.05) !important;
+}
+
+/* ── Dialog / sheet close button surface ───────────────────────────────── */
+html.dark .bg-\[\#f5f0e8\],
+html.dark .bg-\[\#f0ebe4\] {
+  background-color: #1a2616 !important;
+}
+html.dark .text-\[\#5a4a38\] {
+  color: var(--sk-text-secondary) !important;
+}
+
+/* ── Error / alert surfaces ─────────────────────────────────────────────── */
+html.dark .bg-\[\#fdf0f0\] {
+  background-color: #2a1010 !important;
+}
+
+/* ── Premium banner ─────────────────────────────────────────────────────── */
+html.dark .bg-\[\#fff8e6\] {
+  background-color: #1e1a0a !important;
+}
+html.dark .border-\[\#e8d080\] {
+  border-color: #3a3010 !important;
+}
+html.dark .text-\[\#9a7830\] {
+  color: #c8a840 !important;
+}
+html.dark .text-\[\#7a5800\] {
+  color: #e0c060 !important;
+}
+
+/* ── Hardcoded neutral text overrides ───────────────────────────────────── */
+html.dark .text-\[\#7f7466\] {
+  color: var(--sk-text-muted) !important;
+}
+html.dark .text-\[\#2d3028\] {
+  color: #ddeedd !important;
+}
+
+/* ── SkeletonGroup in history ───────────────────────────────────────────── */
+html.dark .bg-\[\#e0d8cc\] {
+  background-color: #283c20 !important;
+}
+html.dark .bg-\[\#e8e2d8\] {
+  background-color: #1e2e18 !important;
+}
+
+/* ── Active filter pill / CTA buttons with forest-green bg ─────────────── */
+html.dark .bg-\[\#2d4a26\] {
+  background-color: #3a6030 !important;
+}
+html.dark .border-\[\#2d4a26\] {
+  border-color: #3a6030 !important;
+}

@@ -437,7 +437,7 @@ export default function HistoryPage() {
                   <h2
                     id={`history-${group.label.replace(/\W+/g, '-').toLowerCase()}`}
                     className="text-[11px] font-bold uppercase"
-                    style={{ color: "#7f7466", letterSpacing: "0.12em", fontFamily: "Manrope, sans-serif" }}
+                    style={{ color: "var(--sk-text-muted)", letterSpacing: "0.12em", fontFamily: "Manrope, sans-serif" }}
                   >
                     {group.label}
                   </h2>

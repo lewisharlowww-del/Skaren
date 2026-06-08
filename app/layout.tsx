@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { PwaShell } from "@/components/PwaShell";
+import { ThemeScript } from "@/components/ThemeScript";
 import { LanguageProvider } from "@/lib/language-context";
+import { ThemeProvider } from "@/lib/theme-context";
 import { colors } from "@/styles/tokens";
 import "./globals.css";
 import "@/styles/globals.css";
@@ -46,12 +48,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="no">
-      <body className="min-h-screen antialiased bg-[#f7f2ea]">
-        <LanguageProvider>
-          <PwaShell />
-          {children}
-        </LanguageProvider>
+    <html lang="no" suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
+      <body className="min-h-screen antialiased bg-[#f7f2ea] dark:bg-[#0e1509]">
+        <ThemeProvider>
+          <LanguageProvider>
+            <PwaShell />
+            {children}
+          </LanguageProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
