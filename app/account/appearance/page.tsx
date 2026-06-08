@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, Monitor, Moon, Sun } from "lucide-react";
+import { ArrowLeft, Check, Moon, Sun } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 import { useTheme, type ThemePreference } from "@/lib/theme-context";
 
@@ -24,14 +24,7 @@ const OPTIONS: {
     label: "Dark",
     sub: "Always dark",
     icon: <Moon size={18} />,
-    preview: { bg: "#0e1509", card: "#182214", text: "#ddeedd", sub: "#607858", accent: "#6abf58" },
-  },
-  {
-    value: "system",
-    label: "System",
-    sub: "Follows device",
-    icon: <Monitor size={18} />,
-    preview: { bg: "#f7f2ea", card: "#ffffff", text: "#2d4a26", sub: "#9a8e7e", accent: "#2d4a26" },
+    preview: { bg: "#1a1714", card: "#242018", text: "#f0ece0", sub: "#6e6458", accent: "#6abf58" },
   },
 ];
 

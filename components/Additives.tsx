@@ -11,9 +11,9 @@ type AdditivesProps = {
 };
 
 const SAFETY_STYLES: Record<SafetyRating, { dot: string; tag: { bg: string; color: string } }> = {
-  safe:     { dot: "#2a5030", tag: { bg: "#ddeedd", color: "#2a5030" } },
-  moderate: { dot: "#706030", tag: { bg: "#f0e8d0", color: "#706030" } },
-  avoid:    { dot: "#703030", tag: { bg: "#e8d8d4", color: "#703030" } },
+  safe:     { dot: "var(--sk-grade-a-text)", tag: { bg: "var(--sk-grade-a-bg)", color: "var(--sk-grade-a-text)" } },
+  moderate: { dot: "var(--sk-grade-c-text)", tag: { bg: "var(--sk-grade-c-bg)", color: "var(--sk-grade-c-text)" } },
+  avoid:    { dot: "var(--sk-grade-e-text)", tag: { bg: "var(--sk-grade-e-bg)", color: "var(--sk-grade-e-text)" } },
 };
 
 function safetyLabel(safety: SafetyRating, lang: Language): string {
@@ -59,14 +59,14 @@ export function Additives({ additives, lang = 'no' }: AdditivesProps) {
 
   if (items.length === 0) {
     return (
-      <div style={{ background: "#ddeedd", borderRadius: 14, border: "0.5px solid #88bb88", padding: "10px 12px" }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "#2a5030" }}>{t('product_no_additives', lang)}</p>
+      <div style={{ background: "var(--sk-grade-a-bg)", borderRadius: 14, border: "0.5px solid var(--sk-grade-a-border)", padding: "10px 12px" }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--sk-grade-a-text)" }}>{t('product_no_additives', lang)}</p>
       </div>
     );
   }
 
   return (
-    <div style={{ background: "#ffffff", borderRadius: 14, border: "0.5px solid #e0d8cc", overflow: "hidden" }}>
+    <div style={{ background: "var(--sk-surface-white)", borderRadius: 14, border: "0.5px solid var(--sk-border-default)", overflow: "hidden" }}>
       {items.map((additive, index) => {
         const safety = (additive.risk ?? "moderate") as SafetyRating;
         const styles = SAFETY_STYLES[safety] ?? SAFETY_STYLES.moderate;
@@ -84,7 +84,7 @@ export function Additives({ additives, lang = 'no' }: AdditivesProps) {
                 alignItems: "center",
                 gap: 8,
                 padding: "8px 12px",
-                borderBottom: isLast && !isOpen ? "none" : "0.5px solid #f5f0e8",
+                borderBottom: isLast && !isOpen ? "none" : "0.5px solid var(--sk-border-muted)",
                 background: "transparent",
                 cursor: "pointer",
                 textAlign: "left",
@@ -95,11 +95,11 @@ export function Additives({ additives, lang = 'no' }: AdditivesProps) {
 
               {/* Name + description */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: "#1e1e18", lineHeight: 1.3 }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: "var(--sk-text-primary)", lineHeight: 1.3 }}>
                   {additive.code.toUpperCase()} {additive.name}
                 </p>
                 {!isOpen && additive.description ? (
-                  <p style={{ fontSize: 11, color: "#9a8e7e", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <p style={{ fontSize: 11, color: "var(--sk-text-muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {additive.description}
                   </p>
                 ) : null}
@@ -113,7 +113,7 @@ export function Additives({ additives, lang = 'no' }: AdditivesProps) {
 
             {/* Expanded description */}
             {isOpen ? (
-              <div style={{ padding: "6px 12px 10px 27px", borderBottom: isLast ? "none" : "0.5px solid #f5f0e8", background: styles.tag.bg }}>
+              <div style={{ padding: "6px 12px 10px 27px", borderBottom: isLast ? "none" : "0.5px solid var(--sk-border-muted)", background: styles.tag.bg }}>
                 <p style={{ fontSize: 12, color: styles.dot, lineHeight: 1.5 }}>{additive.description}</p>
               </div>
             ) : null}

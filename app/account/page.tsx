@@ -4,17 +4,24 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  BarChart3,
   Bell,
+  BellOff,
+  Check,
   ChevronRight,
   Crown,
   Download,
+  FileText,
   Flame,
   Globe,
   Leaf,
+  Lock,
   LogOut,
+  Mail,
   Moon,
   ScanBarcode,
   ShieldCheck,
+  Sun,
   Trash2,
   TriangleAlert,
   X,
@@ -23,8 +30,51 @@ import { BottomNav } from "@/components/BottomNav";
 import { SkarenLoader } from "@/components/SkarenLoader";
 import { t, type Language } from "@/lib/i18n";
 import { useLang } from "@/lib/language-context";
+import { useTheme } from "@/lib/theme-context";
 import { getUserPremiumStatus } from "@/lib/premium";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+
+// ── Push notification helpers ─────────────────────────────────────────────────
+
+const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
+
+async function getPushToken(): Promise<string | null> {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? null;
+}
+
+function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr.buffer;
+}
+
+async function getOrCreateSub(): Promise<PushSubscription | null> {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return null;
+  const reg = await navigator.serviceWorker.ready;
+  const existing = await reg.pushManager.getSubscription();
+  if (existing) return existing;
+  if (!VAPID_PUBLIC) return null;
+  return reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
+  });
+}
+
+async function callPushApi(body: Record<string, unknown>): Promise<boolean> {
+  const token = await getPushToken();
+  if (!token) return false;
+  const res = await fetch("/api/push/subscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+  return res.ok;
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -117,14 +167,14 @@ function ProfileCard({
       />
 
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c7d5c4]">
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#c7d5c4]">
           Skaren membership
         </p>
         {checkingPremium ? (
           <span className="h-6 w-20 animate-pulse rounded-full bg-white/10" />
         ) : (
           <span
-            className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold"
+            className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold"
             style={{
               color: isPremium ? "#f2dfaa" : "#dce8d9",
               borderColor: isPremium
@@ -166,14 +216,14 @@ function ProfileCard({
         <div className="border-r border-white/15 pr-3">
           <ScanBarcode className="mb-2 h-4 w-4 text-[#a9c1a5]" />
           <p className="text-[17px] font-bold leading-none text-white">{scanCount}</p>
-          <p className="mt-1 text-[9px] uppercase tracking-[0.1em] text-[#a9c1a5]">
+          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#a9c1a5]">
             {t("account_scans", lang)}
           </p>
         </div>
         <div className="border-r border-white/15 px-3">
           <Flame className="mb-2 h-4 w-4 text-[#d8c78f]" />
           <p className="text-[17px] font-bold leading-none text-white">{streakDays}</p>
-          <p className="mt-1 text-[9px] uppercase tracking-[0.1em] text-[#a9c1a5]">
+          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#a9c1a5]">
             Day streak
           </p>
         </div>
@@ -182,14 +232,14 @@ function ProfileCard({
           <p className="truncate text-[12px] font-bold leading-none text-white">
             {gamificationBadge.replace("Eco ", "")}
           </p>
-          <p className="mt-1 text-[9px] uppercase tracking-[0.1em] text-[#a9c1a5]">
+          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#a9c1a5]">
             Level
           </p>
         </div>
       </div>
 
       {joinedDate ? (
-        <p className="mt-4 text-[10px] text-[#91aa8e]">
+        <p className="mt-4 text-[11px] text-[#91aa8e]">
           {t("account_member_since", lang)} {joinedDate}
         </p>
       ) : null}
@@ -245,12 +295,14 @@ interface SettingsRowProps {
   danger?: boolean;
 }
 
-function SettingsRow({ icon, iconBg, label, subtitle, href, onClick, danger }: SettingsRowProps) {
+function SettingsRow({ icon, iconBg, iconBgDark, label, subtitle, href, onClick, danger }: SettingsRowProps) {
+  const { resolved } = useTheme();
+  const resolvedIconBg = resolved === "dark" && iconBgDark ? iconBgDark : iconBg;
   const inner = (
     <>
       <div
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
-        style={{ backgroundColor: iconBg }}
+        style={{ backgroundColor: resolvedIconBg }}
       >
         {icon}
       </div>
@@ -267,6 +319,14 @@ function SettingsRow({ icon, iconBg, label, subtitle, href, onClick, danger }: S
   const cls = "flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors";
 
   if (href) {
+    const isExternal = href.startsWith("mailto:") || href.startsWith("http");
+    if (isExternal) {
+      return (
+        <a href={href} className={cls}>
+          {inner}
+        </a>
+      );
+    }
     return (
       <Link href={href} className={cls}>
         {inner}
@@ -284,62 +344,74 @@ function DeleteDialog({
   open,
   onClose,
   onConfirm,
+  loading,
   email,
   lang,
 }: {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  loading: boolean;
   email: string;
   lang: Language;
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center px-4 pb-6 sm:pb-0">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      {/* Sheet */}
-      <div className="relative w-full max-w-sm rounded-3xl border border-[#e0d8cc] bg-white p-6 shadow-2xl">
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-[#f0ebe0] text-[#9a8e7e] active:bg-[#e0d8cc]"
-        >
-          <X className="h-4 w-4" />
-        </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 88px)" }}>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !loading && onClose()} />
+      <div className="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl" style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}>
 
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fcebeb] mb-4">
-          <TriangleAlert className="h-6 w-6 text-[#aa1818]" />
+        {/* Red header strip */}
+        <div className="px-6 pt-6 pb-5" style={{ background: "var(--sk-grade-e-bg)", borderBottom: "1px solid var(--sk-grade-e-border)" }}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: "var(--sk-grade-e-border)" }}>
+              <Trash2 className="h-5 w-5" style={{ color: "var(--sk-status-danger)" }} />
+            </div>
+            <button
+              onClick={onClose}
+              disabled={loading}
+              className="flex h-8 w-8 items-center justify-center rounded-full disabled:opacity-40"
+              style={{ background: "var(--sk-grade-e-border)", color: "var(--sk-text-muted)" }}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <h2 className="mt-3 text-[20px] font-black" style={{ fontFamily: "Satoshi, sans-serif", color: "var(--sk-status-danger)" }}>
+            Delete account?
+          </h2>
+          <p className="mt-1 text-[13px]" style={{ color: "var(--sk-text-secondary)" }}>
+            Signed in as <span className="font-semibold" style={{ color: "var(--sk-text-primary)" }}>{email}</span>
+          </p>
         </div>
 
-        <h2
-          className="text-[20px] font-black text-[#2d3028] mb-1"
-          style={{ fontFamily: "Satoshi, sans-serif" }}
-        >
-          {t('account_delete_title', lang)}
-        </h2>
-        <p className="text-[13px] text-[#9a8e7e] mb-1">
-          {t('account_delete_body', lang)} <span className="font-semibold text-[#2d3028]">{email}</span> {t('account_delete_body2', lang)}
-        </p>
+        {/* Body */}
+        <div className="px-6 py-5">
+          <p className="text-[13px] leading-relaxed" style={{ color: "var(--sk-text-secondary)" }}>
+            This will permanently delete your account and all associated data — scan history, stats, preferences, and notifications. <span className="font-semibold" style={{ color: "var(--sk-text-primary)" }}>This cannot be undone.</span>
+          </p>
 
-        <div className="mt-5 flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="w-full rounded-2xl bg-[#aa1818] px-5 py-3.5 text-[14px] font-black text-white active:opacity-80 transition-opacity"
-          >
-            {t('account_delete_confirm', lang)}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full rounded-2xl border border-[#e0d8cc] bg-white px-5 py-3.5 text-[14px] font-bold text-[#2d3028] active:bg-[#f7f2ea] transition-colors"
-          >
-            {t('cancel', lang)}
-          </button>
+          <div className="mt-5 flex flex-col gap-2.5">
+            <button
+              type="button"
+              disabled={loading}
+              onClick={onConfirm}
+              className="w-full rounded-2xl py-3.5 text-[14px] font-black text-white transition-opacity active:opacity-80 disabled:opacity-50"
+              style={{ background: "#aa1818" }}
+            >
+              {loading ? "Deleting…" : "Yes, delete my account"}
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={onClose}
+              className="w-full rounded-2xl py-3.5 text-[14px] font-semibold transition-colors disabled:opacity-40"
+              style={{ border: "1px solid var(--sk-border-default)", background: "transparent", color: "var(--sk-text-primary)" }}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
+
       </div>
     </div>
   );
@@ -350,7 +422,15 @@ function DeleteDialog({
 export default function AccountPage() {
   const router = useRouter();
   const { lang, setLang } = useLang();
+  const { preference: themePref, setPreference: setThemePref } = useTheme();
   const [langOpen, setLangOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
+  const [disclaimerOpen, setDisclaimerOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   const [user, setUser] = useState<AccountUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPremium, setIsPremium] = useState(false);
@@ -358,6 +438,17 @@ export default function AccountPage() {
   const [streakDays, setStreakDays] = useState(0);
   const [scanCount, setScanCount] = useState(0);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Notification state
+  type PermState = "default" | "granted" | "denied" | "unsupported";
+  const [permState, setPermState] = useState<PermState>("default");
+  const [pushSub, setPushSub] = useState<PushSubscription | null>(null);
+  const [streakNotif, setStreakNotif] = useState(true);
+  const [weeklyNotif, setWeeklyNotif] = useState(true);
+  const [notifSaving, setNotifSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -422,11 +513,112 @@ export default function AccountPage() {
     router.push("/");
   }
 
+  async function exportData() {
+    setExportLoading(true);
+    setExportError(null);
+    try {
+      const { data: sessionData } = await supabase!.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) { setExportError("Not logged in"); return; }
+
+      const res = await fetch("/api/account/export", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) { setExportError("Export failed. Try again."); return; }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `skaren-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExportLoading(false);
+    }
+  }
+
   async function deleteAccount() {
-    // TODO: call /api/account/delete to fully purge user data server-side
-    await supabase?.auth.signOut();
-    document.cookie = "sb-skaren-auth-token=; path=/; max-age=0; SameSite=Lax";
-    router.push("/");
+    setDeleteLoading(true);
+    try {
+      const { data: sessionData } = await supabase!.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (token) {
+        await fetch("/api/account/delete", {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+      await supabase?.auth.signOut();
+      document.cookie = "sb-skaren-auth-token=; path=/; max-age=0; SameSite=Lax";
+      router.push("/");
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
+
+  // Init push notification state when panel opens
+  useEffect(() => {
+    if (!notifOpen) return;
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      setPermState("unsupported"); return;
+    }
+    const perm = Notification.permission;
+    if (perm === "denied") { setPermState("denied"); return; }
+    navigator.serviceWorker.ready.then(async (reg) => {
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) {
+        setPushSub(existing);
+        setPermState("granted");
+        const token = await getPushToken();
+        if (token) {
+          const res = await fetch("/api/push/subscribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ action: "get", endpoint: existing.endpoint }),
+          }).catch(() => null);
+          if (res?.ok) {
+            const data = await res.json() as { streak_enabled?: boolean; weekly_enabled?: boolean };
+            if (data.streak_enabled !== undefined) setStreakNotif(data.streak_enabled);
+            if (data.weekly_enabled !== undefined) setWeeklyNotif(data.weekly_enabled);
+          }
+        }
+      }
+    });
+  }, [notifOpen]);
+
+  async function enableNotifications() {
+    setNotifSaving(true);
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { setPermState("denied"); return; }
+      const sub = await getOrCreateSub();
+      if (!sub) return;
+      const ok = await callPushApi({ action: "subscribe", ...sub.toJSON(), streak_enabled: streakNotif, weekly_enabled: weeklyNotif });
+      if (ok) { setPushSub(sub); setPermState("granted"); }
+    } finally { setNotifSaving(false); }
+  }
+
+  async function disableNotifications() {
+    if (!pushSub) return;
+    setNotifSaving(true);
+    try {
+      await callPushApi({ action: "unsubscribe", endpoint: pushSub.endpoint });
+      await pushSub.unsubscribe();
+      setPushSub(null);
+      setPermState("default");
+    } finally { setNotifSaving(false); }
+  }
+
+  async function toggleNotifPref(key: "streak" | "weekly", value: boolean) {
+    if (key === "streak") setStreakNotif(value); else setWeeklyNotif(value);
+    if (!pushSub) return;
+    await callPushApi({
+      action: "update",
+      endpoint: pushSub.endpoint,
+      streak_enabled: key === "streak" ? value : streakNotif,
+      weekly_enabled: key === "weekly" ? value : weeklyNotif,
+    });
   }
 
   if (loading) return <SkarenLoader message="Loading account" />
@@ -448,7 +640,7 @@ export default function AccountPage() {
       >
         {/* Page title */}
         <div className="px-4 pb-5 pt-1">
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#9a8e7e]">
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#9a8e7e]">
             Profile & preferences
           </p>
           <h1
@@ -481,13 +673,104 @@ export default function AccountPage() {
           {/* ── Preferences ── */}
           <SectionLabel label={t('account_preferences', lang)} />
           <div className="mb-4 overflow-hidden rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}>
-            <SettingsRow
-              icon={<Bell className="h-4 w-4 text-[#2d4a26]" />}
-              iconBg="#eaf3de"
-              label={t('account_notifications', lang)}
-              subtitle={t('account_notifications_sub', lang)}
-              href="/account/notifications"
-            />
+            {/* Notifications accordion */}
+            <div>
+              <button
+                type="button"
+                onClick={() => setNotifOpen((o) => !o)}
+                className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
+                  <Bell className="h-4 w-4 text-[#2d4a26] dark:text-[#6abf58]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{t('account_notifications', lang)}</p>
+                  <p className="mt-0.5 text-[11px] truncate" style={{ color: "var(--sk-text-muted)" }}>{t('account_notifications_sub', lang)}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: notifOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
+              </button>
+              {notifOpen && (
+                <div style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
+                  {permState === "unsupported" && (
+                    <div className="px-5 py-4 flex items-center gap-3">
+                      <BellOff className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-muted)" }} />
+                      <p className="text-[13px]" style={{ color: "var(--sk-text-muted)" }}>Not supported in this browser</p>
+                    </div>
+                  )}
+                  {permState === "denied" && (
+                    <div className="px-5 py-4">
+                      <p className="text-[13px] font-semibold" style={{ color: "var(--sk-status-danger)" }}>Notifications blocked</p>
+                      <p className="text-[11px] mt-1" style={{ color: "var(--sk-text-muted)" }}>Allow notifications in your browser settings to re-enable.</p>
+                    </div>
+                  )}
+                  {(permState === "default" || permState === "granted") && (
+                    <div>
+                      <div className="flex items-center gap-3.5 px-5 py-3">
+                        <div className="flex-1">
+                          <p className="text-[13px] font-semibold" style={{ color: "var(--sk-text-primary)" }}>Push notifications</p>
+                          <p className="text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{permState === "granted" && pushSub ? "Enabled" : "Off — tap to enable"}</p>
+                        </div>
+                        {permState === "granted" && pushSub ? (
+                          <button
+                            disabled={notifSaving}
+                            onClick={disableNotifications}
+                            className="text-[12px] font-semibold rounded-lg px-3 py-1.5 disabled:opacity-50"
+                            style={{ color: "var(--sk-status-danger)", border: "1px solid var(--sk-border-red)" }}
+                          >Turn off</button>
+                        ) : (
+                          <button
+                            disabled={notifSaving}
+                            onClick={enableNotifications}
+                            className="text-[12px] font-semibold text-white rounded-lg px-3 py-1.5 disabled:opacity-50"
+                            style={{ background: "var(--sk-brand-forest)" }}
+                          >{notifSaving ? "..." : "Enable"}</button>
+                        )}
+                      </div>
+                      {permState === "granted" && pushSub && (
+                        <>
+                          <div className="mx-5 h-px" style={{ background: "var(--sk-border-muted)" }} />
+                          {/* Streak toggle */}
+                          <div className="flex items-center gap-3.5 px-5 py-3">
+                            <Flame className="h-4 w-4 shrink-0 text-orange-500" />
+                            <div className="flex-1">
+                              <p className="text-[13px] font-semibold" style={{ color: "var(--sk-text-primary)" }}>Streak reminder</p>
+                              <p className="text-[11px]" style={{ color: "var(--sk-text-muted)" }}>Daily nudge at 8 pm if you haven&apos;t scanned</p>
+                            </div>
+                            <button
+                              role="switch"
+                              aria-checked={streakNotif}
+                              onClick={() => void toggleNotifPref("streak", !streakNotif)}
+                              className="relative w-10 h-5 rounded-full transition-colors flex-shrink-0"
+                              style={{ background: streakNotif ? "var(--sk-brand-forest)" : "var(--sk-border-default)" }}
+                            >
+                              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${streakNotif ? "translate-x-5" : "translate-x-0"}`} />
+                            </button>
+                          </div>
+                          <div className="mx-5 h-px" style={{ background: "var(--sk-border-muted)" }} />
+                          {/* Weekly toggle */}
+                          <div className="flex items-center gap-3.5 px-5 py-3">
+                            <BarChart3 className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-green)" }} />
+                            <div className="flex-1">
+                              <p className="text-[13px] font-semibold" style={{ color: "var(--sk-text-primary)" }}>Weekly summary</p>
+                              <p className="text-[11px]" style={{ color: "var(--sk-text-muted)" }}>Sunday overview of your week&apos;s scans</p>
+                            </div>
+                            <button
+                              role="switch"
+                              aria-checked={weeklyNotif}
+                              onClick={() => void toggleNotifPref("weekly", !weeklyNotif)}
+                              className="relative w-10 h-5 rounded-full transition-colors flex-shrink-0"
+                              style={{ background: weeklyNotif ? "var(--sk-brand-forest)" : "var(--sk-border-default)" }}
+                            >
+                              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${weeklyNotif ? "translate-x-5" : "translate-x-0"}`} />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             <Divider />
             {/* Language inline picker */}
             <div>
@@ -496,84 +779,272 @@ export default function AccountPage() {
                 onClick={() => setLangOpen((o) => !o)}
                 className="flex w-full items-center gap-3.5 px-5 py-4 text-left active:bg-[#faf7f2] transition-colors"
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "#e6f1fb" }}>
-                  <Globe className="h-4 w-4 text-blue-600" />
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-b-bg)" }}>
+                  <Globe className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold text-[#2d3028]">{t('account_language', lang)}</p>
-                  <p className="mt-0.5 text-[11px] text-[#9a8e7e]">{lang === 'no' ? t('language_norwegian', lang) : t('language_english', lang)}</p>
+                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{t('account_language', lang)}</p>
+                  <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{lang === 'no' ? t('language_norwegian', lang) : t('language_english', lang)}</p>
                 </div>
-                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "#b0a090", transform: langOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
+                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: langOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
               </button>
               {langOpen && (
-                <div style={{ borderTop: "0.5px solid #f0ebe0" }}>
+                <div className="px-5 pb-4 flex gap-3" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
                   {([
                     { value: 'no' as const, flag: '🇳🇴', label: t('language_norwegian', lang) },
                     { value: 'en' as const, flag: '🇬🇧', label: t('language_english', lang) },
-                  ]).map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => { setLang(option.value); setLangOpen(false); }}
-                      className="flex w-full items-center gap-3 px-5 py-3 active:bg-[#faf7f2] transition-colors"
-                    >
-                      <span className="text-[20px]">{option.flag}</span>
-                      <span className="flex-1 text-[14px] font-semibold text-[#2d3028]">{option.label}</span>
-                      {lang === option.value && (
-                        <span className="h-5 w-5 rounded-full flex items-center justify-center" style={{ background: "#2d4a26" }}>
-                          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                            <path d="M1 4L4 7L9 1" stroke="#dceedd" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </span>
-                      )}
-                    </button>
-                  ))}
+                  ]).map((option) => {
+                    const active = lang === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => { setLang(option.value); setLangOpen(false); }}
+                        className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold transition-all"
+                        style={{
+                          background: active ? "var(--sk-brand-forest)" : "var(--sk-grade-a-bg)",
+                          color: active ? "#ffffff" : "var(--sk-text-primary)",
+                          border: active ? "none" : "1px solid var(--sk-border-default)",
+                          marginTop: 12,
+                        }}
+                      >
+                        <span className="text-[15px] leading-none">{option.flag}</span>
+                        {option.label}
+                        {active && <Check size={13} />}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
             <Divider />
-            <SettingsRow
-              icon={<Moon className="h-4 w-4 text-orange-500" />}
-              iconBg="#faeeda"
-              label={t('account_appearance', lang)}
-              subtitle={t('account_appearance_sub', lang)}
-              href="/account/appearance"
-            />
+            {/* Appearance accordion */}
+            <div>
+              <button
+                type="button"
+                onClick={() => setAppearanceOpen((o) => !o)}
+                className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-d-bg)" }}>
+                  <Moon className="h-4 w-4 text-orange-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{t('account_appearance', lang)}</p>
+                  <p className="mt-0.5 text-[11px] truncate" style={{ color: "var(--sk-text-muted)" }}>{t('account_appearance_sub', lang)}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: appearanceOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
+              </button>
+              {appearanceOpen && (
+                <div className="px-5 pb-4 flex gap-3" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
+                  {([
+                    { value: "light" as const, label: "Light", icon: <Sun size={15} /> },
+                    { value: "dark" as const, label: "Dark", icon: <Moon size={15} /> },
+                  ]).map((opt) => {
+                    const active = themePref === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setThemePref(opt.value)}
+                        className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold transition-all"
+                        style={{
+                          background: active ? "var(--sk-brand-forest)" : "var(--sk-grade-a-bg)",
+                          color: active ? "#ffffff" : "var(--sk-text-primary)",
+                          border: active ? "none" : "1px solid var(--sk-border-default)",
+                          marginTop: 12,
+                        }}
+                      >
+                        {opt.icon}
+                        {opt.label}
+                        {active && <Check size={13} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* ── Data & Privacy ── */}
           <SectionLabel label={t('account_data_privacy', lang)} />
           <div className="mb-4 overflow-hidden rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}>
-            <SettingsRow
-              icon={<Download className="h-4 w-4 text-[#2d4a26]" />}
-              iconBg="#eaf3de"
-              label={t('account_export', lang)}
-              subtitle={t('account_export_sub', lang)}
-            />
+
+            {/* Export */}
+            <div>
+              <button type="button" onClick={() => setExportOpen((o) => !o)} className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
+                  <Download className="h-4 w-4 text-[#2d4a26] dark:text-[#6abf58]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{t('account_export', lang)}</p>
+                  <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{t('account_export_sub', lang)}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: exportOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
+              </button>
+              {exportOpen && (
+                <div className="px-5 pb-4 space-y-2" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
+                  <p className="text-[13px] pt-3 leading-relaxed" style={{ color: "var(--sk-text-secondary)" }}>
+                    Download a CSV file containing your full scan history — product names, barcodes, grades, and dates.
+                  </p>
+                  {exportError && (
+                    <p className="text-[12px] mt-2" style={{ color: "var(--sk-status-danger)" }}>{exportError}</p>
+                  )}
+                  <button
+                    disabled={exportLoading}
+                    className="mt-1 w-full rounded-xl py-2.5 text-[13px] font-semibold text-white transition-opacity active:opacity-75 disabled:opacity-50"
+                    style={{ background: "var(--sk-brand-forest)" }}
+                    onClick={() => void exportData()}
+                  >
+                    {exportLoading ? "Preparing…" : "Download CSV"}
+                  </button>
+                </div>
+              )}
+            </div>
+
             <Divider />
-            <SettingsRow
-              icon={<ShieldCheck className="h-4 w-4 text-[#9a8e7e]" />}
-              iconBg="#f0ebe0"
-              label={t('account_privacy_policy', lang)}
-              subtitle={t('account_privacy_policy_sub', lang)}
-              href="/privacy"
-            />
+
+            {/* Privacy & Legal */}
+            <div>
+              <button type="button" onClick={() => setPrivacyOpen((o) => !o)} className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
+                  <Lock className="h-4 w-4" style={{ color: "var(--sk-text-green)" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>Privacy Policy</p>
+                  <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>How we collect and use your data</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: privacyOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
+              </button>
+              {privacyOpen && (
+                <div className="px-5 pb-4 space-y-3 text-[13px] leading-relaxed" style={{ borderTop: "0.5px solid var(--sk-border-muted)", color: "var(--sk-text-secondary)" }}>
+                  <p className="pt-3">We collect only what is needed to run Skaren: your email address, scan history, and (optionally) a push notification token.</p>
+                  <p>Your data is stored on <span style={{ color: "var(--sk-text-primary)", fontWeight: 600 }}>Supabase (EU)</span> and is encrypted at rest and in transit. We do not sell or share your data with advertisers.</p>
+                  <p>Product lookups use the open <span style={{ color: "var(--sk-text-primary)", fontWeight: 600 }}>Open Food Facts</span> database — no personal data is sent in those requests.</p>
+                  <p>You can export or delete all your data at any time from this screen. Deletion removes your data within 30 days.</p>
+                  <p style={{ color: "var(--sk-text-muted)", fontSize: 11 }}>Last updated June 2025 · Skaren AS, Oslo, Norway</p>
+                </div>
+              )}
+            </div>
+
+            <Divider />
+
+            {/* Terms of Use */}
+            <div>
+              <button type="button" onClick={() => setTermsOpen((o) => !o)} className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
+                  <FileText className="h-4 w-4" style={{ color: "var(--sk-text-green)" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>Terms of Use</p>
+                  <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>Rules for using Skaren</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: termsOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
+              </button>
+              {termsOpen && (
+                <div className="px-5 pb-4 space-y-3 text-[13px] leading-relaxed" style={{ borderTop: "0.5px solid var(--sk-border-muted)", color: "var(--sk-text-secondary)" }}>
+                  <p className="pt-3">By using Skaren you agree to the following:</p>
+                  <ul className="space-y-1.5">
+                    {[
+                      "You are at least 16 years old (or 13 where permitted).",
+                      "You will not reverse-engineer, scrape, or abuse the app or its APIs.",
+                      "Skaren is provided \"as is\" without warranty of any kind.",
+                      "Skaren is not liable for damages arising from use of or reliance on the app.",
+                      "We may suspend accounts that violate these terms.",
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "var(--sk-text-green)" }} />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p>Governed by Norwegian law. Disputes resolved by the courts of Oslo, Norway.</p>
+                  <p style={{ color: "var(--sk-text-muted)", fontSize: 11 }}>Last updated June 2025</p>
+                </div>
+              )}
+            </div>
+
+            <Divider />
+
+            {/* Nutrition disclaimer */}
+            <div>
+              <button type="button" onClick={() => setDisclaimerOpen((o) => !o)} className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-d-bg)" }}>
+                  <TriangleAlert className="h-4 w-4 text-orange-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>Nutrition disclaimer</p>
+                  <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>Not medical advice — read before use</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: disclaimerOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
+              </button>
+              {disclaimerOpen && (
+                <div className="px-5 pb-4 space-y-3 text-[13px] leading-relaxed" style={{ borderTop: "0.5px solid var(--sk-border-muted)", color: "var(--sk-text-secondary)" }}>
+                  <p className="pt-3">Skaren is an informational tool only. Grades, additive ratings, NOVA scores, and daily intake estimates are:</p>
+                  <ul className="space-y-1.5">
+                    {[
+                      "Based on Open Food Facts — an open community database. Accuracy depends on user-submitted data.",
+                      "Not reviewed by dietitians, physicians, or any health authority.",
+                      "Not a substitute for professional medical or dietary advice.",
+                      "Not tailored to your individual health conditions, allergies, or medications.",
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "var(--sk-status-warning)" }} />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p>Always consult a qualified healthcare professional before making significant dietary changes.</p>
+                </div>
+              )}
+            </div>
+
+            <Divider />
+
+            {/* Contact & support */}
+            <div>
+              <button type="button" onClick={() => setContactOpen((o) => !o)} className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
+                  <Mail className="h-4 w-4" style={{ color: "var(--sk-text-green)" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>Contact & support</p>
+                  <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>hello@skaren.app</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: contactOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
+              </button>
+              {contactOpen && (
+                <div className="px-5 pb-4 space-y-2" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
+                  <p className="text-[13px] pt-3" style={{ color: "var(--sk-text-secondary)" }}>Questions, bug reports, or data requests — we reply within 48 hours.</p>
+                  <a
+                    href="mailto:hello@skaren.app"
+                    className="mt-1 flex items-center justify-center gap-2 w-full rounded-xl py-2.5 text-[13px] font-semibold text-white transition-opacity active:opacity-75"
+                    style={{ background: "var(--sk-brand-forest)" }}
+                  >
+                    <Mail className="h-4 w-4" />
+                    hello@skaren.app
+                  </a>
+                </div>
+              )}
+            </div>
+
           </div>
 
           {/* ── Account actions ── */}
           <SectionLabel label={t('account_title', lang)} />
           <div className="overflow-hidden rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}>
             <SettingsRow
-              icon={<LogOut className="h-4 w-4 text-[#9a8e7e]" />}
+              icon={<LogOut className="h-4 w-4 text-[#9a8e7e] dark:text-[#8a8070]" />}
               iconBg="#f0ebe0"
+              iconBgDark="var(--sk-dark-surface)"
               label={t('account_sign_out', lang)}
               subtitle={user?.email ?? ""}
               onClick={() => void signOut()}
             />
             <Divider />
             <SettingsRow
-              icon={<Trash2 className="h-4 w-4 text-[#aa1818]" />}
+              icon={<Trash2 className="h-4 w-4 text-[#aa1818] dark:text-[#e07070]" />}
               iconBg="#fcebeb"
+              iconBgDark="var(--sk-grade-e-bg)"
               label={t('account_delete', lang)}
               subtitle={t('account_delete_sub', lang)}
               danger
@@ -587,8 +1058,9 @@ export default function AccountPage() {
       {/* Delete confirmation dialog */}
       <DeleteDialog
         open={showDeleteDialog}
-        onClose={() => setShowDeleteDialog(false)}
+        onClose={() => { if (!deleteLoading) setShowDeleteDialog(false); }}
         onConfirm={() => void deleteAccount()}
+        loading={deleteLoading}
         email={user?.email ?? ""}
         lang={lang}
       />

@@ -45,15 +45,15 @@ function formatAmount(amount: number, unit: string) {
 }
 
 function barColour(percent: number): string {
-  if (percent < 20) return "#6aab6a";
-  if (percent <= 35) return "#c8a040";
-  return "#c05050";
+  if (percent < 20) return "var(--sk-grade-a-text)";
+  if (percent <= 35) return "var(--sk-grade-c-text)";
+  return "var(--sk-grade-e-text)";
 }
 
 function percentTextColour(percent: number): string {
-  if (percent < 20) return "#2a5030";
-  if (percent <= 35) return "#706030";
-  return "#703030";
+  if (percent < 20) return "var(--sk-grade-a-text)";
+  if (percent <= 35) return "var(--sk-grade-c-text)";
+  return "var(--sk-grade-e-text)";
 }
 
 export function DailyIntake({ nutrition, lang = 'no' }: DailyIntakeProps) {
@@ -77,21 +77,21 @@ export function DailyIntake({ nutrition, lang = 'no' }: DailyIntakeProps) {
 
   return (
     <div
-      className="overflow-hidden bg-white"
-      style={{ borderRadius: 14, border: "0.5px solid #e0d8cc" }}
+      className="overflow-hidden"
+      style={{ background: "var(--sk-surface-white)", borderRadius: 14, border: "0.5px solid var(--sk-border-default)" }}
     >
       {rows.map((row, index) => (
         <div
           key={row.key}
-          style={{ padding: "7px 12px", ...(index < rows.length - 1 ? { borderBottom: "0.5px solid #e0d8cc" } : {}) }}
+          style={{ padding: "7px 12px", ...(index < rows.length - 1 ? { borderBottom: "0.5px solid var(--sk-border-default)" } : {}) }}
         >
           <div className="type-body-sm flex items-center justify-between gap-3" style={{ marginBottom: 4 }}>
-            <p className="font-bold text-ink">{row.label}</p>
+            <p className="font-bold" style={{ color: "var(--sk-text-primary)" }}>{row.label}</p>
             <p className="text-right font-bold" style={{ color: percentTextColour(row.percent) }}>
               {formatAmount(row.data.amount, row.data.unit)} = {row.percent}{t('product_daily_reference', lang)}
             </p>
           </div>
-          <div style={{ height: 10, borderRadius: 999, overflow: "hidden", background: "#ede8e0" }}>
+          <div style={{ height: 10, borderRadius: 999, overflow: "hidden", background: "var(--sk-border-muted)" }}>
             <div
               style={{
                 height: "100%",

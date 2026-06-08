@@ -510,10 +510,10 @@ export default function StatsPage() {
                         >
                           {grade}
                         </span>
-                        <p className="mt-1.5 text-[10px] font-semibold text-[var(--sk-text-secondary)]">
+                        <p className="mt-1.5 text-[11px] font-semibold text-[var(--sk-text-secondary)]">
                           {percent}%
                         </p>
-                        <p className="text-[9px] text-[var(--sk-text-muted)]">{count}</p>
+                        <p className="text-[11px] font-medium text-[var(--sk-text-muted)]">{count}</p>
                       </div>
                     );
                   })}

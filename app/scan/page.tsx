@@ -13,7 +13,6 @@ import { useLang } from "@/lib/language-context";
 import { PhoneFrame } from "@/components/PhoneFrame";
 import { vibrate } from "@/lib/haptics";
 import { cacheProductLocally } from "@/lib/localProducts";
-import { toScanPayload } from "@/lib/openfoodfacts";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { getUserPremiumStatus } from "@/lib/premium";
 import type { ProductResult } from "@/lib/types";
@@ -34,15 +33,6 @@ function recordGuestScan() {
   window.localStorage.setItem(getGuestScanKey(), String(getGuestScanCount() + 1));
 }
 
-function toLegacyScanPayload(payload: ReturnType<typeof toScanPayload>) {
-  const {
-    skaren_grade,
-    health_grade,
-    environmental_grade,
-    ...legacyPayload
-  } = payload;
-  return legacyPayload;
-}
 
 function ScanLoadingOverlay({ barcode, scanSuccess, saved }: { barcode: string; scanSuccess: boolean; saved: boolean }) {
   const [messageIndex, setMessageIndex] = useState(0);
@@ -192,12 +182,21 @@ export default function ScanPage() {
     let keepLoadingForNavigation = false;
 
     try {
+      // Pass auth token so the server can save to history directly
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (isSupabaseConfigured && supabase) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData.session?.access_token) {
+          headers["Authorization"] = `Bearer ${sessionData.session.access_token}`;
+        }
+      }
+
       const response = await fetch("/api/scan", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ barcode: cleanBarcode })
       });
-      const data = (await response.json()) as { product?: ProductResult; error?: string };
+      const data = (await response.json()) as { product?: ProductResult; savedToHistory?: boolean; error?: string };
 
       if (!response.ok || !data.product) {
         sessionStorage.setItem(
@@ -215,32 +214,9 @@ export default function ScanPage() {
       sessionStorage.setItem(`skaren:${product.barcode}`, JSON.stringify(product));
       cacheProductLocally(product);
 
-      if (isSupabaseConfigured && supabase) {
-        const { data: userData } = await supabase.auth.getUser();
-
-        if (userData.user) {
-          const scanPayload = toScanPayload(product, userData.user.id);
-          const { error: saveError } = await supabase.from("scans").insert(scanPayload);
-          let saved = !saveError;
-
-          if (saveError) {
-            console.warn("[Scan] Extended scan save failed, retrying with legacy scan fields:", saveError);
-            const { error: legacySaveError } = await supabase.from("scans").insert(toLegacyScanPayload(scanPayload));
-            saved = !legacySaveError;
-
-            if (legacySaveError) {
-              console.error("[Scan] Save failed:", legacySaveError);
-            }
-          }
-
-          if (saved) {
-            setSavedToHistory(true);
-            vibrate([12, 24, 18]);
-          }
-        } else if (!isPremium) {
-          recordGuestScan();
-          setGuestScansUsed(getGuestScanCount());
-        }
+      if (data.savedToHistory) {
+        setSavedToHistory(true);
+        vibrate([12, 24, 18]);
       } else if (!isSignedIn && !isPremium) {
         recordGuestScan();
         setGuestScansUsed(getGuestScanCount());

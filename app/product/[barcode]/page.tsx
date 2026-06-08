@@ -399,10 +399,10 @@ function findNutritionForRow(product: ProductResult, matches: string[], excludes
 }
 
 function getNutritionValueTone(label: string, amount: number) {
-  const good     = "bg-[#ddeedd] text-[#2a5030]";
-  const moderate = "bg-[#f0e8d0] text-[#706030]";
-  const poor     = "bg-[#e8d8d4] text-[#703030]";
-  const neutral  = "bg-[#ece0d4] text-[#704830]";
+  const good     = "sk-grade-a";
+  const moderate = "sk-grade-c";
+  const poor     = "sk-grade-e";
+  const neutral  = "sk-grade-d";
 
   if (label === "Calories") {
     if (amount < 150) return good;

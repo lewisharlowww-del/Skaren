@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getEcoGrade, getNutritionGrade } from "@/lib/ecoscore";
+import { createClient } from "@supabase/supabase-js";
+import { getEcoGrade, getNutritionGrade, gradeLetterToScore, hasEcoData } from "@/lib/ecoscore";
 import { calculateHealthGrade, hasNokkelhullLabel, nutritionDataFromKassalapp } from "@/lib/healthscore";
 import { fetchKassalappProduct, getVerifiedDisplayImage } from "@/lib/kassalapp";
 import { generateAiSummary } from "@/lib/openai";
@@ -8,9 +9,54 @@ import {
   normalizeOpenFoodFactsProduct
 } from "@/lib/openfoodfacts";
 import { getCachedAiAnalysis, saveCachedAiAnalysis } from "@/lib/productCache";
+import type { ProductResult } from "@/lib/types";
+
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
+
+async function saveScanToHistory(product: ProductResult, userId: string): Promise<boolean> {
+  try {
+    const admin = getSupabaseAdmin();
+    if (!admin) return false;
+
+    const environmentalGrade = hasEcoData(product) ? product.ecoGradeLetter ?? getEcoGrade(product) : null;
+    const healthGrade = product.healthGrade ?? null;
+    const additives = product.additives ?? [];
+    const additivesToAvoid = additives.filter((a) => a.risk === "avoid").length;
+
+    const payload = {
+      user_id: userId,
+      barcode: product.barcode,
+      product_name: product.name,
+      brand: product.brand === "Brand not listed" ? null : (product.brand ?? null),
+      health_grade: healthGrade,
+      environmental_grade: environmentalGrade,
+      ecoscan_score: gradeLetterToScore(healthGrade ?? environmentalGrade ?? "C"),
+      additives_total: additives.length,
+      additives_to_avoid: additivesToAvoid,
+    };
+
+    const { error } = await admin.from("scans").insert(payload);
+    if (error) {
+      console.error("[Scan] DB save error:", error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("[Scan] DB save exception:", err);
+    return false;
+  }
+}
 
 export async function POST(request: Request) {
   try {
+    const authHeader = request.headers.get("authorization");
+    const token = authHeader?.replace("Bearer ", "") ?? null;
+
     const body = (await request.json()) as { barcode?: string };
     const barcode = body.barcode?.trim();
 
@@ -88,7 +134,27 @@ export async function POST(request: Request) {
       });
     }
 
+    // Save scan to history server-side — completely non-blocking, never fails the scan
+    let savedToHistory = false;
+    try {
+      if (token) {
+        const admin = getSupabaseAdmin();
+        if (admin) {
+          const { data: userData } = await admin.auth.getUser(token);
+          if (userData.user) {
+            savedToHistory = await saveScanToHistory(
+              { ...productWithGrades, ...imageData, aiSummary } as ProductResult,
+              userData.user.id
+            );
+          }
+        }
+      }
+    } catch (saveErr) {
+      console.error("[Scan] History save failed (non-fatal):", saveErr);
+    }
+
     return NextResponse.json({
+      savedToHistory,
       product: {
         ...productWithGrades,
         ...imageData,

@@ -110,7 +110,7 @@ function GradeBadge({
       aria-label={`${label}: ${grade}`}
       title={`${label}: ${grade}`}
     >
-      <span className="text-[7px] uppercase opacity-70">{shortLabel}</span>
+      <span className="text-[10px] font-bold uppercase opacity-80">{shortLabel}</span>
       <span className="mt-0.5 text-[12px]">{grade}</span>
     </span>
   )
@@ -179,7 +179,7 @@ function ScanRow({
             />
           ) : null}
         </div>
-        <span className="text-[10px] text-[#b0a090]">
+        <span className="text-[11px] text-[var(--sk-text-secondary)]">
           {count > 1 ? `${count} ${t('history_scans_count', lang)} · ` : ''}
           {time}
         </span>

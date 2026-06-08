@@ -279,16 +279,11 @@ export function ProductPageLayout({
 
         if (!prefersReducedMotion) {
           if (heroRef.current) {
-            heroRef.current.style.opacity = String(1 - heroProgress * 0.42);
-          }
-          if (heroMediaRef.current) {
-            heroMediaRef.current.style.transform = `translate(-50%, -55%) translateY(${scrollTop * 0.18}px) scale(${1 - heroProgress * 0.04})`;
+            heroRef.current.style.opacity = String(1 - heroProgress * 0.5);
+            heroRef.current.style.transform = `translateY(${-heroProgress * 8}px)`;
           }
           if (heroContentRef.current) {
-            heroContentRef.current.style.opacity = String(
-              1 - heroProgress * 0.92
-            );
-            heroContentRef.current.style.transform = `translateY(${-heroProgress * 12}px)`;
+            heroContentRef.current.style.opacity = String(1 - heroProgress * 0.7);
           }
         }
 
@@ -361,10 +356,9 @@ export function ProductPageLayout({
       {/* ── TOP BAR ─────────────────────────────────────────────────────── */}
       <div
         ref={topBarRef}
-        className="sticky top-0 z-40 flex items-center justify-between px-4 pb-2"
+        className="sticky top-0 z-40 flex items-center justify-between px-4 pb-2 bg-[rgba(250,247,242,0.94)] dark:bg-[rgba(26,23,20,0.94)]"
         style={{
           paddingTop: "calc(0.75rem + env(safe-area-inset-top))",
-          background: "rgba(250, 247, 242, 0.94)",
           borderBottom: "0.5px solid transparent",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
@@ -402,109 +396,106 @@ export function ProductPageLayout({
         <div className="h-10 w-10" aria-hidden="true" />
       </div>
 
-      {/* ── HERO — glass blur ────────────────────────────────────────────── */}
+      {/* ── HERO — G4: warm cream, blurred orbs, circular image, green left border ── */}
       <div
         ref={heroRef}
-        className="relative h-[130px] overflow-hidden"
+        className="relative mx-4 mt-2 overflow-hidden rounded-2xl"
         style={{
-          background: "linear-gradient(135deg, #f0ece0 0%, #fff 45%, #eaf3e8 100%)",
-          transformOrigin: "center top",
+          background: "var(--sk-brand-mist-card)",
+          borderLeft: "4px solid var(--sk-brand-leaf)",
+          border: "0.5px solid var(--sk-border-default)",
+          borderLeftWidth: 4,
+          borderLeftColor: "var(--sk-brand-leaf)",
           willChange: "opacity",
         }}
       >
-        {/* Ambient glow blobs */}
-        <div style={{ position: "absolute", top: -20, left: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(74,140,92,.25)", filter: "blur(36px)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: -20, right: -20, width: 110, height: 110, borderRadius: "50%", background: "rgba(244,162,97,.2)", filter: "blur(30px)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", top: 0, right: 20, width: 70, height: 70, borderRadius: "50%", background: "rgba(74,140,92,.14)", filter: "blur(22px)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: 0, left: 20, width: 60, height: 60, borderRadius: "50%", background: "rgba(200,220,160,.18)", filter: "blur(20px)", pointerEvents: "none" }} />
+        {/* Blurred orbs */}
+        <div style={{ position: "absolute", right: -10, top: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(120,200,80,.38)", filter: "blur(22px)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", left: 55, bottom: -20, width: 70, height: 70, borderRadius: "50%", background: "rgba(240,180,60,.32)", filter: "blur(16px)", pointerEvents: "none" }} />
 
-        {/* Frosted glass inner frame */}
-        <div style={{ position: "absolute", inset: 8, borderRadius: 20, border: "1px solid rgba(255,255,255,.75)", background: "rgba(255,255,255,.22)", pointerEvents: "none" }} />
-
-        {/* Ground shadow */}
-        <div style={{ position: "absolute", left: "20%", right: "20%", bottom: 48, height: 14, borderRadius: "50%", background: "rgba(0,0,0,.14)", filter: "blur(8px)", pointerEvents: "none" }} />
-
-        {/* Product image / emoji */}
-        {product.displayImage ? (
-          <img
-            ref={(node) => {
-              heroMediaRef.current = node;
-            }}
-            src={product.displayImage}
-            alt={product.name}
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -55%)",
-              maxHeight: "80%",
-              maxWidth: "40%",
-              objectFit: "contain",
-              filter: "drop-shadow(0 12px 20px rgba(16,21,18,.2))",
-              zIndex: 1,
-            }}
-          />
-        ) : (
-          <div
-            ref={(node) => {
-              heroMediaRef.current = node;
-            }}
-            style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -55%)", fontSize: 52, lineHeight: 1, zIndex: 1, willChange: "transform" }}
-          >
-            {product.placeholderEmoji}
-          </div>
-        )}
-
-        {/* Bottom gradient overlay */}
+        {/* Content row */}
         <div
-          style={{
-            position: "absolute",
-            insetInline: 0,
-            bottom: 0,
-            height: "60%",
-            background: "linear-gradient(to top, rgba(10,25,10,.92) 0%, rgba(10,25,10,.5) 40%, transparent 100%)",
-            zIndex: 2,
-            pointerEvents: "none",
-          }}
-        />
+          ref={heroContentRef}
+          style={{ display: "flex", alignItems: "center", gap: 14, padding: "18px 18px 18px 14px", position: "relative", zIndex: 1, willChange: "opacity, transform" }}
+        >
+          {/* Circular image */}
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: "50%",
+              background: "rgba(255,255,255,0.88)",
+              border: "2.5px solid var(--sk-border-green)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              overflow: "hidden",
+            }}>
+              {product.displayImage ? (
+                <img
+                  ref={(node) => { heroMediaRef.current = node; }}
+                  src={product.displayImage}
+                  alt={product.name}
+                  style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }}
+                />
+              ) : (
+                <div
+                  ref={(node) => { heroMediaRef.current = node; }}
+                  style={{ fontSize: 36, lineHeight: 1 }}
+                >
+                  {product.placeholderEmoji}
+                </div>
+              )}
+            </div>
+            {/* Green checkmark badge */}
+            <div style={{
+              position: "absolute", bottom: -2, right: -2,
+              width: 22, height: 22, borderRadius: "50%",
+              background: "var(--sk-brand-forest)",
+              border: "2px solid var(--sk-brand-mist-card)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              zIndex: 2,
+            }}>
+              <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                <path d="M1 4L4 7L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          </div>
 
-        {/* Product text overlay */}
-        <div ref={heroContentRef} style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "8px 16px 12px", zIndex: 3, willChange: "opacity, transform" }}>
-          <div style={{ marginBottom: 4 }}>
-            <span
+          {/* Text */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                background: "rgba(0,0,0,.35)",
-                border: "1px solid rgba(255,255,255,.25)",
-                borderRadius: 20,
-                padding: "2px 8px",
-                fontSize: 11,
-                color: "rgba(255,255,255,.95)",
+                fontSize: 15,
+                fontWeight: 800,
+                color: "var(--sk-text-primary)",
+                fontFamily: "Satoshi, sans-serif",
+                lineHeight: 1.25,
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
               }}
             >
-              {product.norwegianDataStatus === "kassalapp" ? t('product_store_data', lang) : t('product_limited_data', lang)}
+              {product.name}
+            </h2>
+            {product.brand && (
+              <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--sk-text-muted)", marginTop: 3 }}>
+                {product.brand}
+              </p>
+            )}
+            <span
+              style={{
+                display: "inline-flex", alignItems: "center",
+                marginTop: 8,
+                background: "var(--sk-grade-a-bg)",
+                border: "0.5px solid var(--sk-grade-a-border)",
+                borderRadius: 20,
+                padding: "3px 10px",
+                fontSize: 11,
+                color: "var(--sk-grade-a-text)",
+                fontWeight: 600,
+              }}
+            >
+              {product.norwegianDataStatus === "kassalapp" ? `✓ ${t('product_store_data', lang)}` : t('product_limited_data', lang)}
             </span>
           </div>
-          <h2
-            style={{
-              fontSize: 18,
-              fontWeight: 900,
-              color: "white",
-              fontFamily: "Satoshi, sans-serif",
-              textShadow: "0 1px 8px rgba(0,0,0,.4)",
-              lineHeight: 1.2,
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-            }}
-          >
-            {product.name}
-          </h2>
-          {product.brand ? (
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,.75)", marginTop: 2 }}>{product.brand}</p>
-          ) : null}
         </div>
       </div>
 
@@ -540,7 +531,7 @@ export function ProductPageLayout({
                   {healthGrade ?? "–"}
                 </span>
                 {healthGrade ? (
-                  <span style={{ fontSize: 8, fontWeight: 700, lineHeight: 1, color: getColor(healthGrade), textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, lineHeight: 1, color: getColor(healthGrade), textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     {gradeDescriptions[healthGrade]}
                   </span>
                 ) : null}
@@ -565,7 +556,7 @@ export function ProductPageLayout({
                   {ecoGrade ?? "–"}
                 </span>
                 {ecoGrade ? (
-                  <span style={{ fontSize: 8, fontWeight: 700, lineHeight: 1, color: getColor(ecoGrade), textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, lineHeight: 1, color: getColor(ecoGrade), textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     {gradeDescriptions[ecoGrade]}
                   </span>
                 ) : null}

@@ -52,7 +52,7 @@ export default function RootLayout({
       <head>
         <ThemeScript />
       </head>
-      <body className="min-h-screen antialiased bg-[#f7f2ea] dark:bg-[#0e1509]">
+      <body className="min-h-screen antialiased bg-[#f7f2ea] dark:bg-[#1a1714]">
         <ThemeProvider>
           <LanguageProvider>
             <PwaShell />
