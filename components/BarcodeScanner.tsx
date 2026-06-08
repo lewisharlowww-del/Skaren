@@ -78,12 +78,18 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
         { facingMode: "environment" },
         {
           fps: 10,
-          qrbox: (viewfinderWidth, viewfinderHeight) => {
-            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-            const size = Math.floor(minEdge * 0.72);
-            return { width: size, height: Math.floor(size * 0.58) };
-          },
-          aspectRatio: 1.7777778,
+          // When hideControls is true we render our own viewfinder overlay,
+          // so suppress the library's built-in shaded scan region.
+          ...(hideControls
+            ? {}
+            : {
+                qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+                  const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                  const size = Math.floor(minEdge * 0.72);
+                  return { width: size, height: Math.floor(size * 0.58) };
+                },
+                aspectRatio: 1.7777778,
+              }),
           disableFlip: false
         },
         async (decodedText) => {
@@ -145,6 +151,10 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
 
   return (
     <div className={hideControls ? "" : "space-y-3"}>
+      {/* Force the library's injected video to cover the container when in hideControls mode */}
+      {hideControls && (
+        <style>{`#${scannerElementId} video { object-fit: cover !important; width: 100% !important; height: 100% !important; position: absolute !important; inset: 0 !important; }`}</style>
+      )}
       <div className={`relative bg-black ${hideControls ? "h-full w-full" : "overflow-hidden rounded-[2rem] bg-lime-50"}`}>
         <div id={scannerElementId} className={`${hideControls ? "h-full w-full" : "min-h-56 w-full"} ${isScanning ? "bg-black" : ""}`} />
 

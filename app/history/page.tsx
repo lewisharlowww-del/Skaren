@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Crown } from 'lucide-react'
+import { Crown, Ellipsis, Trash2, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { BottomNav } from '@/components/BottomNav'
 import { SkarenLoader } from '@/components/SkarenLoader'
@@ -19,6 +19,11 @@ import type { GradeLetter, ScanRecord } from '@/lib/types'
 type Grade = GradeLetter
 
 type Filter = 'all' | 'today' | 'week' | 'ab'
+
+type CollapsedScan = {
+  scan: ScanRecord
+  count: number
+}
 
 const FILTER_KEYS: { key: Filter; translationKey: 'history_filter_all' | 'history_filter_today' | 'history_filter_week' | 'history_filter_ab' }[] = [
   { key: 'all',   translationKey: 'history_filter_all' },
@@ -88,21 +93,39 @@ function formatTime(dateStr?: string): string {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function GradeBadge({ grade, label }: { grade: Grade; label: string }) {
+function GradeBadge({
+  grade,
+  label,
+  shortLabel,
+}: {
+  grade: Grade
+  label: string
+  shortLabel: string
+}) {
   const s = GRADE_STYLES[grade]
   return (
     <span
-      className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-black"
+      className="inline-flex h-8 min-w-8 flex-col items-center justify-center rounded-lg px-1 font-black leading-none"
       style={{ background: s.bg, color: s.color }}
       aria-label={`${label}: ${grade}`}
       title={`${label}: ${grade}`}
     >
-      {grade}
+      <span className="text-[7px] uppercase opacity-70">{shortLabel}</span>
+      <span className="mt-0.5 text-[12px]">{grade}</span>
     </span>
   )
 }
 
-function ScanRow({ scan, isLast }: { scan: ScanRecord; isLast: boolean }) {
+function ScanRow({
+  item,
+  isLast,
+  lang,
+}: {
+  item: CollapsedScan
+  isLast: boolean
+  lang: 'no' | 'en'
+}) {
+  const { scan, count } = item
   const healthGrade = getHealthGrade(scan)
   const ecoGrade = getEcoGrade(scan)
   const time = formatTime(scan.created_at)
@@ -143,10 +166,23 @@ function ScanRow({ scan, isLast }: { scan: ScanRecord; isLast: boolean }) {
       {/* Grades + time */}
       <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
         <div className="flex gap-1.5">
-          <GradeBadge grade={healthGrade} label="Health grade" />
-          {ecoGrade ? <GradeBadge grade={ecoGrade} label="Eco grade" /> : null}
+          <GradeBadge
+            grade={healthGrade}
+            label={t('product_health', lang)}
+            shortLabel={t('history_health_short', lang)}
+          />
+          {ecoGrade ? (
+            <GradeBadge
+              grade={ecoGrade}
+              label={t('product_eco', lang)}
+              shortLabel={t('history_eco_short', lang)}
+            />
+          ) : null}
         </div>
-        <span className="text-[10px] text-[#b0a090]">{time}</span>
+        <span className="text-[10px] text-[#b0a090]">
+          {count > 1 ? `${count} ${t('history_scans_count', lang)} · ` : ''}
+          {time}
+        </span>
       </div>
     </Link>
   )
@@ -184,9 +220,14 @@ export default function HistoryPage() {
   const router = useRouter()
   const { lang } = useLang()
   const { user, loading: userLoading, isConfigured } = useUser()
-  const { scans, loading: scansLoading } = useScans(user)
+  const { scans, loading: scansLoading, clearHistory } = useScans(user)
   const [activeFilter, setActiveFilter] = useState<Filter>('all')
   const [isPremium, setIsPremium] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [confirmClear, setConfirmClear] = useState(false)
+  const [clearing, setClearing] = useState(false)
+  const [clearError, setClearError] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!userLoading && (!isConfigured || !user)) {
@@ -200,6 +241,24 @@ export default function HistoryPage() {
       .then((premium) => setIsPremium(premium))
       .catch(() => setIsPremium(false))
   }, [user])
+
+  useEffect(() => {
+    if (!menuOpen) return
+
+    const closeMenu = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false)
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
+
+    document.addEventListener('mousedown', closeMenu)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('mousedown', closeMenu)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [menuOpen])
 
   const loading = userLoading || scansLoading
 
@@ -243,34 +302,89 @@ export default function HistoryPage() {
   const groupedScans = useMemo(() => {
     const todayLabel = t('history_today', lang)
     const yesterdayLabel = t('history_yesterday', lang)
-    const map = new Map<string, ScanRecord[]>()
+    const map = new Map<string, CollapsedScan[]>()
     for (const scan of filteredScans) {
       const label = getDateLabel(scan.created_at ?? '', todayLabel, yesterdayLabel)
       if (!map.has(label)) map.set(label, [])
-      map.get(label)!.push(scan)
+      const group = map.get(label)!
+      const existing = group.find((item) => item.scan.barcode === scan.barcode)
+      if (existing) {
+        existing.count += 1
+      } else {
+        group.push({ scan, count: 1 })
+      }
     }
     return Array.from(map.entries()).map(([label, items]) => ({ label, scans: items }))
   }, [filteredScans, lang])
+
+  async function handleClearHistory() {
+    setClearing(true)
+    setClearError(false)
+    const cleared = await clearHistory()
+    setClearing(false)
+
+    if (cleared) {
+      setConfirmClear(false)
+      setMenuOpen(false)
+      return
+    }
+    setClearError(true)
+  }
 
   if (loading) return <SkarenLoader message="Loading history" />
 
   return (
     <div className="min-h-screen bg-[var(--sk-brand-mist)]">
       <BottomNav />
-      <main className="mx-auto min-h-screen w-full max-w-[430px] overflow-x-hidden bg-[var(--sk-brand-mist)] pb-32 pt-4 sm:max-w-lg sm:pt-8">
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 h-36 bg-gradient-to-t from-[var(--sk-brand-mist)] via-[var(--sk-brand-mist)]/85 to-transparent sm:hidden" />
+      <main className="mx-auto min-h-screen w-full max-w-[430px] overflow-x-hidden bg-[var(--sk-brand-mist)] pb-48 pt-4 sm:max-w-lg sm:pb-32 sm:pt-8">
         {/* Page title */}
-        <div className="px-5 pb-3">
-          <h1
-            className="text-[28px] font-black text-[#2d4a26] tracking-tight"
-            style={{ fontFamily: 'Satoshi, sans-serif' }}
-          >
-            {t('history_title', lang)}
-          </h1>
-          <p className="text-[12px] text-[#9a8e7e] mt-0.5" style={{ fontFamily: "Manrope, sans-serif" }}>
-            {monthlyCount > 0
-              ? `${monthlyCount} ${t('history_scans_this_month', lang)}`
-              : t('history_no_scans_this_month', lang)}
-          </p>
+        <div className="flex items-start justify-between gap-4 px-5 pb-3">
+          <div>
+            <h1
+              className="text-[28px] font-black text-[#2d4a26] tracking-tight"
+              style={{ fontFamily: 'Satoshi, sans-serif' }}
+            >
+              {t('history_title', lang)}
+            </h1>
+            <p className="text-[12px] text-[#9a8e7e] mt-0.5" style={{ fontFamily: "Manrope, sans-serif" }}>
+              {monthlyCount > 0
+                ? `${monthlyCount} ${t('history_scans_this_month', lang)}`
+                : t('history_no_scans_this_month', lang)}
+            </p>
+          </div>
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((open) => !open)}
+              className="focus-ring flex h-11 w-11 items-center justify-center rounded-full border border-[#e0d8cc] bg-white text-[#2d4a26]"
+              aria-label={t('history_options', lang)}
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+            >
+              <Ellipsis className="h-5 w-5" />
+            </button>
+            {menuOpen ? (
+              <div
+                role="menu"
+                className="absolute right-0 top-12 z-30 w-48 rounded-xl border border-[#e0d8cc] bg-white p-1.5 shadow-lg"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={scans.length === 0}
+                  onClick={() => {
+                    setMenuOpen(false)
+                    setConfirmClear(true)
+                  }}
+                  className="focus-ring flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[13px] font-semibold text-[#9a2a1a] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {t('history_clear', lang)}
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
 
         {/* Filter pills */}
@@ -318,24 +432,91 @@ export default function HistoryPage() {
             </div>
           ) : (
             groupedScans.map((group) => (
-              <div key={group.label}>
-                <p className="text-[10px] font-bold uppercase mb-2 px-1" style={{ color: "#9a8e7e", letterSpacing: "0.1em", fontFamily: "Manrope, sans-serif" }}>
-                  {group.label}
-                </p>
+              <section key={group.label} aria-labelledby={`history-${group.label.replace(/\W+/g, '-').toLowerCase()}`}>
+                <div className="sticky top-0 z-20 -mx-1 mb-2 bg-[var(--sk-brand-mist)]/95 px-2 py-2 backdrop-blur-md">
+                  <h2
+                    id={`history-${group.label.replace(/\W+/g, '-').toLowerCase()}`}
+                    className="text-[11px] font-bold uppercase"
+                    style={{ color: "#7f7466", letterSpacing: "0.12em", fontFamily: "Manrope, sans-serif" }}
+                  >
+                    {group.label}
+                  </h2>
+                </div>
                 <div className="bg-white rounded-2xl border border-[#e0d8cc] overflow-hidden">
-                  {group.scans.map((scan, i) => (
+                  {group.scans.map((item, i) => (
                     <ScanRow
-                      key={scan.id ?? `${scan.barcode}-${scan.created_at}`}
-                      scan={scan}
+                      key={item.scan.id ?? `${item.scan.barcode}-${item.scan.created_at}`}
+                      item={item}
                       isLast={i === group.scans.length - 1}
+                      lang={lang}
                     />
                   ))}
                 </div>
-              </div>
+              </section>
             ))
           )}
         </div>
       </main>
+
+      {confirmClear ? (
+        <div
+          className="fixed inset-0 z-[70] flex items-end justify-center bg-black/30 p-4 sm:items-center"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !clearing) setConfirmClear(false)
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="clear-history-title"
+            className="w-full max-w-sm rounded-2xl border border-[#e0d8cc] bg-white p-5 shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 id="clear-history-title" className="text-[20px] font-bold text-[#1e1e18]">
+                  {t('history_clear_title', lang)}
+                </h2>
+                <p className="mt-2 text-[13px] leading-relaxed text-[#7f7466]">
+                  {t('history_clear_body', lang)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfirmClear(false)}
+                disabled={clearing}
+                className="focus-ring flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f5f0e8] text-[#5a4a38]"
+                aria-label={t('cancel', lang)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {clearError ? (
+              <p className="mt-3 rounded-lg bg-[#fdf0f0] px-3 py-2 text-[12px] text-[#9a2a1a]">
+                {t('history_clear_failed', lang)}
+              </p>
+            ) : null}
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmClear(false)}
+                disabled={clearing}
+                className="focus-ring rounded-xl border border-[#e0d8cc] px-4 py-3 text-[13px] font-semibold text-[#5a4a38]"
+              >
+                {t('cancel', lang)}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleClearHistory()}
+                disabled={clearing}
+                className="focus-ring rounded-xl bg-[#9a2a1a] px-4 py-3 text-[13px] font-semibold text-white disabled:opacity-60"
+              >
+                {clearing ? t('loading', lang) : t('history_clear_confirm', lang)}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
