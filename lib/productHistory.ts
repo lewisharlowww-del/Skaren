@@ -19,8 +19,12 @@ export function consumeSearchProductHistoryMarker(barcode: string) {
 }
 
 function toLegacyScanPayload(payload: ReturnType<typeof toScanPayload>) {
-  const { skaren_grade, health_grade, environmental_grade, ...legacyPayload } =
-    payload;
+  const {
+    skaren_grade,
+    health_grade,
+    environmental_grade,
+    ...legacyPayload
+  } = payload;
   return legacyPayload;
 }
 

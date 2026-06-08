@@ -60,7 +60,7 @@ async function callOpenAi(prompt: string, maxTokens: number, instructions: strin
 export async function generateWeeklyStatsInsight(stats: {
   totalScans: number;
   avgHealthGrade: string;
-  trendVsLast: number;
+  scanTrendVsLast: number | null;
   gradeBreakdown: Record<string, number>;
   additivesTotal: number;
   additivesToAvoid: number;
@@ -70,18 +70,22 @@ export async function generateWeeklyStatsInsight(stats: {
     count: number;
     healthGrade: string;
   }>;
-}) {
+}, language: "no" | "en" = "en") {
   const systemPrompt = `You write one sentence weekly food insights for a Norwegian health app.
 - Maximum 20 words
 - Reference the user's actual scan data
 - Tone: warm, direct, never preachy
 - No emojis, no exclamation marks
-- End with one gentle actionable observation`;
+- End with one gentle actionable observation
+- Do not add a heading or label
+- Write in ${language === "no" ? "Norwegian Bokmål" : "English"}`;
 
   const prompt = `Weekly scan data:
 Total scans: ${stats.totalScans}
 Average health grade: ${stats.avgHealthGrade}
-Change versus last week: ${stats.trendVsLast}%
+Scan volume change versus last week: ${
+    stats.scanTrendVsLast === null ? "no previous data" : `${stats.scanTrendVsLast}%`
+  }
 Grade breakdown: ${Object.entries(stats.gradeBreakdown)
     .map(([grade, count]) => `${grade}: ${count}`)
     .join(", ")}
@@ -102,6 +106,7 @@ Most scanned products: ${
 
   return text
     .replace(/^["']|["']$/g, "")
+    .replace(/^(weekly (?:insight|summary)|ukeoppsummering|ukens innsikt)\s*:\s*/i, "")
     .split(/\s+/)
     .slice(0, 20)
     .join(" ");

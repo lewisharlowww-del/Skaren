@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 import { ProductSearchThumbnail } from "@/components/ProductSearchThumbnail";
+import { SkarenLoader } from "@/components/SkarenLoader";
 import { Spinner } from "@/components/Spinner";
 import { useShoppingList } from "@/hooks/useShoppingList";
 import { t, type Language } from "@/lib/i18n";
@@ -88,7 +89,10 @@ function ItemRow({
   onExpand: () => void;
   onDelete: () => void;
 }) {
-  const details = [item.quantity, item.healthGrade ? "Health grade" : null]
+  const details = [
+    item.quantity ? `Quantity · ${item.quantity}` : null,
+    item.healthGrade ? "Health grade" : null
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -178,7 +182,7 @@ function AddProductSheet({
 }: {
   open: boolean;
   onClose: () => void;
-  onSave: (item: NewShoppingListItem) => Promise<void>;
+  onSave: (item: NewShoppingListItem) => Promise<ShoppingListItem | null>;
   lang: Language;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -190,6 +194,8 @@ function AddProductSheet({
   const [visibleCount, setVisibleCount] = useState(8);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
+  const [selectedProduct, setSelectedProduct] =
+    useState<KassalappSearchProduct | null>(null);
   const [addingProductKey, setAddingProductKey] = useState<string | null>(null);
   const [addedMessage, setAddedMessage] = useState("");
 
@@ -214,6 +220,7 @@ function AddProductSheet({
       setVisibleCount(8);
       setSearching(false);
       setSearchError("");
+      setSelectedProduct(null);
       setAddingProductKey(null);
       setAddedMessage("");
       return;
@@ -226,6 +233,7 @@ function AddProductSheet({
       setVisibleCount(8);
       setSearching(false);
       setSearchError("");
+      setSelectedProduct(null);
       return;
     }
 
@@ -275,29 +283,34 @@ function AddProductSheet({
     };
   }, [name, open]);
 
-  async function addProduct(product: KassalappSearchProduct, index: number) {
+  async function addProduct(product: KassalappSearchProduct) {
     if (addInFlightRef.current) return;
     addInFlightRef.current = true;
 
-    const productKey = `${product.barcode ?? product.name}-${index}`;
+    const productKey = product.barcode ?? product.name;
     setAddingProductKey(productKey);
     setSearchError("");
 
     try {
-      await onSave({
+      const savedItem = await onSave({
         name: product.name,
         quantity,
         category:
           category === "Other" ? inferShoppingCategory(product) : category,
         addedFromScan: false
       });
-      setAddedMessage(`${product.name} added to your list.`);
+      setAddedMessage(
+        savedItem
+          ? `${product.name} added to your list.`
+          : `${product.name} is already on your list.`
+      );
       setName("");
       setQuantity("");
       setCategory("Other");
       setResults([]);
       setVisibleCount(8);
-      window.setTimeout(() => inputRef.current?.focus(), 50);
+      setSelectedProduct(null);
+      onClose();
     } catch {
       setSearchError("This product could not be added. Please try again.");
     } finally {
@@ -353,6 +366,7 @@ function AddProductSheet({
                 value={name}
                 onChange={(event) => {
                   setName(event.target.value);
+                  setSelectedProduct(null);
                   setAddedMessage("");
                 }}
                 placeholder="Search actual products"
@@ -398,17 +412,23 @@ function AddProductSheet({
               >
                 {results.slice(0, visibleCount).map((product, index) => {
                   const productKey = `${product.barcode ?? product.name}-${index}`;
-                  const isAdding = addingProductKey === productKey;
+                  const selectionKey = product.barcode ?? product.name;
+                  const isSelected =
+                    (selectedProduct?.barcode ?? selectedProduct?.name) ===
+                    selectionKey;
+                  const isAdding = addingProductKey === selectionKey;
 
                   return (
                   <button
                     key={productKey}
                     type="button"
                     role="option"
-                    aria-selected="false"
+                    aria-selected={isSelected}
                     disabled={Boolean(addingProductKey)}
-                    onClick={() => void addProduct(product, index)}
-                    className="focus-ring flex w-full items-center gap-3 border-b border-[var(--sk-border-default)] p-3 text-left last:border-b-0"
+                    onClick={() => setSelectedProduct(product)}
+                    className={`focus-ring flex w-full items-center gap-3 border-b border-[var(--sk-border-default)] p-3 text-left last:border-b-0 ${
+                      isSelected ? "bg-[var(--sk-grade-a-bg)]" : ""
+                    }`}
                   >
                     <ProductSearchThumbnail
                       product={product}
@@ -424,10 +444,15 @@ function AddProductSheet({
                     </span>
                     {isAdding ? (
                       <Spinner size={16} className="shrink-0" aria-label="Adding product" />
+                    ) : isSelected ? (
+                      <Check
+                        className="h-5 w-5 shrink-0 text-[var(--sk-brand-forest)]"
+                        aria-label="Selected product"
+                      />
                     ) : (
                       <Plus
                         className="h-4 w-4 shrink-0 text-[var(--sk-brand-forest)]"
-                        aria-label="Add product"
+                        aria-label="Select product"
                       />
                     )}
                   </button>
@@ -482,10 +507,13 @@ function AddProductSheet({
 
           <button
             type="button"
-            onClick={onClose}
-            className="focus-ring type-button w-full rounded-2xl bg-[var(--sk-brand-forest)] px-4 py-4 text-white"
+            disabled={!selectedProduct || Boolean(addingProductKey)}
+            onClick={() => {
+              if (selectedProduct) void addProduct(selectedProduct);
+            }}
+            className="focus-ring type-button w-full rounded-2xl bg-[var(--sk-brand-forest)] px-4 py-4 text-white disabled:cursor-not-allowed disabled:opacity-45"
           >
-            {t('confirm', lang)}
+            {addingProductKey ? "Saving..." : "Save product"}
           </button>
         </div>
       </section>
@@ -541,10 +569,13 @@ export default function ShoppingListPage() {
   const done = filteredItems.filter((item) => item.checked);
 
   async function saveItem(item: NewShoppingListItem) {
-    await addItem(item);
+    const savedItem = await addItem(item);
     setActiveCategory("All");
     setSearch("");
+    return savedItem;
   }
+
+  if (loading || checkingPremium) return <SkarenLoader message="Loading your list" />
 
   if (!checkingPremium && !isPremium) {
     return (
@@ -657,16 +688,7 @@ export default function ShoppingListPage() {
             })}
           </div>
 
-          {loading ? (
-            <div className="mt-6 space-y-2">
-              {[0, 1, 2].map((item) => (
-                <div
-                  key={item}
-                  className="h-[4.6rem] animate-pulse rounded-2xl border border-[var(--sk-border-default)] bg-white/70"
-                />
-              ))}
-            </div>
-          ) : items.length === 0 ? (
+          {items.length === 0 ? (
             <section className="mt-10 flex flex-col items-center text-center">
               <div className="grid h-16 w-16 place-items-center rounded-full bg-white text-[var(--sk-brand-forest)] shadow-sm">
                 <ShoppingBasket className="h-7 w-7" />

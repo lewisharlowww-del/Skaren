@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Crown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { BottomNav } from '@/components/BottomNav'
+import { SkarenLoader } from '@/components/SkarenLoader'
 import { useScans } from '@/hooks/useScans'
 import { useUser } from '@/hooks/useUser'
 import { t } from '@/lib/i18n'
@@ -249,10 +250,12 @@ export default function HistoryPage() {
     return Array.from(map.entries()).map(([label, items]) => ({ label, scans: items }))
   }, [filteredScans, lang])
 
+  if (loading) return <SkarenLoader message="Loading history" />
+
   return (
-    <>
+    <div className="min-h-screen bg-[var(--sk-brand-mist)]">
       <BottomNav />
-      <main className="mx-auto w-full max-w-[430px] overflow-x-hidden pb-32 pt-4 sm:max-w-lg sm:pt-8" style={{ background: "#faf7f2", minHeight: "100dvh" }}>
+      <main className="mx-auto min-h-screen w-full max-w-[430px] overflow-x-hidden bg-[var(--sk-brand-mist)] pb-32 pt-4 sm:max-w-lg sm:pt-8">
         {/* Page title */}
         <div className="px-5 pb-3">
           <h1
@@ -261,14 +264,11 @@ export default function HistoryPage() {
           >
             {t('history_title', lang)}
           </h1>
-          {!loading && (
-            <p className="text-[12px] text-[#9a8e7e] mt-0.5" style={{ fontFamily: "Manrope, sans-serif" }}>
-              {monthlyCount > 0
-                ? `${monthlyCount} ${t('history_scans_this_month', lang)}`
-                : t('history_no_scans_this_month', lang)}
-            </p>
-          )}
-          {loading && <div className="mt-1 h-3 w-32 rounded bg-[#e8e2d8] animate-pulse" />}
+          <p className="text-[12px] text-[#9a8e7e] mt-0.5" style={{ fontFamily: "Manrope, sans-serif" }}>
+            {monthlyCount > 0
+              ? `${monthlyCount} ${t('history_scans_this_month', lang)}`
+              : t('history_no_scans_this_month', lang)}
+          </p>
         </div>
 
         {/* Filter pills */}
@@ -304,12 +304,7 @@ export default function HistoryPage() {
 
         {/* Content */}
         <div className="px-4 flex flex-col gap-5">
-          {loading ? (
-            <>
-              <SkeletonGroup />
-              <SkeletonGroup />
-            </>
-          ) : groupedScans.length === 0 ? (
+          {groupedScans.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
               <span className="text-5xl">🌿</span>
               <p className="text-[15px] font-bold text-[#2d4a26]">{t('history_no_scans', lang)}</p>
@@ -339,6 +334,6 @@ export default function HistoryPage() {
           )}
         </div>
       </main>
-    </>
+    </div>
   )
 }

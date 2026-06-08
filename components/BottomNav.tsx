@@ -40,18 +40,13 @@ export function BottomNav() {
             className={`focus-ring type-caption flex min-h-[3.25rem] flex-col items-center justify-center gap-1 rounded-[1.2rem] px-2 py-2 transition active:scale-95 ${
               item.primary
                 ? "bg-ink text-white shadow-soft"
-                : active && itemPath === "/shopping-list"
-                  ? "text-[var(--sk-brand-forest)]"
-                  : active
-                    ? "bg-leaf-50 text-forest"
-                    : "text-soil-500 hover:bg-soil-50/60"
+                : active
+                  ? "bg-leaf-50 text-forest"
+                  : "text-soil-500 hover:bg-soil-50/60"
             }`}
           >
             <item.icon className={`h-[1.1rem] w-[1.1rem] ${item.primary ? "" : active ? "stroke-[2.4px]" : ""}`} />
             <span style={{ fontSize: 10 }}>{t(item.key, lang)}</span>
-            {active && itemPath === "/shopping-list" ? (
-              <span className="h-1 w-1 rounded-full bg-[var(--sk-brand-forest)]" aria-hidden="true" />
-            ) : null}
           </Link>
         );
       })}

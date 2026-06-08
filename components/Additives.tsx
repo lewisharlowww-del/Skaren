@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import type { AdditiveAnalysis } from "@/lib/additives";
-import type { SafetyRating } from "@/lib/enumbers";
+import { lookupENumber, type SafetyRating } from "@/lib/enumbers";
 import { t, type Language } from "@/lib/i18n";
 
 type AdditivesProps = {
-  additives: AdditiveAnalysis[];
+  additives: AdditiveAnalysis[] | string[];
   lang?: Language;
 };
 
@@ -22,10 +22,42 @@ function safetyLabel(safety: SafetyRating, lang: Language): string {
   return t('product_moderate', lang);
 }
 
+/** Normalise the union input to a consistent AdditiveAnalysis array */
+function normalise(input: AdditiveAnalysis[] | string[]): AdditiveAnalysis[] {
+  if (input.length === 0) return [];
+
+  // Detect string[] vs AdditiveAnalysis[]
+  if (typeof input[0] === "string") {
+    return (input as string[]).map((code) => {
+      const entry = lookupENumber(code);
+      if (entry) {
+        return {
+          code: entry.code,
+          name: entry.name,
+          risk: entry.safety as AdditiveAnalysis["risk"],
+          description: entry.description,
+          known: true,
+        };
+      }
+      // Unknown code — show gracefully
+      return {
+        code: code.toUpperCase(),
+        name: `${code.toUpperCase()} Unknown additive`,
+        risk: "moderate" as AdditiveAnalysis["risk"],
+        description: "Not in Skaren's additive database",
+        known: false,
+      };
+    });
+  }
+
+  return input as AdditiveAnalysis[];
+}
+
 export function Additives({ additives, lang = 'no' }: AdditivesProps) {
   const [openCode, setOpenCode] = useState<string | null>(null);
+  const items = normalise(additives);
 
-  if (additives.length === 0) {
+  if (items.length === 0) {
     return (
       <div style={{ background: "#ddeedd", borderRadius: 14, border: "0.5px solid #88bb88", padding: "10px 12px" }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: "#2a5030" }}>{t('product_no_additives', lang)}</p>
@@ -35,11 +67,11 @@ export function Additives({ additives, lang = 'no' }: AdditivesProps) {
 
   return (
     <div style={{ background: "#ffffff", borderRadius: 14, border: "0.5px solid #e0d8cc", overflow: "hidden" }}>
-      {additives.map((additive, index) => {
+      {items.map((additive, index) => {
         const safety = (additive.risk ?? "moderate") as SafetyRating;
         const styles = SAFETY_STYLES[safety] ?? SAFETY_STYLES.moderate;
         const isOpen = openCode === additive.code;
-        const isLast = index === additives.length - 1;
+        const isLast = index === items.length - 1;
 
         return (
           <div key={additive.code}>

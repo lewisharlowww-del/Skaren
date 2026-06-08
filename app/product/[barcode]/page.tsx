@@ -20,6 +20,7 @@ import {
 } from "@/lib/productHistory";
 import type { GradeLetter, ProductInsight, ProductResult } from "@/lib/types";
 import { ProductPageLayout } from "@/components/ProductPageLayout";
+import { SkarenLoader } from "@/components/SkarenLoader";
 
 type ProductPageProps = {
   params: {
@@ -31,22 +32,6 @@ type ProductError = {
   message: string;
   type: "not-found" | "retry";
 };
-
-const productLoadingMessages = ["Checking product data...", "Checking ingredients...", "Checking product grades...", "Analyzing nutrition..."];
-
-function ProductLoadingState({ barcode: _barcode }: { barcode: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-4" style={{ height: "100dvh", background: "#faf7f2" }}>
-      <svg className="animate-spin" width="36" height="36" viewBox="0 0 36 36" fill="none">
-        <circle cx="18" cy="18" r="14" stroke="#e0d8cc" strokeWidth="3" />
-        <path d="M18 4 A14 14 0 0 1 32 18" stroke="#2d4a26" strokeWidth="3" strokeLinecap="round" />
-      </svg>
-      <p style={{ color: "#9a8e7e", fontSize: 13, fontFamily: "Manrope, sans-serif" }}>
-        Loading product...
-      </p>
-    </div>
-  );
-}
 
 function withProductDefaults(product: ProductResult): ProductResult {
   const productWithDefaults = {
@@ -884,7 +869,7 @@ export default function ProductPage({ params }: ProductPageProps) {
     <>
       <main className="w-full">
         {loading ? (
-          <ProductLoadingState barcode={params.barcode} />
+          <SkarenLoader message="Loading product" />
         ) : error ? (
           <div className="mx-auto mt-8 max-w-xl rounded-[2rem] border border-black/5 bg-white p-6 text-center shadow-soft sm:mt-10 sm:p-8">
             <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-rose-50 text-rose-600">

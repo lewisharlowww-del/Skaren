@@ -35,7 +35,12 @@ function recordGuestScan() {
 }
 
 function toLegacyScanPayload(payload: ReturnType<typeof toScanPayload>) {
-  const { skaren_grade, health_grade, environmental_grade, ...legacyPayload } = payload;
+  const {
+    skaren_grade,
+    health_grade,
+    environmental_grade,
+    ...legacyPayload
+  } = payload;
   return legacyPayload;
 }
 
@@ -274,30 +279,30 @@ export default function ScanPage() {
         {/* Scanner panel */}
         <div
           className="relative flex flex-col items-center justify-center overflow-hidden px-5 pb-6 pt-4"
-          style={{ height: "46vh", background: "linear-gradient(135deg, #f0ece0 0%, #fff 45%, #eaf3e8 100%)" }}
+          style={{
+            height: "46vh",
+            background:
+              "radial-gradient(circle at 50% 34%, #52734b 0%, #3d6037 28%, #2d4a26 62%, #243d20 100%)",
+          }}
         >
-          {/* Ambient glow blobs */}
-          <div style={{ position: "absolute", top: -20, left: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(74,140,92,.2)", filter: "blur(30px)", pointerEvents: "none" }} />
-          <div style={{ position: "absolute", bottom: -20, right: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(244,162,97,.15)", filter: "blur(25px)", pointerEvents: "none" }} />
-
           {/* Viewfinder frame */}
           <div className="relative mb-3" style={{ width: "160px", height: "140px" }}>
             {/* Corner brackets */}
-            <div className="absolute top-0 left-0 w-8 h-8 rounded-tl-xl" style={{ borderTop: "3px solid rgba(45,74,38,.4)", borderLeft: "3px solid rgba(45,74,38,.4)" }} />
-            <div className="absolute top-0 right-0 w-8 h-8 rounded-tr-xl" style={{ borderTop: "3px solid rgba(45,74,38,.4)", borderRight: "3px solid rgba(45,74,38,.4)" }} />
-            <div className="absolute bottom-0 left-0 w-8 h-8 rounded-bl-xl" style={{ borderBottom: "3px solid rgba(45,74,38,.4)", borderLeft: "3px solid rgba(45,74,38,.4)" }} />
-            <div className="absolute bottom-0 right-0 w-8 h-8 rounded-br-xl" style={{ borderBottom: "3px solid rgba(45,74,38,.4)", borderRight: "3px solid rgba(45,74,38,.4)" }} />
+            <div className="absolute left-0 top-0 h-8 w-8 rounded-tl-xl" style={{ borderTop: "3px solid rgba(255,255,255,.92)", borderLeft: "3px solid rgba(255,255,255,.92)" }} />
+            <div className="absolute right-0 top-0 h-8 w-8 rounded-tr-xl" style={{ borderTop: "3px solid rgba(255,255,255,.92)", borderRight: "3px solid rgba(255,255,255,.92)" }} />
+            <div className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-xl" style={{ borderBottom: "3px solid rgba(255,255,255,.92)", borderLeft: "3px solid rgba(255,255,255,.92)" }} />
+            <div className="absolute bottom-0 right-0 h-8 w-8 rounded-br-xl" style={{ borderBottom: "3px solid rgba(255,255,255,.92)", borderRight: "3px solid rgba(255,255,255,.92)" }} />
             {/* Scanner line */}
-            <div className="absolute left-4 right-4 top-1/2" style={{ height: 2, background: "#4a8c5c", opacity: 0.6 }} />
+            <div className="absolute left-4 right-4 top-1/2" style={{ height: 2, background: "#88bb88" }} />
             {/* Hidden BarcodeScanner still listens for scans */}
             <div className="absolute inset-0 overflow-hidden rounded-2xl opacity-0 pointer-events-none">
               <BarcodeScanner autoStart disabled={loading} onDetected={(detectedBarcode) => void analyzeBarcode(detectedBarcode)} />
             </div>
           </div>
-          <p className="text-[20px] font-black" style={{ fontFamily: "Satoshi, sans-serif", color: "#2d4a26" }}>
+          <p className="text-[20px] font-black text-white" style={{ fontFamily: "Satoshi, sans-serif" }}>
             {t('scan_title', lang)}
           </p>
-          <p className="mt-0.5 text-[12px]" style={{ color: "#9a8e7e" }}>{t('scan_subtitle', lang)}</p>
+          <p className="mt-0.5 text-[12px]" style={{ color: "rgba(220,238,221,.72)" }}>{t('scan_subtitle', lang)}</p>
           {/* Tap to scan button */}
           <button
             type="button"
@@ -307,7 +312,11 @@ export default function ScanPage() {
               if (scanner) scanner.click();
             }}
             className="mt-4 flex items-center gap-2 rounded-full px-5 py-2.5 text-[12px] font-bold"
-            style={{ background: "#2d4a26", color: "#dceedd" }}
+            style={{
+              background: "rgba(255,255,255,.16)",
+              border: "1px solid rgba(255,255,255,.18)",
+              color: "#ffffff",
+            }}
           >
             <ScanBarcode className="h-4 w-4" />
             {t('scan_tap_camera', lang)}

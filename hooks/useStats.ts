@@ -3,15 +3,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@/hooks/useUser";
 import { gradeLetterToScore } from "@/lib/ecoscore";
+import type { Language } from "@/lib/i18n";
+import { readLocalProduct } from "@/lib/localProducts";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
-import type { GradeLetter, ScanRecord, StatsScanRecord } from "@/lib/types";
+import type { GradeLetter, StatsScanRecord } from "@/lib/types";
 
 export type StatsRange = "week" | "month" | "all";
 
 export type StatsData = {
   totalScans: number;
   avgHealthGrade: string;
-  trendVsLast: number;
+  scanTrendVsLast: number | null;
+  previousAvgHealthGrade: string | null;
+  healthGradeTrend: "up" | "down" | "same" | "none";
   gradeBreakdown: Record<GradeLetter, number>;
   additivesTotal: number;
   additivesToAvoid: number;
@@ -27,7 +31,9 @@ export type StatsData = {
 const emptyStats: StatsData = {
   totalScans: 0,
   avgHealthGrade: "–",
-  trendVsLast: 0,
+  scanTrendVsLast: null,
+  previousAvgHealthGrade: null,
+  healthGradeTrend: "none",
   gradeBreakdown: { A: 0, B: 0, C: 0, D: 0, E: 0 },
   additivesTotal: 0,
   additivesToAvoid: 0,
@@ -94,19 +100,69 @@ function isoWeekKey(date = new Date()) {
   return monday.toISOString().slice(0, 10);
 }
 
-function fallbackInsight(stats: Omit<StatsData, "weeklyInsight">) {
-  if (stats.totalScans === 0) {
-    return "Your next scan will start a clearer picture of your weekly choices.";
-  }
-
-  const strongestGrade = (Object.entries(stats.gradeBreakdown) as Array<
-    [GradeLetter, number]
-  >).sort((a, b) => b[1] - a[1])[0]?.[0];
-
-  return `${stats.totalScans} scans leaned most toward grade ${strongestGrade}; compare one similar product before your next shop.`;
+function cleanInsight(text: string) {
+  return text
+    .replace(/^(weekly (?:insight|summary)|ukeoppsummering|ukens innsikt)\s*:\s*/i, "")
+    .trim();
 }
 
-export function useStats(range: StatsRange) {
+function insightMatchesScanCount(text: string, totalScans: number) {
+  const numberWords: Record<string, number> = {
+    one: 1,
+    two: 2,
+    three: 3,
+    four: 4,
+    five: 5,
+    six: 6,
+    seven: 7,
+    eight: 8,
+    nine: 9,
+    ten: 10,
+    én: 1,
+    ett: 1,
+    to: 2,
+    tre: 3,
+    fire: 4,
+    fem: 5,
+    seks: 6,
+    sju: 7,
+    åtte: 8,
+    ni: 9,
+    ti: 10
+  };
+  const match = text.match(
+    /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten|én|ett|to|tre|fire|fem|seks|sju|åtte|ni|ti)\s+(?:scans?|skanning(?:er)?)\b/i
+  );
+
+  if (!match) return true;
+  const statedCount = /^\d+$/.test(match[1])
+    ? Number(match[1])
+    : numberWords[match[1].toLowerCase()];
+
+  return statedCount === totalScans;
+}
+
+function fallbackInsight(
+  stats: Omit<StatsData, "weeklyInsight">,
+  language: Language
+) {
+  if (stats.totalScans === 0) {
+    return language === "no"
+      ? "Neste skanning gir et tydeligere bilde av ukens valg."
+      : "Your next scan will start a clearer picture of your weekly choices.";
+  }
+
+  const strong = stats.gradeBreakdown.A + stats.gradeBreakdown.B;
+  const weaker = stats.gradeBreakdown.D + stats.gradeBreakdown.E;
+
+  if (language === "no") {
+    return `${stats.totalScans} skanninger ga snitt ${stats.avgHealthGrade}, med ${strong} sterke og ${weaker} svakere valg; sammenlign ett alternativ neste gang.`;
+  }
+
+  return `${stats.totalScans} scans averaged ${stats.avgHealthGrade}, with ${strong} strong and ${weaker} weaker choices; compare one alternative next time.`;
+}
+
+export function useStats(range: StatsRange, language: Language = "en") {
   const { user, loading: userLoading } = useUser();
   const [scans, setScans] = useState<StatsScanRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -188,45 +244,107 @@ export function useStats(range: StatsRange) {
     let additivesModerate = 0;
     const productCounts = new Map<
       string,
-      { name: string; count: number; healthGrade: GradeLetter }
+      {
+        name: string;
+        count: number;
+        healthGrade: GradeLetter;
+        lastScannedAt: number;
+      }
     >();
 
     current.forEach((scan) => {
       const grade = resolveGrade(scan);
       gradeBreakdown[grade] += 1;
       gradeScoreTotal += gradeLetterToScore(grade);
-      additivesTotal += scan.additives_total ?? 0;
-      additivesToAvoid += scan.additives_to_avoid ?? 0;
-      additivesModerate += scan.additives_moderate ?? 0;
+
+      // If additive counts weren't saved (pre-migration scans), fall back to
+      // the locally cached product data to derive them on the fly.
+      let scanAdditivesToAvoid = scan.additives_to_avoid ?? null;
+      let scanAdditivesModerate = scan.additives_moderate ?? null;
+      let scanAdditivesTotal = scan.additives_total ?? null;
+
+      if (scanAdditivesToAvoid === null || scanAdditivesModerate === null) {
+        const cached = readLocalProduct(scan.barcode);
+        if (cached?.additives?.length) {
+          scanAdditivesToAvoid = cached.additives.filter((a) => a.risk === "avoid").length;
+          scanAdditivesModerate = cached.additives.filter((a) => a.risk === "moderate").length;
+          scanAdditivesTotal = cached.additives.length;
+        } else {
+          scanAdditivesToAvoid = 0;
+          scanAdditivesModerate = 0;
+          scanAdditivesTotal = 0;
+        }
+      }
+
+      additivesTotal += scanAdditivesTotal ?? (scanAdditivesToAvoid + scanAdditivesModerate);
+      additivesToAvoid += scanAdditivesToAvoid;
+      additivesModerate += scanAdditivesModerate;
 
       const key = scan.barcode || scan.product_name.toLowerCase();
       const existing = productCounts.get(key);
       productCounts.set(key, {
         name: scan.product_name,
         count: (existing?.count ?? 0) + 1,
-        healthGrade: existing?.healthGrade ?? grade
+        healthGrade: existing?.healthGrade ?? grade,
+        lastScannedAt: Math.max(
+          existing?.lastScannedAt ?? 0,
+          new Date(scan.created_at ?? 0).getTime()
+        )
       });
     });
 
-    const trendVsLast =
+    const previousGradeScoreTotal = previous.reduce(
+      (total, scan) => total + gradeLetterToScore(resolveGrade(scan)),
+      0
+    );
+    const currentAverageScore = current.length
+      ? gradeScoreTotal / current.length
+      : null;
+    const previousAverageScore = previous.length
+      ? previousGradeScoreTotal / previous.length
+      : null;
+    const scanTrendVsLast =
       range === "all" || previous.length === 0
-        ? 0
+        ? null
         : Math.round(
             ((current.length - previous.length) / previous.length) * 100
           );
+    const healthGradeTrend: StatsData["healthGradeTrend"] =
+      currentAverageScore === null || previousAverageScore === null
+        ? "none"
+        : currentAverageScore > previousAverageScore
+          ? "up"
+          : currentAverageScore < previousAverageScore
+            ? "down"
+            : "same";
 
     return {
       totalScans: current.length,
-      avgHealthGrade: current.length
-        ? scoreToDisplayGrade(gradeScoreTotal / current.length)
+      avgHealthGrade: currentAverageScore !== null
+        ? scoreToDisplayGrade(currentAverageScore)
         : "–",
-      trendVsLast,
+      scanTrendVsLast,
+      previousAvgHealthGrade:
+        previousAverageScore !== null
+          ? scoreToDisplayGrade(previousAverageScore)
+          : null,
+      healthGradeTrend,
       gradeBreakdown,
       additivesTotal,
       additivesToAvoid,
       additivesModerate,
       mostScanned: Array.from(productCounts.values())
-        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+        .sort(
+          (a, b) =>
+            b.count - a.count ||
+            b.lastScannedAt - a.lastScannedAt ||
+            a.name.localeCompare(b.name)
+        )
+        .map(({ name, count, healthGrade }) => ({
+          name,
+          count,
+          healthGrade
+        }))
         .slice(0, 3)
     };
   }, [range, scans]);
@@ -235,16 +353,21 @@ export function useStats(range: StatsRange) {
     if (loading || userLoading || !user || range !== "week") return;
     let active = true;
     const week = isoWeekKey();
-    const cacheKey = `skaren:weekly-insight:${user.id}:${week}`;
+    const cacheKey = `skaren:weekly-insight:${user.id}:${week}:${language}`;
     const cached = window.localStorage.getItem(cacheKey);
 
     if (cached) {
-      setWeeklyInsight(cached);
+      const cleaned = cleanInsight(cached);
+      setWeeklyInsight(
+        insightMatchesScanCount(cleaned, statsWithoutInsight.totalScans)
+          ? cleaned
+          : fallbackInsight(statsWithoutInsight, language)
+      );
       return;
     }
 
     async function loadInsight() {
-      const fallback = fallbackInsight(statsWithoutInsight);
+      const fallback = fallbackInsight(statsWithoutInsight, language);
 
       try {
         const { data } = await supabase!.auth.getSession();
@@ -258,11 +381,18 @@ export function useStats(range: StatsRange) {
           },
           body: JSON.stringify({
             week,
+            language,
             stats: statsWithoutInsight
           })
         });
         const result = (await response.json()) as { text?: string };
-        const text = result.text?.trim() || fallback;
+        const generated = cleanInsight(result.text?.trim() || fallback);
+        const text = insightMatchesScanCount(
+          generated,
+          statsWithoutInsight.totalScans
+        )
+          ? generated
+          : fallback;
 
         if (active) {
           window.localStorage.setItem(cacheKey, text);
@@ -280,12 +410,12 @@ export function useStats(range: StatsRange) {
     return () => {
       active = false;
     };
-  }, [loading, range, statsWithoutInsight, user, userLoading]);
+  }, [language, loading, range, statsWithoutInsight, user, userLoading]);
 
   const insight =
     range === "week"
-      ? weeklyInsight || fallbackInsight(statsWithoutInsight)
-      : fallbackInsight(statsWithoutInsight);
+      ? weeklyInsight || fallbackInsight(statsWithoutInsight, language)
+      : fallbackInsight(statsWithoutInsight, language);
 
   return {
     ...statsWithoutInsight,

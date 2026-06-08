@@ -18,15 +18,14 @@ export type ScanRecord = {
   skaren_grade?: GradeLetter | null;
   health_grade?: GradeLetter | null;
   environmental_grade?: GradeLetter | null;
+  additives_total?: number | null;
+  additives_to_avoid?: number | null;
+  additives_moderate?: number | null;
   product_image: string | null;
   created_at?: string;
 };
 
-export type StatsScanRecord = ScanRecord & {
-  additives_total?: number | null;
-  additives_to_avoid?: number | null;
-  additives_moderate?: number | null;
-};
+export type StatsScanRecord = ScanRecord;
 
 export type ProductResult = {
   barcode: string;

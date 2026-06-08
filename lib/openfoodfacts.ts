@@ -403,6 +403,12 @@ export async function findOpenFoodFactsBarcode(productName: string, brand?: stri
 export function toScanPayload(product: ProductResult, userId: string) {
   const environmentalGrade = hasEcoData(product) ? product.ecoGradeLetter ?? getEcoGrade(product) : null;
   const healthGrade = product.healthGrade;
+  const additivesToAvoid = product.additives.filter(
+    (additive) => additive.risk === "avoid"
+  ).length;
+  const additivesModerate = product.additives.filter(
+    (additive) => additive.risk === "moderate"
+  ).length;
 
   return {
     user_id: userId,
@@ -414,6 +420,9 @@ export function toScanPayload(product: ProductResult, userId: string) {
     skaren_grade: null,
     health_grade: healthGrade,
     environmental_grade: environmentalGrade,
+    additives_total: product.additives.length,
+    additives_to_avoid: additivesToAvoid,
+    additives_moderate: additivesModerate,
     product_image: product.displayImage
   };
 }

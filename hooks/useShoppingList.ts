@@ -23,20 +23,47 @@ type ShoppingListRow = {
   created_at: string;
 };
 
+function normalizeItemName(name: string) {
+  return name
+    .normalize("NFKC")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLocaleLowerCase("nb-NO");
+}
+
+function dedupeItems(items: ShoppingListItem[]) {
+  const seen = new Set<string>();
+  const duplicateIds: string[] = [];
+  const uniqueItems = items.filter((item) => {
+    const key = normalizeItemName(item.name);
+    if (!key || seen.has(key)) {
+      duplicateIds.push(item.id);
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+
+  return { items: uniqueItems, duplicateIds };
+}
+
 function readLocalItems() {
   if (typeof window === "undefined") return [];
 
   try {
     const value = window.localStorage.getItem(storageKey);
-    return value ? (JSON.parse(value) as ShoppingListItem[]) : [];
+    const parsed = value ? (JSON.parse(value) as ShoppingListItem[]) : [];
+    return dedupeItems(parsed).items;
   } catch {
     return [];
   }
 }
 
 function writeLocalItems(items: ShoppingListItem[]) {
-  window.localStorage.setItem(storageKey, JSON.stringify(items));
-  window.dispatchEvent(new CustomEvent(updateEvent, { detail: items }));
+  const uniqueItems = dedupeItems(items).items;
+  window.localStorage.setItem(storageKey, JSON.stringify(uniqueItems));
+  window.dispatchEvent(new CustomEvent(updateEvent, { detail: uniqueItems }));
 }
 
 function createItemId() {
@@ -83,7 +110,8 @@ export function useShoppingList() {
   const { user, loading: userLoading } = useUser();
   const [items, setItems] = useState<ShoppingListItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const recentAddRef = useRef<{ key: string; time: number } | null>(null);
+  const itemsRef = useRef<ShoppingListItem[]>([]);
+  const pendingNamesRef = useRef(new Set<string>());
 
   const updateItems = useCallback(
     (
@@ -91,12 +119,13 @@ export function useShoppingList() {
         | ShoppingListItem[]
         | ((current: ShoppingListItem[]) => ShoppingListItem[])
     ) => {
-      setItems((current) => {
-        const next =
-          typeof updater === "function" ? updater(current) : updater;
-        writeLocalItems(next);
-        return next;
-      });
+      const nextItems =
+        typeof updater === "function" ? updater(itemsRef.current) : updater;
+      const next = dedupeItems(nextItems).items;
+
+      itemsRef.current = next;
+      setItems(next);
+      writeLocalItems(next);
     },
     []
   );
@@ -104,7 +133,9 @@ export function useShoppingList() {
   useEffect(() => {
     function syncLocalItems(event: Event) {
       const detail = (event as CustomEvent<ShoppingListItem[]>).detail;
-      setItems(detail ?? readLocalItems());
+      const next = dedupeItems(detail ?? readLocalItems()).items;
+      itemsRef.current = next;
+      setItems(next);
     }
 
     window.addEventListener(updateEvent, syncLocalItems);
@@ -120,6 +151,7 @@ export function useShoppingList() {
 
       if (!isSupabaseConfigured || !supabase || !user) {
         if (active) {
+          itemsRef.current = localItems;
           setItems(localItems);
           setLoading(false);
         }
@@ -136,14 +168,18 @@ export function useShoppingList() {
         if (!active) return;
 
         if (error) {
+          itemsRef.current = localItems;
           setItems(localItems);
         } else {
           const remoteItems = (data as ShoppingListRow[]).map(toItem);
-          setItems(remoteItems);
-          writeLocalItems(remoteItems);
+          const deduped = dedupeItems([...remoteItems, ...localItems]);
+          itemsRef.current = deduped.items;
+          setItems(deduped.items);
+          writeLocalItems(deduped.items);
         }
       } catch {
         if (!active) return;
+        itemsRef.current = localItems;
         setItems(localItems);
       }
 
@@ -158,21 +194,17 @@ export function useShoppingList() {
 
   const addItem = useCallback(
     async (input: NewShoppingListItem) => {
-      const addKey = [
-        input.name.trim().toLocaleLowerCase("nb-NO"),
-        input.quantity?.trim().toLocaleLowerCase("nb-NO") ?? "",
-        input.category ?? ""
-      ].join("|");
-      const now = Date.now();
-
-      if (
-        recentAddRef.current?.key === addKey &&
-        now - recentAddRef.current.time < 1500
-      ) {
+      const normalizedName = normalizeItemName(input.name);
+      if (!normalizedName || pendingNamesRef.current.has(normalizedName)) {
         return null;
       }
 
-      recentAddRef.current = { key: addKey, time: now };
+      const existingItem = itemsRef.current.find(
+        (item) => normalizeItemName(item.name) === normalizedName
+      );
+      if (existingItem) return null;
+
+      pendingNamesRef.current.add(normalizedName);
 
       const item: ShoppingListItem = {
         id: createItemId(),
@@ -185,14 +217,17 @@ export function useShoppingList() {
         createdAt: new Date().toISOString()
       };
 
-      updateItems((current) => [item, ...current]);
+      itemsRef.current = [item, ...itemsRef.current];
+      updateItems(itemsRef.current);
 
-      if (isSupabaseConfigured && supabase && user) {
-        try {
+      try {
+        if (isSupabaseConfigured && supabase && user) {
           await supabase.from("shopping_list").insert(toRow(item, user.id));
-        } catch {
-          // Local storage remains the active fallback.
         }
+      } catch {
+        // Local storage remains the active fallback.
+      } finally {
+        pendingNamesRef.current.delete(normalizedName);
       }
 
       return item;

@@ -37,10 +37,11 @@ export const ENUMBERS: Record<string, ENumber> = {
   E140: { code: 'E140', name: 'Chlorophylls', category: 'Colour', safety: 'safe', description: 'Natural green pigment from plants', vegan: true },
   E141: { code: 'E141', name: 'Copper complexes of chlorophylls', category: 'Colour', safety: 'safe', description: 'Natural green colourant derived from chlorophyll', vegan: true },
   E142: { code: 'E142', name: 'Green S', category: 'Colour', safety: 'moderate', description: 'Synthetic green dye', vegan: true },
-  E150a: { code: 'E150a', name: 'Plain caramel', category: 'Colour', safety: 'safe', description: 'Natural brown colourant from heated sugar', vegan: true },
+  E150: { code: 'E150', name: 'Caramel colour', category: 'Colour', safety: 'moderate', description: 'Brown colourant made from heated sugar, general caramel colour', vegan: true },
+  E150a: { code: 'E150a', name: 'Plain caramel', category: 'Colour', safety: 'safe', description: 'Natural brown colourant from heated sugar, no additives used', vegan: true },
   E150b: { code: 'E150b', name: 'Caustic sulphite caramel', category: 'Colour', safety: 'safe', description: 'Caramel colour made with sulphites', vegan: true },
-  E150c: { code: 'E150c', name: 'Ammonia caramel', category: 'Colour', safety: 'moderate', description: 'Caramel colour made with ammonia', vegan: true },
-  E150d: { code: 'E150d', name: 'Sulphite ammonia caramel', category: 'Colour', safety: 'moderate', description: 'Most common caramel colour, used in cola drinks', vegan: true },
+  E150c: { code: 'E150c', name: 'Ammonia caramel', category: 'Colour', safety: 'moderate', description: 'Caramel colour made with ammonia, used in cola drinks', vegan: true },
+  E150d: { code: 'E150d', name: 'Sulphite ammonia caramel', category: 'Colour', safety: 'moderate', description: 'Most common caramel colour in cola and dark soft drinks', vegan: true },
   E151: { code: 'E151', name: 'Brilliant Black BN', category: 'Colour', safety: 'moderate', description: 'Synthetic black dye', vegan: true },
   E153: { code: 'E153', name: 'Vegetable carbon', category: 'Colour', safety: 'safe', description: 'Natural black colourant from charred plant material', vegan: true },
   E155: { code: 'E155', name: 'Brown HT', category: 'Colour', safety: 'moderate', description: 'Synthetic brown dye', vegan: true },
@@ -379,10 +380,30 @@ export const ENUMBERS: Record<string, ENumber> = {
  */
 export function lookupENumber(code: string): ENumber | null {
   if (!code) return null
-  // Normalise: uppercase, ensure starts with E
-  const clean = code.trim().toUpperCase()
-  const withE = clean.startsWith('E') ? clean : `E${clean}`
-  return ENUMBERS[withE] ?? null
+  let clean = code.trim().toLowerCase()
+  // Remove language prefix like "en:", "fr:", "de:" etc
+  if (clean.includes(':')) {
+    clean = clean.split(':').pop() ?? clean
+  }
+  // Remove dashes between E and number e.g. "e-150" → "e150"
+  clean = clean.replace(/^e-/, 'e')
+  // Remove any other dashes
+  clean = clean.replace(/-/g, '')
+  // Ensure starts with e
+  if (!clean.startsWith('e')) {
+    clean = 'e' + clean
+  }
+  // Try uppercase first (E150)
+  const upperKey = clean.toUpperCase()
+  if (ENUMBERS[upperKey]) return ENUMBERS[upperKey]
+  // Try with lowercase suffix for sub-variants (E150a, E160b etc)
+  // Uppercase the E and number, keep suffix lowercase
+  const match = clean.match(/^(e\d+)([a-z]*)$/)
+  if (match) {
+    const mixedKey = match[1].toUpperCase() + match[2].toLowerCase()
+    if (ENUMBERS[mixedKey]) return ENUMBERS[mixedKey]
+  }
+  return null
 }
 
 /**

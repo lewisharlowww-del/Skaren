@@ -5,7 +5,7 @@ import { generateWeeklyStatsInsight } from "@/lib/openai";
 type InsightStats = {
   totalScans: number;
   avgHealthGrade: string;
-  trendVsLast: number;
+  scanTrendVsLast: number | null;
   gradeBreakdown: Record<string, number>;
   additivesTotal: number;
   additivesToAvoid: number;
@@ -17,24 +17,29 @@ type InsightStats = {
   }>;
 };
 
-function fallbackInsight(stats: InsightStats) {
-  const strongestGrade = Object.entries(stats.gradeBreakdown).sort(
-    (a, b) => b[1] - a[1]
-  )[0]?.[0];
-
+function fallbackInsight(stats: InsightStats, language: "no" | "en") {
   if (!stats.totalScans) {
-    return "Your next scan will start a clearer picture of your weekly choices.";
+    return language === "no"
+      ? "Neste skanning gir et tydeligere bilde av ukens valg."
+      : "Your next scan will start a clearer picture of your weekly choices.";
   }
 
-  return `${stats.totalScans} scans leaned most toward grade ${strongestGrade}; compare one similar product before your next shop.`;
+  const strong = (stats.gradeBreakdown.A ?? 0) + (stats.gradeBreakdown.B ?? 0);
+  const weaker = (stats.gradeBreakdown.D ?? 0) + (stats.gradeBreakdown.E ?? 0);
+
+  return language === "no"
+    ? `${stats.totalScans} skanninger ga snitt ${stats.avgHealthGrade}, med ${strong} sterke og ${weaker} svakere valg; sammenlign ett alternativ neste gang.`
+    : `${stats.totalScans} scans averaged ${stats.avgHealthGrade}, with ${strong} strong and ${weaker} weaker choices; compare one alternative next time.`;
 }
 
 export async function POST(request: Request) {
   const body = (await request.json()) as {
     week?: string;
+    language?: "no" | "en";
     stats?: InsightStats;
   };
   const week = body.week?.trim();
+  const language = body.language === "no" ? "no" : "en";
   const stats = body.stats;
 
   if (!week || !stats) {
@@ -44,7 +49,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const fallback = fallbackInsight(stats);
+  const fallback = fallbackInsight(stats, language);
+  const cacheWeek = `${week}:${language}`;
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -73,18 +79,19 @@ export async function POST(request: Request) {
     .from("insights")
     .select("text")
     .eq("user_id", user.id)
-    .eq("week", week)
+    .eq("week", cacheWeek)
     .maybeSingle();
 
   if (cached.data?.text) {
     return NextResponse.json({ text: cached.data.text, cached: true });
   }
 
-  const generated = (await generateWeeklyStatsInsight(stats)) || fallback;
+  const generated =
+    (await generateWeeklyStatsInsight(stats, language)) || fallback;
 
   await supabase.from("insights").insert({
     user_id: user.id,
-    week,
+    week: cacheWeek,
     text: generated
   });
 

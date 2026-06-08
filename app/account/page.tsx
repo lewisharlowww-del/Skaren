@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
+import { SkarenLoader } from "@/components/SkarenLoader";
 import { t, type Language } from "@/lib/i18n";
 import { useLang } from "@/lib/language-context";
 import { getUserPremiumStatus } from "@/lib/premium";
@@ -104,8 +105,9 @@ function ProfileCard({
     <section
       className="relative mb-5 overflow-hidden rounded-2xl border px-5 py-5 text-[#f5f0e8]"
       style={{
-        background: "#243f24",
-        borderColor: "#496649",
+        background:
+          "radial-gradient(circle at 50% 34%, #52734b 0%, #3d6037 28%, #2d4a26 62%, #243d20 100%)",
+        borderColor: "#52734b",
         boxShadow: "0 18px 42px rgba(45, 74, 38, 0.14)",
       }}
     >
@@ -427,6 +429,8 @@ export default function AccountPage() {
     router.push("/");
   }
 
+  if (loading) return <SkarenLoader message="Loading account" />
+
   const locale = lang === 'no' ? 'nb' : 'en';
   const joinedDate = user?.created_at
     ? new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" }).format(
@@ -438,10 +442,9 @@ export default function AccountPage() {
   const displayName = getDisplayName(user?.email);
 
   return (
-    <>
+    <div className="min-h-screen bg-[var(--sk-brand-mist)]">
       <main
-        className="mx-auto w-full max-w-[430px] overflow-x-hidden pb-32 pt-4 sm:max-w-lg sm:pt-8"
-        style={{ background: "#f5f0e8", minHeight: "100dvh" }}
+        className="mx-auto min-h-screen w-full max-w-[430px] overflow-x-hidden bg-[var(--sk-brand-mist)] pb-32 pt-4 sm:max-w-lg sm:pt-8"
       >
         {/* Page title */}
         <div className="px-4 pb-5 pt-1">
@@ -458,24 +461,20 @@ export default function AccountPage() {
 
         <div className="px-4">
           {/* ── Profile card ── */}
-          {loading ? (
-            <div className="mb-3 h-36 animate-pulse rounded-2xl bg-white border border-[#e0d8cc]" />
-          ) : (
-            <ProfileCard
-              initials={initials}
-              name={displayName}
-              email={user?.email ?? ""}
-              isPremium={isPremium}
-              checkingPremium={checkingPremium}
-              streakDays={streakDays}
-              scanCount={scanCount}
-              joinedDate={joinedDate}
-              lang={lang}
-            />
-          )}
+          <ProfileCard
+            initials={initials}
+            name={displayName}
+            email={user?.email ?? ""}
+            isPremium={isPremium}
+            checkingPremium={checkingPremium}
+            streakDays={streakDays}
+            scanCount={scanCount}
+            joinedDate={joinedDate}
+            lang={lang}
+          />
 
           {/* ── Pro upgrade / membership card ── */}
-          {!loading && !checkingPremium && (
+          {!checkingPremium && (
             <ProCard isPremium={isPremium} lang={lang} />
           )}
 
@@ -594,6 +593,6 @@ export default function AccountPage() {
         lang={lang}
       />
       <BottomNav />
-    </>
+    </div>
   );
 }

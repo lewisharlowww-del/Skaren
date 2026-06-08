@@ -15,6 +15,16 @@ import { t } from "@/lib/i18n";
 import { useLang } from "@/lib/language-context";
 import type { ProductInsight, ProductResult, GradeLetter } from "@/lib/types";
 
+// ── Additive extraction from ingredients text ─────────────────────────────────
+function extractAdditivesFromIngredients(ingredients: string): string[] {
+  if (!ingredients) return [];
+  // Match patterns like e300, e-300, E300, (e300), e300,
+  const matches = ingredients.match(/\b[eE]-?\d{3,4}[a-zA-Z]?\b/g);
+  if (!matches) return [];
+  // Deduplicate and normalise to lowercase-e form for lookupENumber
+  return Array.from(new Set(matches.map((m) => m.replace(/[^eE\d]/g, "").toLowerCase())));
+}
+
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const PAGE_BG   = "#faf7f2";
 const CARD_BG   = "#ffffff";
@@ -88,6 +98,33 @@ function getEcoGradeBasis(hasEco: boolean) {
     : "No official Eco-Score available yet.";
 }
 
+function getGradeSummary(
+  grade: GradeLetter | null,
+  kind: "health" | "eco",
+  lang: "en" | "no"
+) {
+  if (!grade) {
+    return lang === "no" ? "Ingen score ennå" : "No score yet";
+  }
+
+  const health = {
+    A: ["Strong nutrition", "Sterk ernæring"],
+    B: ["Good nutrition", "God ernæring"],
+    C: ["Average nutrition", "Middels ernæring"],
+    D: ["Weaker nutrition", "Svakere ernæring"],
+    E: ["Poor nutrition", "Svak ernæring"],
+  } as const;
+  const eco = {
+    A: ["Strong environmental score", "Sterk miljøscore"],
+    B: ["Good environmental score", "God miljøscore"],
+    C: ["Average environmental score", "Middels miljøscore"],
+    D: ["Weaker environmental score", "Svakere miljøscore"],
+    E: ["Poor environmental score", "Svak miljøscore"],
+  } as const;
+
+  return (kind === "health" ? health : eco)[grade][lang === "no" ? 1 : 0];
+}
+
 function getTypedInsightTone(type: ProductInsight["type"]) {
   if (type === "positive") {
     return { icon: CheckCircle2, bg: "#ddeedd", border: "#88bb88", text: "#2a5030" };
@@ -135,15 +172,7 @@ function getAllergenEmoji(name: string): string {
 // ── Sub-components ─────────────────────────────────────────────────────────────
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{
-      fontSize: 9,
-      fontWeight: 700,
-      color: MUTED,
-      textTransform: "uppercase",
-      letterSpacing: "0.07em",
-      padding: "10px 2px 5px",
-      fontFamily: "Manrope, sans-serif",
-    }}>
+    <p className="type-section-label px-0.5 pb-1 pt-2.5" style={{ color: MUTED }}>
       {children}
     </p>
   );
@@ -199,8 +228,13 @@ export function ProductPageLayout({
 
   const [gradeHelpOpen, setGradeHelpOpen] = useState(false);
   const [addedToList, setAddedToList] = useState(false);
-  const [scrollY, setScrollY] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const topBarRef = useRef<HTMLDivElement>(null);
+  const compactHeaderRef = useRef<HTMLDivElement>(null);
+  const scanResultRef = useRef<HTMLSpanElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const heroMediaRef = useRef<HTMLElement | null>(null);
+  const heroContentRef = useRef<HTMLDivElement>(null);
   const gradeHelpRef = useRef<HTMLDivElement>(null);
   const gradeHelpButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -209,6 +243,13 @@ export function ProductPageLayout({
   const healthGrade = hasNutritionSignal(product) ? product.healthGrade : null;
   const nutritionRows = getNutritionRows(product);
   const ingredients = visibleIngredients(product);
+
+  // Build additive list: use product.additives if present, otherwise parse from ingredients text
+  const rawAdditives = product.additives ?? [];
+  const allAdditives: typeof rawAdditives | string[] =
+    rawAdditives.length > 0
+      ? rawAdditives
+      : extractAdditivesFromIngredients(ingredients ?? "");
   const quickFacts = nutritionRows.slice(0, 4);
   const insights = getKeyInsights(product)
     .map((insight) => ({ ...insight, text: polishInsightText(insight.text) }))
@@ -217,17 +258,71 @@ export function ProductPageLayout({
       return !text.includes("limited eco data") && !text.includes("eco score is missing") && !text.includes("weak eco score");
     })
     .slice(0, 3);
-  const heroOpacity = Math.max(0, 1 - scrollY / 120);
-  const heroHeight = Math.max(0, 130 - scrollY * 0.8);
-  const gradesOpacity = Math.max(0, 1 - (scrollY - 80) / 80);
-
   useEffect(() => {
     const element = scrollRef.current;
     if (!element) return;
 
-    const handleScroll = () => setScrollY(element.scrollTop);
+    let frame = 0;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+    const handleScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        const scrollTop = element.scrollTop;
+        const heroProgress = Math.min(scrollTop / 180, 1);
+        const headerProgress = Math.min(
+          Math.max((scrollTop - 55) / 85, 0),
+          1
+        );
+
+        if (!prefersReducedMotion) {
+          if (heroRef.current) {
+            heroRef.current.style.opacity = String(1 - heroProgress * 0.42);
+          }
+          if (heroMediaRef.current) {
+            heroMediaRef.current.style.transform = `translate(-50%, -55%) translateY(${scrollTop * 0.18}px) scale(${1 - heroProgress * 0.04})`;
+          }
+          if (heroContentRef.current) {
+            heroContentRef.current.style.opacity = String(
+              1 - heroProgress * 0.92
+            );
+            heroContentRef.current.style.transform = `translateY(${-heroProgress * 12}px)`;
+          }
+        }
+
+        if (compactHeaderRef.current) {
+          compactHeaderRef.current.style.opacity = String(
+            headerProgress * headerProgress
+          );
+          compactHeaderRef.current.style.transform = `translateX(-50%) translateY(${(1 - headerProgress) * 4}px)`;
+          compactHeaderRef.current.style.pointerEvents =
+            headerProgress > 0.8 ? "auto" : "none";
+        }
+        if (scanResultRef.current) {
+          scanResultRef.current.style.opacity = String(
+            (1 - headerProgress) * (1 - headerProgress)
+          );
+        }
+        if (topBarRef.current) {
+          topBarRef.current.style.boxShadow =
+            headerProgress > 0.05
+              ? `0 8px 24px rgba(45, 40, 31, ${0.08 * headerProgress})`
+              : "none";
+          topBarRef.current.style.borderBottomColor = `rgba(224, 216, 204, ${0.75 * headerProgress})`;
+        }
+
+        frame = 0;
+      });
+    };
+
     element.addEventListener("scroll", handleScroll, { passive: true });
-    return () => element.removeEventListener("scroll", handleScroll);
+    handleScroll();
+    return () => {
+      element.removeEventListener("scroll", handleScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
   }, []);
 
   useEffect(() => {
@@ -257,11 +352,23 @@ export function ProductPageLayout({
       className="flex flex-col"
       style={{ height: "100dvh", background: PAGE_BG, overflowX: "hidden" }}
     >
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
 
       {/* ── TOP BAR ─────────────────────────────────────────────────────── */}
       <div
-        className="flex flex-shrink-0 items-center justify-between px-4 pb-2"
-        style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))" }}
+        ref={topBarRef}
+        className="sticky top-0 z-40 flex items-center justify-between px-4 pb-2"
+        style={{
+          paddingTop: "calc(0.75rem + env(safe-area-inset-top))",
+          background: "rgba(250, 247, 242, 0.94)",
+          borderBottom: "0.5px solid transparent",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+        }}
       >
         <Link
           href="/scan"
@@ -271,7 +378,7 @@ export function ProductPageLayout({
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <div style={{ opacity: scrollY > 100 ? Math.min(1, (scrollY - 100) / 60) : 0, transition: "opacity 0.2s linear", display: "flex", alignItems: "center", gap: 6, position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: scrollY > 100 ? "auto" : "none" }}>
+        <div ref={compactHeaderRef} style={{ opacity: 0, display: "flex", alignItems: "center", gap: 6, position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", willChange: "opacity" }}>
           <span
             className="truncate max-w-[160px]"
             style={{ color: "#2d3028", fontSize: 13, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}
@@ -289,7 +396,7 @@ export function ProductPageLayout({
             </span>
           ) : null}
         </div>
-        <span style={{ opacity: scrollY > 100 ? Math.max(0, 1 - (scrollY - 100) / 60) : 1, transition: "opacity 0.2s linear", color: MUTED, fontFamily: "Manrope, sans-serif", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+        <span ref={scanResultRef} style={{ opacity: 1, color: MUTED, fontFamily: "Manrope, sans-serif", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", willChange: "opacity" }}>
           {t('scan_result', lang)}
         </span>
         <div className="h-10 w-10" aria-hidden="true" />
@@ -297,15 +404,12 @@ export function ProductPageLayout({
 
       {/* ── HERO — glass blur ────────────────────────────────────────────── */}
       <div
-        className="flex-shrink-0"
+        ref={heroRef}
+        className="relative h-[130px] overflow-hidden"
         style={{
-          position: "relative",
-          minHeight: heroHeight,
-          opacity: heroOpacity,
-          overflow: "hidden",
-          transition: "opacity 0.1s linear",
-          willChange: "opacity",
           background: "linear-gradient(135deg, #f0ece0 0%, #fff 45%, #eaf3e8 100%)",
+          transformOrigin: "center top",
+          willChange: "opacity",
         }}
       >
         {/* Ambient glow blobs */}
@@ -323,6 +427,9 @@ export function ProductPageLayout({
         {/* Product image / emoji */}
         {product.displayImage ? (
           <img
+            ref={(node) => {
+              heroMediaRef.current = node;
+            }}
             src={product.displayImage}
             alt={product.name}
             style={{
@@ -338,7 +445,12 @@ export function ProductPageLayout({
             }}
           />
         ) : (
-          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -60%)", fontSize: 52, lineHeight: 1, zIndex: 1 }}>
+          <div
+            ref={(node) => {
+              heroMediaRef.current = node;
+            }}
+            style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -55%)", fontSize: 52, lineHeight: 1, zIndex: 1, willChange: "transform" }}
+          >
             {product.placeholderEmoji}
           </div>
         )}
@@ -357,7 +469,7 @@ export function ProductPageLayout({
         />
 
         {/* Product text overlay */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "8px 16px 12px", zIndex: 3 }}>
+        <div ref={heroContentRef} style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "8px 16px 12px", zIndex: 3, willChange: "opacity, transform" }}>
           <div style={{ marginBottom: 4 }}>
             <span
               style={{
@@ -397,60 +509,83 @@ export function ProductPageLayout({
       </div>
 
       {/* ── GRADES ──────────────────────────────────────────────────────── */}
-      <div ref={gradeHelpRef} className="relative mx-4 flex-shrink-0" style={{ display: "flex", gap: 12, opacity: gradesOpacity, overflow: "hidden", maxHeight: scrollY > 160 ? 0 : 500, transition: "max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s linear", willChange: "opacity, max-height", marginTop: scrollY > 160 ? 0 : 12, paddingTop: scrollY > 160 ? 0 : undefined }}>
-
-        {/* Health card */}
-        <div style={{ flex: 1, background: CARD_BG, borderRadius: 16, border: `0.5px solid ${CARD_BORDER}`, padding: "14px 8px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-          <div style={{ width: 68, height: 68, borderRadius: "50%", border: `2.5px solid ${getGradeBorder(healthGrade)}`, background: getGradeBackground(healthGrade), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1 }}>
-            <span style={{ fontSize: 26, fontWeight: 900, color: getColor(healthGrade), fontFamily: "Manrope, sans-serif", lineHeight: 1 }}>
-              {healthGrade ?? "–"}
-            </span>
-            {healthGrade ? (
-              <span style={{ fontSize: 7, fontWeight: 700, textAlign: "center", textTransform: "uppercase", letterSpacing: "0.04em", color: getColor(healthGrade), lineHeight: 1 }}>
-                {gradeDescriptions[healthGrade]}
-              </span>
-            ) : null}
-          </div>
-          <span style={{ fontSize: 9, fontWeight: 700, color: MUTED, textTransform: "uppercase", letterSpacing: "0.05em", fontFamily: "Manrope, sans-serif" }}>
-            {t('product_health', lang)}
-          </span>
+      <section ref={gradeHelpRef} className="relative mx-4 mt-3">
+        <div className="mb-2 flex items-center justify-between px-0.5">
+          <SectionLabel>{t("product_grades", lang)}</SectionLabel>
+          <button
+            ref={gradeHelpButtonRef}
+            type="button"
+            aria-label="Explain grades"
+            aria-expanded={gradeHelpOpen}
+            onClick={() => setGradeHelpOpen((open) => !open)}
+            className="focus-ring grid h-11 w-11 place-items-center rounded-full"
+            style={{
+              background: CARD_BG,
+              border: `0.5px solid ${CARD_BORDER}`,
+              color: MUTED,
+            }}
+          >
+            <Info className="h-4 w-4" />
+          </button>
         </div>
 
-        {/* Eco card */}
-        <div style={{ flex: 1, background: CARD_BG, borderRadius: 16, border: `0.5px solid ${CARD_BORDER}`, padding: "14px 8px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, opacity: hasOfficialEcoData ? 1 : 0.4 }}>
-          <div style={{ width: 68, height: 68, borderRadius: "50%", border: hasOfficialEcoData ? `2.5px solid ${getGradeBorder(ecoGrade)}` : `2px dashed ${CARD_BORDER}`, background: hasOfficialEcoData ? getGradeBackground(ecoGrade) : CARD_BG, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1 }}>
-            <span style={{ fontSize: 26, fontWeight: 900, color: hasOfficialEcoData ? getColor(ecoGrade) : MUTED, fontFamily: "Manrope, sans-serif", lineHeight: 1 }}>
-              {ecoGrade ?? "–"}
-            </span>
-            {ecoGrade ? (
-              <span style={{ fontSize: 7, fontWeight: 700, textAlign: "center", textTransform: "uppercase", letterSpacing: "0.04em", color: getColor(ecoGrade), lineHeight: 1 }}>
-                {gradeDescriptions[ecoGrade]}
-              </span>
-            ) : null}
-          </div>
-          <span style={{ fontSize: 9, fontWeight: 700, color: MUTED, textTransform: "uppercase", letterSpacing: "0.05em", fontFamily: "Manrope, sans-serif" }}>
-            {t('product_eco', lang)}
-          </span>
-        </div>
-
-        {/* Info button */}
-        <button
-          ref={gradeHelpButtonRef}
-          type="button"
-          aria-label="Explain grades"
-          aria-expanded={gradeHelpOpen}
-          onClick={() => setGradeHelpOpen((open) => !open)}
-          style={{ position: "absolute", right: 6, top: 6, width: 28, height: 28, borderRadius: "50%", background: PAGE_BG, border: `1px solid ${CARD_BORDER}`, color: MUTED, display: "grid", placeItems: "center", cursor: "pointer" }}
+        <div
+          className="overflow-hidden rounded-2xl"
+          style={{ background: CARD_BG, border: `0.5px solid ${CARD_BORDER}` }}
         >
-          <Info className="h-3.5 w-3.5" />
-        </button>
+          <div className="grid grid-cols-2">
+            <div className="flex flex-col items-center gap-2 px-4 py-4">
+              <div style={{ width: 72, height: 72, borderRadius: "50%", border: `2.5px solid ${getGradeBorder(healthGrade)}`, background: getGradeBackground(healthGrade), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3 }}>
+                <span className="type-grade" style={{ fontSize: 28, color: getColor(healthGrade), fontFamily: "Manrope, sans-serif" }}>
+                  {healthGrade ?? "–"}
+                </span>
+                {healthGrade ? (
+                  <span style={{ fontSize: 8, fontWeight: 700, lineHeight: 1, color: getColor(healthGrade), textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    {gradeDescriptions[healthGrade]}
+                  </span>
+                ) : null}
+              </div>
+              <span className="type-section-label" style={{ color: MUTED }}>
+                {t("product_health", lang)}
+              </span>
+              <span className="type-caption text-center" style={{ color: getColor(healthGrade), textTransform: "none", letterSpacing: 0 }}>
+                {getGradeSummary(healthGrade, "health", lang)}
+              </span>
+            </div>
+
+            <div
+              className="flex flex-col items-center gap-2 border-l px-4 py-4"
+              style={{
+                borderColor: CARD_BORDER,
+                opacity: hasOfficialEcoData ? 1 : 0.55,
+              }}
+            >
+              <div style={{ width: 72, height: 72, borderRadius: "50%", border: hasOfficialEcoData ? `2.5px solid ${getGradeBorder(ecoGrade)}` : `2px dashed ${CARD_BORDER}`, background: hasOfficialEcoData ? getGradeBackground(ecoGrade) : CARD_BG, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3 }}>
+                <span className="type-grade" style={{ fontSize: 28, color: hasOfficialEcoData ? getColor(ecoGrade) : MUTED, fontFamily: "Manrope, sans-serif" }}>
+                  {ecoGrade ?? "–"}
+                </span>
+                {ecoGrade ? (
+                  <span style={{ fontSize: 8, fontWeight: 700, lineHeight: 1, color: getColor(ecoGrade), textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    {gradeDescriptions[ecoGrade]}
+                  </span>
+                ) : null}
+              </div>
+              <span className="type-section-label" style={{ color: MUTED }}>
+                {t("product_eco", lang)}
+              </span>
+              <span className="type-caption text-center" style={{ color: hasOfficialEcoData ? getColor(ecoGrade) : MUTED, textTransform: "none", letterSpacing: 0 }}>
+                {getGradeSummary(ecoGrade, "eco", lang)}
+              </span>
+            </div>
+          </div>
+        </div>
 
         {/* Grade help popover */}
         {gradeHelpOpen ? (
           <div
-            style={{ position: "absolute", right: 8, top: 40, zIndex: 30, width: "min(18rem, calc(100vw - 3rem))", background: CARD_BG, borderRadius: 16, border: `0.5px solid ${CARD_BORDER}`, padding: 16, boxShadow: "0 18px 60px rgba(50,42,31,0.15)", textAlign: "left" }}
+            style={{ position: "absolute", right: 0, top: 54, zIndex: 30, width: "min(18rem, calc(100vw - 3rem))", background: CARD_BG, borderRadius: 16, border: `0.5px solid ${CARD_BORDER}`, padding: 16, boxShadow: "0 18px 60px rgba(50,42,31,0.15)", textAlign: "left" }}
           >
-            <p style={{ fontSize: 9, fontWeight: 700, color: "#2d4a26", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 12, fontFamily: "Manrope, sans-serif" }}>
+            <p className="type-section-label" style={{ color: "#2d4a26", marginBottom: 12 }}>
               {t('product_how_grades_work', lang)}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -465,13 +600,11 @@ export function ProductPageLayout({
             </div>
           </div>
         ) : null}
-      </div>
+      </section>
 
       {/* ── SCROLLABLE CONTENT ──────────────────────────────────────────── */}
       <div
-        ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-1"
-        style={{ scrollBehavior: "auto", WebkitOverflowScrolling: "touch" }}
+        className="px-4 pb-4 pt-1"
       >
 
         {/* 2. PROCESSING LEVEL */}
@@ -479,15 +612,17 @@ export function ProductPageLayout({
           <div className="mb-4 flex flex-col gap-2.5">
             <SectionLabel>{t('product_processing', lang)}</SectionLabel>
             {isPremium ? (
-              <div style={{ background: CARD_BG, borderRadius: 14, border: `0.5px solid ${CARD_BORDER}`, padding: "12px 14px" }}>
+              <div style={{ background: CARD_BG, borderRadius: 16, border: `0.5px solid ${CARD_BORDER}`, padding: 16 }}>
                 {/* Top row */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 800, color: NOVA_TONES[product.novaGroup]?.text ?? MUTED }}>{novaLabels[product.novaGroup]}</p>
-                    <p style={{ fontSize: 8, color: MUTED, marginTop: 2 }}>NOVA {product.novaGroup} · {novaLabels[product.novaGroup]}</p>
+                    <p className="type-body-lg" style={{ fontWeight: 700, color: NOVA_TONES[product.novaGroup]?.text ?? MUTED }}>{novaLabels[product.novaGroup]}</p>
+                    <p className="type-caption" style={{ color: MUTED, marginTop: 2 }}>
+                      NOVA {product.novaGroup} · {novaLabels[product.novaGroup]}
+                    </p>
                   </div>
-                  <div style={{ background: NOVA_TONES[product.novaGroup]?.bg ?? CARD_BG, border: `0.5px solid ${NOVA_TONES[product.novaGroup]?.border ?? CARD_BORDER}`, borderRadius: 10, padding: "5px 10px", textAlign: "center" }}>
-                    <p style={{ fontSize: 7, fontWeight: 700, color: NOVA_TONES[product.novaGroup]?.text ?? MUTED }}>NOVA</p>
+                  <div style={{ background: NOVA_TONES[product.novaGroup]?.bg ?? CARD_BG, border: `0.5px solid ${NOVA_TONES[product.novaGroup]?.border ?? CARD_BORDER}`, borderRadius: 12, minWidth: 58, padding: "7px 10px", textAlign: "center" }}>
+                    <p className="type-section-label" style={{ color: NOVA_TONES[product.novaGroup]?.text ?? MUTED }}>NOVA</p>
                     <p style={{ fontSize: 20, fontWeight: 900, color: NOVA_TONES[product.novaGroup]?.text ?? MUTED, lineHeight: 1 }}>{product.novaGroup}</p>
                   </div>
                 </div>
@@ -511,12 +646,19 @@ export function ProductPageLayout({
                   })}
                 </div>
                 {/* Scale labels */}
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 6, marginTop: 7 }}>
                   {novaSegmentLabels.map((label, index) => (
                     <span
                       key={label}
                       style={{
-                        fontSize: 7,
+                        fontSize: 11,
+                        lineHeight: 1.25,
+                        textAlign:
+                          index === 0
+                            ? "left"
+                            : index === novaSegmentLabels.length - 1
+                              ? "right"
+                              : "center",
                         color:
                           product.novaGroup === index + 1
                             ? NOVA_TONES[product.novaGroup]?.text
@@ -546,19 +688,19 @@ export function ProductPageLayout({
               {product.allergens.map((a) => (
                 <div
                   key={a}
-                  style={{ background: CARD_BG, borderRadius: 12, border: `0.5px solid ${CARD_BORDER}`, padding: "8px 10px", display: "flex", alignItems: "center", gap: 7 }}
+                  style={{ background: CARD_BG, borderRadius: 16, border: `0.5px solid ${CARD_BORDER}`, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 }}
                 >
-                  <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }}>{getAllergenEmoji(a)}</span>
+                  <span style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>{getAllergenEmoji(a)}</span>
                   <div style={{ minWidth: 0 }}>
-                    <p style={{ fontSize: 11, fontWeight: 800, color: "#3a2820", lineHeight: 1.2 }}>{a}</p>
-                    <p style={{ fontSize: 8, color: "#9a8e7e", marginTop: 2 }}>{t('product_contains', lang)} {a.toLowerCase()}</p>
+                    <p className="type-body-sm" style={{ fontWeight: 700, color: "#3a2820" }}>{a}</p>
+                    <p className="type-caption" style={{ color: "#9a8e7e", marginTop: 2, textTransform: "none", letterSpacing: 0 }}>{t('product_contains', lang)} {a.toLowerCase()}</p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div style={{ background: "#ddeedd", borderRadius: 12, border: "0.5px solid #88bb88", padding: "10px 12px" }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#2a5030" }}>{t('product_no_allergens', lang)}</p>
+            <div style={{ background: "#ddeedd", borderRadius: 16, border: "0.5px solid #88bb88", padding: "12px 16px" }}>
+              <p className="type-body-sm" style={{ fontWeight: 600, color: "#2a5030" }}>{t('product_no_allergens', lang)}</p>
             </div>
           )}
         </div>
@@ -567,15 +709,15 @@ export function ProductPageLayout({
         {nutritionRows.length > 0 && (
           <div className="mb-4 flex flex-col gap-2.5">
             <SectionLabel>{t('product_nutrition', lang)}</SectionLabel>
-            <div style={{ background: CARD_BG, borderRadius: 14, border: `0.5px solid ${CARD_BORDER}`, overflow: "hidden" }}>
+            <div style={{ background: CARD_BG, borderRadius: 16, border: `0.5px solid ${CARD_BORDER}`, overflow: "hidden" }}>
               {nutritionRows.map((row, index) => (
                 <div
                   key={row.label}
-                  className="flex items-center justify-between px-4 py-3"
+                  className="flex min-h-12 items-center justify-between px-4 py-3"
                   style={index < nutritionRows.length - 1 ? { borderBottom: `1px solid ${CARD_BORDER}` } : undefined}
                 >
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1e1e18" }}>{row.label}</span>
-                  <span className={`rounded-full px-3 py-0.5 font-bold ${row.tone}`} style={{ fontSize: 12 }}>
+                  <span className="type-body-sm" style={{ fontWeight: 600, color: "#1e1e18" }}>{row.label}</span>
+                  <span className={`type-body-sm rounded-full px-3 py-1 font-bold ${row.tone}`}>
                     {row.displayAmount}
                   </span>
                 </div>
@@ -598,7 +740,7 @@ export function ProductPageLayout({
         <div className="mb-4 flex flex-col gap-2.5">
           <SectionLabel>{t('product_additives', lang)}</SectionLabel>
           {isPremium ? (
-            <Additives additives={product.additives} lang={lang} />
+            <Additives additives={allAdditives} lang={lang} />
           ) : (
             <PremiumNudge label={t('product_additives', lang)} />
           )}
@@ -639,6 +781,7 @@ export function ProductPageLayout({
           </div>
         )}
 
+      </div>
       </div>
 
       {/* ── BOTTOM ACTIONS ───────────────────────────────────────────────── */}
