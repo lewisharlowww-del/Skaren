@@ -150,10 +150,10 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
   }, [autoStart, disabled]);
 
   return (
-    <div className={hideControls ? "" : "space-y-3"}>
-      {/* Force the library's injected video to cover the container when in hideControls mode */}
+    <div className={hideControls ? "h-full w-full" : "space-y-3"}>
+      {/* Force the library's injected video to fill and cover the container */}
       {hideControls && (
-        <style>{`#${scannerElementId} video { object-fit: cover !important; width: 100% !important; height: 100% !important; position: absolute !important; inset: 0 !important; }`}</style>
+        <style>{`#${scannerElementId} { position: relative; } #${scannerElementId} video { object-fit: cover !important; width: 100% !important; height: 100% !important; }`}</style>
       )}
       <div className={`relative bg-black ${hideControls ? "h-full w-full" : "overflow-hidden rounded-[2rem] bg-lime-50"}`}>
         <div id={scannerElementId} className={`${hideControls ? "h-full w-full" : "min-h-56 w-full"} ${isScanning ? "bg-black" : ""}`} />
