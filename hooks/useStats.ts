@@ -200,21 +200,8 @@ export function useStats(range: StatsRange, language: Language = "en") {
       setLoading(true);
 
       try {
-        const historyResult = await supabase
-          .from("scan_history")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
-
-        if (!active) return;
-
-        if (!historyResult.error && historyResult.data) {
-          setScans(historyResult.data);
-          window.clearTimeout(timeout);
-          setLoading(false);
-          return;
-        }
-
+        // Always read from `scans` — it has additives_details, product_image etc.
+        // scan_history is a legacy mirror that lacks these columns.
         const scansResult = await supabase
           .from("scans")
           .select("*")
