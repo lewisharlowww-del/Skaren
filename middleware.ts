@@ -1,26 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const protectedRoutes = ["/dashboard", "/stats", "/history", "/account"];
-
-function hasSupabaseSession(request: NextRequest) {
-  return request.cookies.getAll().some((cookie) => cookie.name.startsWith("sb-") && cookie.name.endsWith("-auth-token"));
-}
-
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const isProtectedRoute = protectedRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
-
-  if (!isProtectedRoute || hasSupabaseSession(request)) {
-    return NextResponse.next();
-  }
-
-  const redirectUrl = request.nextUrl.clone();
-  redirectUrl.pathname = "/login";
-  redirectUrl.searchParams.set("next", pathname);
-
-  return NextResponse.redirect(redirectUrl);
+// Auth is handled client-side via useUser() + router.push("/login").
+// The Supabase browser client stores sessions in localStorage (not cookies),
+// so a server-side cookie check here would always fail and block logged-in users.
+export function middleware(_request: NextRequest) {
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/stats/:path*", "/history/:path*", "/account/:path*"]
+  matcher: []
 };

@@ -14,8 +14,6 @@ export async function POST(request: Request) {
     const body = (await request.json()) as { barcode?: string };
     const barcode = body.barcode?.trim();
 
-    console.log("[Scan] Starting scan for barcode:", barcode);
-
     if (!barcode) {
       return NextResponse.json({ error: "Barcode is required." }, { status: 400 });
     }
@@ -25,23 +23,16 @@ export async function POST(request: Request) {
 
     try {
       kassalappProduct = await fetchKassalappProduct(barcode);
-      console.log("[Scan] Kassalapp:", kassalappProduct?.name ?? "not found");
     } catch (error) {
       console.error("[Scan] Kassalapp error:", error);
     }
 
     try {
       const offProduct = await fetchOpenFoodFactsProduct(barcode);
-      console.log("[Scan] OFF:", offProduct?.product_name ?? "not found");
       openFoodFactsProduct = normalizeOpenFoodFactsProduct(barcode, offProduct);
     } catch (error) {
       console.error("[Scan] OFF error:", error);
     }
-
-    console.log("[Scan] Sources:", {
-      hasKassalapp: Boolean(kassalappProduct),
-      hasOpenFoodFacts: Boolean(openFoodFactsProduct)
-    });
 
     if (!kassalappProduct && !openFoodFactsProduct) {
       return NextResponse.json({

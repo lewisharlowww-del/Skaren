@@ -1,17 +1,27 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import {
   Check,
   ChevronRight,
+  Crown,
+  Lock,
   Plus,
   Search,
   ShoppingBasket,
   Trash2,
   X
 } from "lucide-react";
-import { AppHeader } from "@/components/AppHeader";
+import { BottomNav } from "@/components/BottomNav";
+import { ProductSearchThumbnail } from "@/components/ProductSearchThumbnail";
+import { Spinner } from "@/components/Spinner";
 import { useShoppingList } from "@/hooks/useShoppingList";
+import { t, type Language } from "@/lib/i18n";
+import type { KassalappSearchProduct } from "@/lib/kassalapp";
+import { useLang } from "@/lib/language-context";
+import { getUserPremiumStatus } from "@/lib/premium";
+import { supabase } from "@/lib/supabase";
 import type {
   NewShoppingListItem,
   ShoppingListItem
@@ -37,6 +47,33 @@ const gradeStyles: Record<
   D: "bg-[var(--sk-grade-d-bg)] text-[var(--sk-grade-d-text)]",
   E: "bg-[var(--sk-grade-e-bg)] text-[var(--sk-grade-e-text)]"
 };
+
+function inferShoppingCategory(
+  product: KassalappSearchProduct
+): (typeof categories)[number] {
+  const text = `${product.name} ${product.brand ?? ""}`.toLocaleLowerCase("nb-NO");
+
+  if (/(melk|milk|yogh?urt|ost|cheese|fløte|cream|smør|butter|rømme|kvarg)/.test(text)) {
+    return "Dairy";
+  }
+  if (/(fisk|fish|laks|salmon|torsk|cod|makrell|mackerel|reke|shrimp|tunfisk|tuna)/.test(text)) {
+    return "Fish";
+  }
+  if (/(kjøtt|meat|kylling|chicken|biff|beef|svin|pork|lam|lamb|pølse|sausage)/.test(text)) {
+    return "Meat";
+  }
+  if (/(grønnsak|vegetable|salat|salad|tomat|tomato|potet|potato|gulrot|carrot|brokkoli|broccoli)/.test(text)) {
+    return "Vegetables";
+  }
+  if (/(brus|soda|juice|drikk|drink|vann|water|kaffe|coffee|te\b|tea\b)/.test(text)) {
+    return "Drinks";
+  }
+  if (/(snack|chips|sjokolade|chocolate|godteri|candy|kjeks|biscuit|cookie|nøtter|nuts)/.test(text)) {
+    return "Snacks";
+  }
+
+  return "Other";
+}
 
 function ItemRow({
   item,
@@ -136,16 +173,25 @@ function ItemRow({
 function AddProductSheet({
   open,
   onClose,
-  onSave
+  onSave,
+  lang
 }: {
   open: boolean;
   onClose: () => void;
   onSave: (item: NewShoppingListItem) => Promise<void>;
+  lang: Language;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const addInFlightRef = useRef(false);
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
   const [category, setCategory] = useState<(typeof categories)[number]>("Other");
+  const [results, setResults] = useState<KassalappSearchProduct[]>([]);
+  const [visibleCount, setVisibleCount] = useState(8);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [addingProductKey, setAddingProductKey] = useState<string | null>(null);
+  const [addedMessage, setAddedMessage] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -159,22 +205,105 @@ function AddProductSheet({
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [onClose, open]);
 
-  async function saveItem() {
-    if (!name.trim()) {
-      inputRef.current?.focus();
+  useEffect(() => {
+    if (!open) {
+      setName("");
+      setQuantity("");
+      setCategory("Other");
+      setResults([]);
+      setVisibleCount(8);
+      setSearching(false);
+      setSearchError("");
+      setAddingProductKey(null);
+      setAddedMessage("");
       return;
     }
 
-    await onSave({
-      name,
-      quantity,
-      category,
-      addedFromScan: false
-    });
-    setName("");
-    setQuantity("");
-    setCategory("Other");
-    onClose();
+    const query = name.trim();
+
+    if (query.length < 2) {
+      setResults([]);
+      setVisibleCount(8);
+      setSearching(false);
+      setSearchError("");
+      return;
+    }
+
+    const controller = new AbortController();
+    setSearching(true);
+    const timer = window.setTimeout(async () => {
+      setSearchError("");
+
+      try {
+        const session = await supabase?.auth.getSession();
+        const accessToken = session?.data.session?.access_token;
+        if (!accessToken) throw new Error("Please log in to search products.");
+
+        const response = await fetch(
+          `/api/products/search?q=${encodeURIComponent(query)}`,
+          {
+            cache: "no-store",
+            headers: { Authorization: `Bearer ${accessToken}` },
+            signal: controller.signal
+          }
+        );
+        const payload = (await response.json()) as {
+          products?: KassalappSearchProduct[];
+          error?: string;
+        };
+
+        if (!response.ok) {
+          throw new Error(payload.error || "Product search is unavailable.");
+        }
+
+        setResults(payload.products ?? []);
+        setVisibleCount(8);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setResults([]);
+        setSearchError(
+          error instanceof Error ? error.message : "Product search is unavailable."
+        );
+      } finally {
+        if (!controller.signal.aborted) setSearching(false);
+      }
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [name, open]);
+
+  async function addProduct(product: KassalappSearchProduct, index: number) {
+    if (addInFlightRef.current) return;
+    addInFlightRef.current = true;
+
+    const productKey = `${product.barcode ?? product.name}-${index}`;
+    setAddingProductKey(productKey);
+    setSearchError("");
+
+    try {
+      await onSave({
+        name: product.name,
+        quantity,
+        category:
+          category === "Other" ? inferShoppingCategory(product) : category,
+        addedFromScan: false
+      });
+      setAddedMessage(`${product.name} added to your list.`);
+      setName("");
+      setQuantity("");
+      setCategory("Other");
+      setResults([]);
+      setVisibleCount(8);
+      window.setTimeout(() => inputRef.current?.focus(), 50);
+    } catch {
+      setSearchError("This product could not be added. Please try again.");
+    } finally {
+      addInFlightRef.current = false;
+      setAddingProductKey(null);
+    }
   }
 
   if (!open) return null;
@@ -191,14 +320,14 @@ function AddProductSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-product-title"
-        className="relative w-full rounded-t-[1.75rem] border-t border-[var(--sk-border-default)] bg-[var(--sk-surface-white)] px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-4 shadow-[0_-20px_60px_rgba(45,40,31,0.18)]"
+        className="relative max-h-[92vh] w-full overflow-y-auto rounded-t-[1.75rem] border-t border-[var(--sk-border-default)] bg-[var(--sk-surface-white)] px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-4 shadow-[0_-20px_60px_rgba(45,40,31,0.18)]"
       >
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--sk-border-default)]" />
         <div className="flex items-center justify-between">
           <div>
-            <p className="type-section-label text-[var(--sk-text-faint)]">Shopping list</p>
+            <p className="type-section-label text-[var(--sk-text-faint)]">{t('list_section_label', lang)}</p>
             <h2 id="add-product-title" className="type-heading-2 mt-1 text-[var(--sk-text-primary)]">
-              Add product
+              {t('list_add_product', lang)}
             </h2>
           </div>
           <button
@@ -212,16 +341,114 @@ function AddProductSheet({
         </div>
 
         <div className="mt-5 space-y-4">
-          <label className="block">
+          <div>
             <span className="type-section-label text-[var(--sk-text-muted)]">Product name</span>
-            <input
-              ref={inputRef}
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="What do you need?"
-              className="focus-ring mt-2 h-12 w-full rounded-xl border border-[var(--sk-border-default)] bg-white px-4 text-sm text-[var(--sk-text-primary)] placeholder:text-[var(--sk-text-muted)]"
-            />
-          </label>
+            <div className="relative mt-2">
+              <Search
+                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--sk-text-muted)]"
+                aria-hidden="true"
+              />
+              <input
+                ref={inputRef}
+                value={name}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  setAddedMessage("");
+                }}
+                placeholder="Search actual products"
+                autoComplete="off"
+                className="focus-ring h-12 w-full rounded-xl border border-[var(--sk-border-default)] bg-white pl-12 pr-11 text-sm text-[var(--sk-text-primary)] placeholder:text-[var(--sk-text-muted)]"
+              />
+              {searching ? (
+                <span className="absolute right-4 top-1/2 -translate-y-1/2" aria-label="Searching products">
+                  <Spinner size={20} />
+                </span>
+              ) : null}
+            </div>
+
+            {searchError ? (
+              <p className="mt-2 text-xs text-[var(--sk-grade-e-text)]">{searchError}</p>
+            ) : null}
+
+            {addedMessage ? (
+              <p
+                className="mt-2 flex items-center gap-2 text-xs font-semibold text-[var(--sk-brand-forest)]"
+                role="status"
+                aria-live="polite"
+              >
+                <Check className="h-4 w-4" aria-hidden="true" />
+                {addedMessage}
+              </p>
+            ) : null}
+
+            {!searching &&
+            !searchError &&
+            name.trim().length >= 2 &&
+            results.length === 0 ? (
+              <p className="mt-2 text-xs text-[var(--sk-text-muted)]">
+                No matching products found.
+              </p>
+            ) : null}
+
+            {results.length > 0 ? (
+              <div
+                className="mt-2 overflow-hidden rounded-xl border border-[var(--sk-border-default)] bg-white"
+                role="listbox"
+                aria-label="Product search results"
+              >
+                {results.slice(0, visibleCount).map((product, index) => {
+                  const productKey = `${product.barcode ?? product.name}-${index}`;
+                  const isAdding = addingProductKey === productKey;
+
+                  return (
+                  <button
+                    key={productKey}
+                    type="button"
+                    role="option"
+                    aria-selected="false"
+                    disabled={Boolean(addingProductKey)}
+                    onClick={() => void addProduct(product, index)}
+                    className="focus-ring flex w-full items-center gap-3 border-b border-[var(--sk-border-default)] p-3 text-left last:border-b-0"
+                  >
+                    <ProductSearchThumbnail
+                      product={product}
+                      className="h-12 w-12"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-[var(--sk-text-primary)]">
+                        {product.name}
+                      </span>
+                      <span className="mt-0.5 block truncate text-xs text-[var(--sk-text-muted)]">
+                        {product.brand || "Brand not listed"}
+                      </span>
+                    </span>
+                    {isAdding ? (
+                      <Spinner size={16} className="shrink-0" aria-label="Adding product" />
+                    ) : (
+                      <Plus
+                        className="h-4 w-4 shrink-0 text-[var(--sk-brand-forest)]"
+                        aria-label="Add product"
+                      />
+                    )}
+                  </button>
+                  );
+                })}
+                {visibleCount < results.length ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setVisibleCount((current) =>
+                        Math.min(current + 8, results.length)
+                      )
+                    }
+                    className="focus-ring w-full px-4 py-3 text-center text-sm font-semibold text-[var(--sk-brand-forest)]"
+                  >
+                    Load more · {results.length - visibleCount} remaining
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
 
           <label className="block">
             <span className="type-section-label text-[var(--sk-text-muted)]">Quantity optional</span>
@@ -255,10 +482,10 @@ function AddProductSheet({
 
           <button
             type="button"
-            onClick={() => void saveItem()}
+            onClick={onClose}
             className="focus-ring type-button w-full rounded-2xl bg-[var(--sk-brand-forest)] px-4 py-4 text-white"
           >
-            Save product
+            {t('confirm', lang)}
           </button>
         </div>
       </section>
@@ -267,9 +494,23 @@ function AddProductSheet({
 }
 
 export default function ShoppingListPage() {
+  const { lang } = useLang();
   const { items, loading, addItem, toggleItem, deleteItem, clearChecked } =
     useShoppingList();
+  const [isPremium, setIsPremium] = useState(false);
+  const [checkingPremium, setCheckingPremium] = useState(true);
   const [activeCategory, setActiveCategory] = useState("All");
+
+  useEffect(() => {
+    if (!supabase) {
+      setCheckingPremium(false);
+      return;
+    }
+    getUserPremiumStatus(supabase)
+      .then((premium) => setIsPremium(premium))
+      .catch(() => setIsPremium(false))
+      .finally(() => setCheckingPremium(false));
+  }, []);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -305,17 +546,46 @@ export default function ShoppingListPage() {
     setSearch("");
   }
 
+  if (!checkingPremium && !isPremium) {
+    return (
+      <>
+        <BottomNav />
+        <main className="min-h-screen bg-[var(--sk-brand-mist)] pb-36 flex items-start justify-center">
+          <div className="mx-auto w-full max-w-sm px-4 pt-20 flex flex-col items-center text-center">
+            <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center mb-5">
+              <Lock className="h-8 w-8 text-amber-600" />
+            </div>
+            <h1 className="type-heading-1 text-[var(--sk-text-primary)]">{t('list_title', lang)}</h1>
+            <p className="type-body-sm mt-3 text-[var(--sk-text-muted)] max-w-xs">
+              {t('list_empty_subtitle', lang)}
+            </p>
+            <Link
+              href="/pricing"
+              className="mt-6 inline-flex h-12 items-center gap-2 rounded-full bg-[var(--sk-brand-forest)] px-6 font-bold text-white text-sm"
+            >
+              <Crown className="h-4 w-4" />
+              {t('account_upgrade', lang)}
+            </Link>
+            <Link href="/scan" className="mt-3 text-sm text-[var(--sk-text-muted)] underline underline-offset-2">
+              {t('back', lang)}
+            </Link>
+          </div>
+        </main>
+      </>
+    );
+  }
+
   return (
     <>
-      <AppHeader />
+      <BottomNav />
       <main className="min-h-screen bg-[var(--sk-brand-mist)] pb-36 text-[var(--sk-text-primary)]">
         <div className="mx-auto w-full max-w-xl px-4 pb-8 pt-6">
           <header className="flex items-start justify-between gap-4">
             <div>
-              <p className="type-section-label text-[var(--sk-text-faint)]">Shopping list</p>
-              <h1 className="type-heading-1 mt-1">My list</h1>
+              <p className="type-section-label text-[var(--sk-text-faint)]">{t('list_section_label', lang)}</p>
+              <h1 className="type-heading-1 mt-1">{t('list_title', lang)}</h1>
               <p className="mt-1 text-[13px] text-[var(--sk-text-muted)]">
-                {items.length} {items.length === 1 ? "item" : "items"}
+                {items.length} {items.length === 1 ? t('list_item', lang) : t('list_items', lang)}
               </p>
             </div>
             <div className="flex gap-2">
@@ -401,9 +671,9 @@ export default function ShoppingListPage() {
               <div className="grid h-16 w-16 place-items-center rounded-full bg-white text-[var(--sk-brand-forest)] shadow-sm">
                 <ShoppingBasket className="h-7 w-7" />
               </div>
-              <h2 className="type-heading-3 mt-5">Your list is ready</h2>
+              <h2 className="type-heading-3 mt-5">{t('list_empty_title', lang)}</h2>
               <p className="type-body-sm mt-2 max-w-xs text-[var(--sk-text-muted)]">
-                Add groceries here or save a product after scanning it.
+                {t('list_empty_subtitle', lang)}
               </p>
             </section>
           ) : (
@@ -471,7 +741,7 @@ export default function ShoppingListPage() {
             className="focus-ring type-button mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--sk-brand-forest)] px-4 py-4 text-white"
           >
             <Plus className="h-5 w-5" />
-            Add product
+            {t('list_add_product', lang)}
           </button>
         </div>
       </main>
@@ -480,6 +750,7 @@ export default function ShoppingListPage() {
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         onSave={saveItem}
+        lang={lang}
       />
     </>
   );

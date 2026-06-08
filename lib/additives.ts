@@ -1,3 +1,5 @@
+import { lookupENumber } from "@/lib/enumbers";
+
 export type AdditiveRisk = "safe" | "moderate" | "avoid";
 
 export type AdditiveAnalysis = {
@@ -52,8 +54,20 @@ export function analyzeAdditives(tags: string[] = []): AdditiveAnalysis[] {
       return true;
     })
     .map((code) => {
-      const additive = ADDITIVES[code];
+      // Primary: look up in the full enumbers database
+      const eInfo = lookupENumber(code);
+      if (eInfo) {
+        return {
+          code,
+          name: eInfo.name,
+          risk: eInfo.safety as AdditiveRisk,
+          description: eInfo.description,
+          known: true
+        };
+      }
 
+      // Fallback: use legacy ADDITIVES list
+      const additive = ADDITIVES[code];
       if (additive) {
         return {
           code,
@@ -65,7 +79,7 @@ export function analyzeAdditives(tags: string[] = []): AdditiveAnalysis[] {
       return {
         code,
         name: "Unknown additive",
-        risk: "moderate",
+        risk: "moderate" as AdditiveRisk,
         description: "This additive is not in Skaren's current additive database yet.",
         known: false
       };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useUser } from "@/hooks/useUser";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import type {
@@ -83,6 +83,7 @@ export function useShoppingList() {
   const { user, loading: userLoading } = useUser();
   const [items, setItems] = useState<ShoppingListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const recentAddRef = useRef<{ key: string; time: number } | null>(null);
 
   const updateItems = useCallback(
     (
@@ -157,6 +158,22 @@ export function useShoppingList() {
 
   const addItem = useCallback(
     async (input: NewShoppingListItem) => {
+      const addKey = [
+        input.name.trim().toLocaleLowerCase("nb-NO"),
+        input.quantity?.trim().toLocaleLowerCase("nb-NO") ?? "",
+        input.category ?? ""
+      ].join("|");
+      const now = Date.now();
+
+      if (
+        recentAddRef.current?.key === addKey &&
+        now - recentAddRef.current.time < 1500
+      ) {
+        return null;
+      }
+
+      recentAddRef.current = { key: addKey, time: now };
+
       const item: ShoppingListItem = {
         id: createItemId(),
         name: input.name.trim(),

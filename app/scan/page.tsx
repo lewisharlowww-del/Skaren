@@ -4,14 +4,18 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, Info, Loader2, ScanBarcode } from "lucide-react";
-import { AppHeader } from "@/components/AppHeader";
+import { CheckCircle2, ScanBarcode, Search } from "lucide-react";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { BottomNav } from "@/components/BottomNav";
+import { Spinner } from "@/components/Spinner";
+import { t } from "@/lib/i18n";
+import { useLang } from "@/lib/language-context";
 import { PhoneFrame } from "@/components/PhoneFrame";
 import { vibrate } from "@/lib/haptics";
 import { cacheProductLocally } from "@/lib/localProducts";
 import { toScanPayload } from "@/lib/openfoodfacts";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { getUserPremiumStatus } from "@/lib/premium";
 import type { ProductResult } from "@/lib/types";
 
 const freeGuestScanLimit = 5;
@@ -119,13 +123,14 @@ function ScanLoadingOverlay({ barcode, scanSuccess, saved }: { barcode: string; 
 
 export default function ScanPage() {
   const router = useRouter();
+  const { lang } = useLang();
   const [barcode, setBarcode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [scanSuccess, setScanSuccess] = useState(false);
   const [savedToHistory, setSavedToHistory] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
-  const [isSupporter, setIsSupporter] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   const [guestScansUsed, setGuestScansUsed] = useState(0);
 
   useEffect(() => {
@@ -137,20 +142,8 @@ export default function ScanPage() {
         setIsSignedIn(Boolean(data.user));
       }
 
-      const { data: sessionData } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
-      if (sessionData.session?.access_token) {
-        const response = await fetch("/api/stripe/premium-status", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${sessionData.session.access_token}`
-          }
-        }).catch(() => null);
-        const premiumStatus = (await response?.json().catch(() => null)) as { premium?: boolean } | null;
-        if (active) setIsSupporter(Boolean(premiumStatus?.premium));
-      } else if (active) {
-        setIsSupporter(false);
-      }
+      const premium = supabase ? await getUserPremiumStatus(supabase) : false;
+      if (active) setIsPremium(premium);
     }
 
     loadSession();
@@ -158,7 +151,11 @@ export default function ScanPage() {
 
     const listener = supabase?.auth.onAuthStateChange((_event, session) => {
       setIsSignedIn(Boolean(session?.user));
-      setIsSupporter(false);
+      if (session?.user && supabase) {
+        void getUserPremiumStatus(supabase).then((premium) => setIsPremium(premium));
+      } else {
+        setIsPremium(false);
+      }
     });
 
     return () => {
@@ -174,7 +171,7 @@ export default function ScanPage() {
       return;
     }
 
-    const isGuestAtLimit = !isSignedIn && !isSupporter && getGuestScanCount() >= freeGuestScanLimit;
+    const isGuestAtLimit = !isSignedIn && !isPremium && getGuestScanCount() >= freeGuestScanLimit;
 
     if (isGuestAtLimit) {
       setError("Free guest scanning includes 5 scans per month. Log in and support Skaren to unlock unlimited scans.");
@@ -235,11 +232,11 @@ export default function ScanPage() {
             setSavedToHistory(true);
             vibrate([12, 24, 18]);
           }
-        } else if (!isSupporter) {
+        } else if (!isPremium) {
           recordGuestScan();
           setGuestScansUsed(getGuestScanCount());
         }
-      } else if (!isSignedIn && !isSupporter) {
+      } else if (!isSignedIn && !isPremium) {
         recordGuestScan();
         setGuestScansUsed(getGuestScanCount());
       }
@@ -269,115 +266,135 @@ export default function ScanPage() {
 
   return (
     <>
-      <AppHeader />
+      <BottomNav />
       <AnimatePresence>
         {loading ? <ScanLoadingOverlay barcode={barcode} scanSuccess={scanSuccess} saved={savedToHistory} /> : null}
       </AnimatePresence>
-      <main className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-[430px] gap-4 px-4 pb-36 pt-3 sm:max-w-6xl sm:py-8 md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-8">
-        <motion.section
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: "spring", stiffness: 130, damping: 24 }}
-          className="order-2 md:order-1"
+      <div className="flex h-screen flex-col bg-[#f7f2ea]">
+        {/* Scanner panel */}
+        <div
+          className="relative flex flex-col items-center justify-center overflow-hidden px-5 pb-6 pt-4"
+          style={{ height: "46vh", background: "linear-gradient(135deg, #f0ece0 0%, #fff 45%, #eaf3e8 100%)" }}
         >
-          <div className="mb-3 hidden h-12 w-12 place-items-center rounded-[1.2rem] bg-forest text-cream shadow-glass sm:mb-6 sm:grid sm:h-16 sm:w-16 sm:rounded-[1.4rem]">
-            <ScanBarcode className="h-7 w-7" />
-          </div>
-          <h1 className="type-display-lg max-w-xl text-ink">Scan a barcode</h1>
-          <p className="type-body-lg mt-2 max-w-xl text-soil-600 sm:mt-5">
-            Use your phone camera to scan a barcode, or enter it manually when camera access is not available.
-          </p>
-          <div className="glass-card type-body-sm mt-3 flex max-w-xl gap-3 rounded-[1.25rem] p-3 text-soil-600 sm:mt-8 sm:rounded-[1.7rem] sm:p-4">
-            <Info className="mt-0.5 h-5 w-5 flex-none text-forest" />
-            <p>Scan with your account to save history, badges, and dashboard stats.</p>
-          </div>
-        </motion.section>
+          {/* Ambient glow blobs */}
+          <div style={{ position: "absolute", top: -20, left: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(74,140,92,.2)", filter: "blur(30px)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: -20, right: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(244,162,97,.15)", filter: "blur(25px)", pointerEvents: "none" }} />
 
-        <motion.div
-          initial={{ opacity: 0, y: 22, scale: 0.985 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ type: "spring", stiffness: 120, damping: 22, delay: 0.08 }}
-          className="order-1 mx-auto w-full max-w-[23rem] md:order-2 md:max-w-[22rem]"
-        >
-        <PhoneFrame className="rounded-[1.8rem] border-2 sm:rounded-[2.25rem] sm:border-[3px]" contentClassName="min-h-0 px-4 pb-5 pt-5 sm:min-h-[34rem] sm:px-7 sm:pb-8 sm:pt-10">
-          <div className="flex flex-col">
-            <div className="text-center sm:block">
-              <p className="type-section-label text-forest">Camera ready</p>
-              <h2 className="type-heading-2 mt-1 text-ink sm:mt-2">Analyze Product</h2>
-            </div>
-            <div className="my-3 sm:my-6">
+          {/* Viewfinder frame */}
+          <div className="relative mb-3" style={{ width: "160px", height: "140px" }}>
+            {/* Corner brackets */}
+            <div className="absolute top-0 left-0 w-8 h-8 rounded-tl-xl" style={{ borderTop: "3px solid rgba(45,74,38,.4)", borderLeft: "3px solid rgba(45,74,38,.4)" }} />
+            <div className="absolute top-0 right-0 w-8 h-8 rounded-tr-xl" style={{ borderTop: "3px solid rgba(45,74,38,.4)", borderRight: "3px solid rgba(45,74,38,.4)" }} />
+            <div className="absolute bottom-0 left-0 w-8 h-8 rounded-bl-xl" style={{ borderBottom: "3px solid rgba(45,74,38,.4)", borderLeft: "3px solid rgba(45,74,38,.4)" }} />
+            <div className="absolute bottom-0 right-0 w-8 h-8 rounded-br-xl" style={{ borderBottom: "3px solid rgba(45,74,38,.4)", borderRight: "3px solid rgba(45,74,38,.4)" }} />
+            {/* Scanner line */}
+            <div className="absolute left-4 right-4 top-1/2" style={{ height: 2, background: "#4a8c5c", opacity: 0.6 }} />
+            {/* Hidden BarcodeScanner still listens for scans */}
+            <div className="absolute inset-0 overflow-hidden rounded-2xl opacity-0 pointer-events-none">
               <BarcodeScanner autoStart disabled={loading} onDetected={(detectedBarcode) => void analyzeBarcode(detectedBarcode)} />
             </div>
-
-            <form onSubmit={handleAnalyze} className="space-y-4">
-              <div className="mt-3 flex items-center gap-3">
-                <div className="h-px flex-1 bg-black/8" />
-                <span className="type-caption text-soil-400">or enter manually</span>
-                <div className="h-px flex-1 bg-black/8" />
-              </div>
-              <label className="type-body-sm block font-bold text-ink">
-                Barcode
-                <input
-                  className="focus-ring type-heading-3 mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-4 text-center"
-                  inputMode="numeric"
-                  placeholder="3017620422003"
-                  value={barcode}
-                  onChange={(event) => setBarcode(event.target.value)}
-                  autoComplete="off"
-                  required
-                />
-              </label>
-              <button
-                disabled={loading}
-                className="focus-ring tap-feedback type-button sticky bottom-24 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 text-white shadow-phone hover:-translate-y-0.5 hover:bg-forest disabled:bg-soil-600 sm:static"
-              >
-                <AnimatePresence mode="wait" initial={false}>
-                  {scanSuccess ? (
-                    <motion.span
-                      key="success"
-                      initial={{ opacity: 0, scale: 0.86 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.94 }}
-                      transition={{ type: "spring", stiffness: 360, damping: 24 }}
-                    >
-                      <CheckCircle2 className="h-5 w-5" />
-                    </motion.span>
-                  ) : loading ? (
-                    <motion.span key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    </motion.span>
-                  ) : (
-                    <motion.span key="scan" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                      <ScanBarcode className="h-5 w-5" />
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-                {scanSuccess ? "Product found" : loading ? "Analyzing..." : "Analyze Product"}
-              </button>
-              {error ? <p className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-medium text-rose-700">{error}</p> : null}
-            </form>
+          </div>
+          <p className="text-[20px] font-black" style={{ fontFamily: "Satoshi, sans-serif", color: "#2d4a26" }}>
+            {t('scan_title', lang)}
+          </p>
+          <p className="mt-0.5 text-[12px]" style={{ color: "#9a8e7e" }}>{t('scan_subtitle', lang)}</p>
+          {/* Tap to scan button */}
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => {
+              const scanner = document.querySelector('video');
+              if (scanner) scanner.click();
+            }}
+            className="mt-4 flex items-center gap-2 rounded-full px-5 py-2.5 text-[12px] font-bold"
+            style={{ background: "#2d4a26", color: "#dceedd" }}
+          >
+            <ScanBarcode className="h-4 w-4" />
+            {t('scan_tap_camera', lang)}
+          </button>
+        </div>
+        {/* Bottom section */}
+        <div className="flex-1 overflow-hidden px-5 pb-24 pt-4">
+          {/* Divider */}
+          <div className="mb-3 flex items-center gap-3">
+            <div className="h-px flex-1 bg-[#e0d8cc]" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#9a8e7e]">{t('scan_enter_manually', lang)}</span>
+            <div className="h-px flex-1 bg-[#e0d8cc]" />
+          </div>
+          <form onSubmit={handleAnalyze} className="space-y-2">
+            <input
+              className="w-full rounded-2xl border border-[#e0d8cc] bg-white px-4 py-3 text-center text-lg font-bold text-[#2d4a26] placeholder:font-normal placeholder:text-[#ccc] focus:outline-none focus:ring-2 focus:ring-[#2d4a26]/20"
+              inputMode="numeric"
+              placeholder="3017620422003"
+              value={barcode}
+              onChange={(event) => setBarcode(event.target.value)}
+              autoComplete="off"
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2d4a26] py-3 text-[15px] font-black text-[#dceedd] disabled:opacity-60"
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                {scanSuccess ? (
+                  <motion.span key="success" initial={{ opacity: 0, scale: 0.86 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ type: "spring", stiffness: 360, damping: 24 }}>
+                    <CheckCircle2 className="h-5 w-5" />
+                  </motion.span>
+                ) : loading ? (
+                  <motion.span key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <Spinner size={20} />
+                  </motion.span>
+                ) : (
+                  <motion.span key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <ScanBarcode className="h-5 w-5" />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+              {scanSuccess ? "Product found" : loading ? t('loading', lang) : t('scan_analyze', lang)}
+            </button>
+            {error ? (
+              <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-medium text-rose-700">{error}</div>
+            ) : null}
+          </form>
+          {/* Search products row — premium feature */}
+          <div className="mt-3 flex items-center gap-3">
+            <div className="h-px flex-1 bg-[#e0d8cc]" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#9a8e7e]">{t('scan_or_explore', lang)}</span>
+            <div className="h-px flex-1 bg-[#e0d8cc]" />
+          </div>
+          <Link
+            href={isPremium ? "/search" : "/pricing"}
+            className="mt-2 flex items-center gap-4 rounded-2xl bg-white border border-[#e0d8cc] px-5 py-3"
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#eaf3de] flex items-center justify-center flex-shrink-0">
+              <Search className="h-5 w-5 text-[#2d4a26]" />
+            </div>
+            <div className="flex-1">
+              <p className="text-[14px] font-bold text-[#2d4a26]">{t('scan_search_products', lang)}</p>
+              <p className="text-[11px] text-[#9a8e7e]">{isPremium ? t('scan_find_without_scanning', lang) : t('pro_feature', lang)}</p>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b0a090" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </Link>
+          {/* Status */}
+          <div className="mt-3 flex justify-center">
             {isSignedIn ? (
-              <p className="mt-5 rounded-2xl bg-leaf-50 px-4 py-3 text-center text-sm font-bold text-forest">
-                Signed in. Scans will be saved to your history.
-              </p>
+              <span className="rounded-full bg-[#eaf3de] px-4 py-2 text-[11px] font-bold text-[#2d4a26]">
+                {t('scan_signed_in', lang)}
+              </span>
             ) : (
-              <div className="mt-5 rounded-2xl bg-soil-50 px-4 py-3 text-center text-sm text-soil-600">
-                <p className="font-bold text-soil-700">
-                  Free guest scans: {Math.min(guestScansUsed, freeGuestScanLimit)}/{freeGuestScanLimit} this month
-                </p>
-                <p className="mt-1">
-                  Want unlimited scans and saved history?{" "}
-                  <Link className="font-bold text-ink underline decoration-lime-400 decoration-2 underline-offset-4" href="/login?next=%2Fscan">
-                    Log in or upgrade
-                  </Link>
-                  .
-                </p>
-              </div>
+              <p className="text-center text-[11px] text-[#9a8e7e]">
+                Free scans: {Math.min(guestScansUsed, freeGuestScanLimit)}/{freeGuestScanLimit} this month
+                {" · "}
+                <Link href="/login?next=%2Fscan" className="font-bold text-[#2d4a26] underline underline-offset-2">
+                  Log in
+                </Link>
+              </p>
             )}
           </div>
-        </PhoneFrame>
-        </motion.div>
-      </main>
+        </div>
+      </div>
     </>
   );
 }

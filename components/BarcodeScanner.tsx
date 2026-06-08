@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, Loader2, ScanLine, X } from "lucide-react";
+import { Camera, ScanLine, X } from "lucide-react";
+import { Spinner } from "@/components/Spinner";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { vibrate } from "@/lib/haptics";
 
@@ -170,7 +171,7 @@ export function BarcodeScanner({ disabled = false, autoStart = false, onDetected
           disabled={disabled || isStarting || isScanning}
           className="focus-ring inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 font-bold text-white shadow-phone disabled:bg-soil-600"
         >
-          {isStarting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+          {isStarting ? <Spinner size={20} /> : <Camera className="h-5 w-5" />}
           {isStarting ? "Opening camera..." : isScanning ? "Scanning..." : "Scan Product"}
         </button>
 

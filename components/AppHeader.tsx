@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, History, LogOut, ScanBarcode, ShoppingCart, UserRound, type LucideIcon } from "lucide-react";
+import { BarChart3, History, LogOut, ScanBarcode, ShoppingCart, UserRound } from "lucide-react";
 import { SkarenMark, SkarenWordmark } from "@/components/SkarenLogo";
-import { t, type TranslationKey } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
 
 export function AppHeader({ showMobileScan = true }: { showMobileScan?: boolean }) {
@@ -60,18 +59,18 @@ export function AppHeader({ showMobileScan = true }: { showMobileScan?: boolean 
           </Link>
 
           <nav className="type-body-sm hidden items-center gap-1 text-soil-600 sm:flex">
-            <NavLink href="/pricing" pathname={pathname}>{t("nav.pricing")}</NavLink>
+            <NavLink href="/pricing" pathname={pathname}>Pricing</NavLink>
             {isApp && (
               <>
-                <NavLink href="/stats" pathname={pathname}>{t("nav.stats")}</NavLink>
-                <NavLink href="/history" pathname={pathname}>{t("nav.history")}</NavLink>
-                <NavLink href="/account" pathname={pathname}>{t("nav.account")}</NavLink>
+                <NavLink href="/stats" pathname={pathname}>Stats</NavLink>
+                <NavLink href="/history" pathname={pathname}>History</NavLink>
+                <NavLink href="/account" pathname={pathname}>Account</NavLink>
                 <Link
                   href="/scan"
                   className="type-button ml-1 inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-forest active:scale-95"
                 >
                   <ScanBarcode className="h-3.5 w-3.5" />
-                  {t("nav.scan")}
+                  Scan
                 </Link>
                 {isSignedIn ? (
                   <button
@@ -79,14 +78,14 @@ export function AppHeader({ showMobileScan = true }: { showMobileScan?: boolean 
                     className="focus-ring type-button ml-1 inline-flex items-center gap-1.5 rounded-full border border-black/8 px-3.5 py-2 transition hover:bg-white hover:shadow-sm active:scale-95"
                   >
                     <LogOut className="h-3.5 w-3.5" />
-                    {t("nav.sign_out")}
+                    Sign out
                   </button>
                 ) : (
                   <Link
                     href="/auth"
                     className="type-button ml-1 rounded-full border border-black/10 px-4 py-2 transition hover:bg-white hover:shadow-sm active:scale-95"
                   >
-                    {t("nav.save_history")}
+                    Save history
                   </Link>
                 )}
               </>
@@ -100,7 +99,7 @@ export function AppHeader({ showMobileScan = true }: { showMobileScan?: boolean 
                 className="focus-ring tap-feedback type-button inline-flex min-h-10 items-center gap-2 rounded-full bg-ink px-4 py-2 text-white shadow-soft"
               >
                 <ScanBarcode className="h-4 w-4" />
-                {t("nav.scan")}
+                Scan
               </Link>
             </div>
           )}
@@ -109,12 +108,12 @@ export function AppHeader({ showMobileScan = true }: { showMobileScan?: boolean 
 
       <nav className="fixed inset-x-3 bottom-3 z-50 grid grid-cols-5 rounded-[1.6rem] border border-black/[0.07] bg-white/90 p-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] shadow-phone backdrop-blur-2xl sm:hidden">
         {([
-          { href: "/history", labelKey: "nav.history", icon: History },
-          { href: "/shopping-list", label: "List", icon: ShoppingCart },
-          { href: "/scan", labelKey: "nav.scan", icon: ScanBarcode, primary: true },
-          { href: "/stats", labelKey: "nav.stats", icon: BarChart3 },
-          { href: "/account", labelKey: "nav.account", icon: UserRound }
-        ] satisfies Array<{ href: string; labelKey?: TranslationKey; label?: string; icon: LucideIcon; primary?: boolean }>).map((item) => {
+          { href: "/history", label: "History", icon: History, primary: false },
+          { href: "/shopping-list", label: "List", icon: ShoppingCart, primary: false },
+          { href: "/scan", label: "Scan", icon: ScanBarcode, primary: true },
+          { href: "/stats", label: "Stats", icon: BarChart3, primary: false },
+          { href: "/account", label: "Account", icon: UserRound, primary: false }
+        ] as const).map((item) => {
           const tabPaths = ["/history", "/shopping-list", "/scan", "/stats", "/dashboard", "/account"];
           const hasSelectedTab = tabPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
           const itemPath = item.href.split("?")[0];
@@ -125,7 +124,7 @@ export function AppHeader({ showMobileScan = true }: { showMobileScan?: boolean 
             (item.primary && !hasSelectedTab);
           return (
             <Link
-              key={item.label ?? item.labelKey}
+              key={item.href}
               href={item.href}
               className={`focus-ring type-caption flex min-h-[3.25rem] flex-col items-center justify-center gap-1 rounded-[1.2rem] px-2 py-2 transition active:scale-95 ${
                 item.primary
@@ -138,7 +137,7 @@ export function AppHeader({ showMobileScan = true }: { showMobileScan?: boolean 
               }`}
             >
               <item.icon className={`h-[1.1rem] w-[1.1rem] ${item.primary ? "" : active ? "stroke-[2.4px]" : ""}`} />
-              {item.label ?? t(item.labelKey as TranslationKey)}
+              {item.label}
               {active && itemPath === "/shopping-list" ? (
                 <span className="h-1 w-1 rounded-full bg-[var(--sk-brand-forest)]" aria-hidden="true" />
               ) : null}

@@ -1,8 +1,9 @@
-import { Activity } from "lucide-react";
+import { t, type Language } from "@/lib/i18n";
 import type { KassalappNutrition } from "@/lib/types";
 
 type DailyIntakeProps = {
   nutrition: KassalappNutrition[];
+  lang?: Language;
 };
 
 const DAILY_REFERENCE = {
@@ -43,13 +44,19 @@ function formatAmount(amount: number, unit: string) {
   return `${value}${unit === "kcal" ? " kcal" : unit ? ` ${unit}` : ""}`;
 }
 
-function barTone(percent: number) {
-  if (percent <= 15) return "bg-emerald-500";
-  if (percent <= 30) return "bg-amber-400";
-  return "bg-rose-500";
+function barColour(percent: number): string {
+  if (percent < 20) return "#6aab6a";
+  if (percent <= 35) return "#c8a040";
+  return "#c05050";
 }
 
-export function DailyIntake({ nutrition }: DailyIntakeProps) {
+function percentTextColour(percent: number): string {
+  if (percent < 20) return "#2a5030";
+  if (percent <= 35) return "#706030";
+  return "#703030";
+}
+
+export function DailyIntake({ nutrition, lang = 'no' }: DailyIntakeProps) {
   const rows = [
     { key: "calories", label: "Calories", reference: DAILY_REFERENCE.calories, data: findAmount(nutrition, ["energy", "energi", "calories", "calorie", "kcal", "kj"], [], ["kcal"]) },
     { key: "fat", label: "Fat", reference: DAILY_REFERENCE.fat, data: findAmount(nutrition, ["fat", "fett"], ["saturated", "mettede", "mettet"]) },
@@ -69,31 +76,33 @@ export function DailyIntake({ nutrition }: DailyIntakeProps) {
   if (rows.length === 0) return null;
 
   return (
-    <div className="rounded-[1.5rem] border border-black/5 bg-white p-4 sm:p-5">
-      <div className="mb-4 flex items-center gap-2">
-        <div className="grid h-9 w-9 place-items-center rounded-2xl bg-leaf-50 text-forest">
-          <Activity className="h-4 w-4" />
-        </div>
-        <h3 className="type-heading-3 text-soil-900">Daily impact</h3>
-      </div>
-
-      <div className="space-y-4">
-        {rows.map((row) => (
-          <div key={row.key}>
-            <div className="type-body-sm mb-2 flex items-center justify-between gap-3">
-              <p className="font-bold text-ink">{row.label}</p>
-              <p className="text-right font-bold text-soil-600">
-                {formatAmount(row.data.amount, row.data.unit)} = {row.percent}% of daily reference
-              </p>
-            </div>
-            <div className="h-3 overflow-hidden rounded-full bg-soil-100">
-              <div className={`h-full rounded-full ${barTone(row.percent)}`} style={{ width: `${Math.min(100, row.percent)}%` }} />
-            </div>
+    <div
+      className="overflow-hidden bg-white"
+      style={{ borderRadius: 14, border: "0.5px solid #e0d8cc" }}
+    >
+      {rows.map((row, index) => (
+        <div
+          key={row.key}
+          style={{ padding: "7px 12px", ...(index < rows.length - 1 ? { borderBottom: "0.5px solid #e0d8cc" } : {}) }}
+        >
+          <div className="type-body-sm flex items-center justify-between gap-3" style={{ marginBottom: 4 }}>
+            <p className="font-bold text-ink">{row.label}</p>
+            <p className="text-right font-bold" style={{ color: percentTextColour(row.percent) }}>
+              {formatAmount(row.data.amount, row.data.unit)} = {row.percent}{t('product_daily_reference', lang)}
+            </p>
           </div>
-        ))}
-      </div>
-
-      <p className="type-body-sm mt-4 text-soil-500">Based on a 2000 kcal daily diet per 100g</p>
+          <div style={{ height: 10, borderRadius: 999, overflow: "hidden", background: "#ede8e0" }}>
+            <div
+              style={{
+                height: "100%",
+                borderRadius: 999,
+                width: `${Math.min(100, row.percent)}%`,
+                background: barColour(row.percent),
+              }}
+            />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

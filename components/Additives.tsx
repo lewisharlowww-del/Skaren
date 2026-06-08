@@ -1,92 +1,93 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, FlaskConical } from "lucide-react";
-import type { AdditiveAnalysis, AdditiveRisk } from "@/lib/additives";
+import type { AdditiveAnalysis } from "@/lib/additives";
+import type { SafetyRating } from "@/lib/enumbers";
+import { t, type Language } from "@/lib/i18n";
 
 type AdditivesProps = {
   additives: AdditiveAnalysis[];
+  lang?: Language;
 };
 
-const riskStyles: Record<AdditiveRisk, { pill: string; panel: string; label: string }> = {
-  safe: {
-    pill: "border-emerald-200 bg-emerald-50 text-emerald-800",
-    panel: "border-emerald-100 bg-emerald-50/60 text-emerald-900",
-    label: "Low concern"
-  },
-  moderate: {
-    pill: "border-amber-200 bg-amber-50 text-amber-800",
-    panel: "border-amber-100 bg-amber-50/70 text-amber-900",
-    label: "Worth knowing"
-  },
-  avoid: {
-    pill: "border-rose-200 bg-rose-50 text-rose-800",
-    panel: "border-rose-100 bg-rose-50/70 text-rose-900",
-    label: "Best to avoid"
-  }
+const SAFETY_STYLES: Record<SafetyRating, { dot: string; tag: { bg: string; color: string } }> = {
+  safe:     { dot: "#2a5030", tag: { bg: "#ddeedd", color: "#2a5030" } },
+  moderate: { dot: "#706030", tag: { bg: "#f0e8d0", color: "#706030" } },
+  avoid:    { dot: "#703030", tag: { bg: "#e8d8d4", color: "#703030" } },
 };
 
-function additiveTitle(additive: AdditiveAnalysis) {
-  return `${additive.code.toUpperCase()} ${additive.name}`;
+function safetyLabel(safety: SafetyRating, lang: Language): string {
+  if (safety === "safe") return t('product_safe', lang);
+  if (safety === "avoid") return t('product_avoid', lang);
+  return t('product_moderate', lang);
 }
 
-export function Additives({ additives }: AdditivesProps) {
+export function Additives({ additives, lang = 'no' }: AdditivesProps) {
   const [openCode, setOpenCode] = useState<string | null>(null);
 
   if (additives.length === 0) {
     return (
-      <section className="w-full max-w-full rounded-[1.75rem] border border-emerald-100 bg-white p-5 shadow-soft sm:rounded-[2rem] sm:p-6">
-        <div className="flex items-start gap-3">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-xl">✅</div>
-          <div>
-            <h2 className="type-heading-2 text-ink">Additives</h2>
-            <p className="type-body mt-2 font-bold text-emerald-800">No additives detected</p>
-          </div>
-        </div>
-      </section>
+      <div style={{ background: "#ddeedd", borderRadius: 14, border: "0.5px solid #88bb88", padding: "10px 12px" }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "#2a5030" }}>{t('product_no_additives', lang)}</p>
+      </div>
     );
   }
 
-  const avoidCount = additives.filter((additive) => additive.risk === "avoid").length;
-  const summary = `${additives.length} additive${additives.length === 1 ? "" : "s"} found — ${avoidCount} to avoid`;
-
   return (
-    <section className="w-full max-w-full rounded-[1.75rem] border border-black/5 bg-white p-5 shadow-soft sm:rounded-[2rem] sm:p-6">
-      <div className="mb-4 flex items-start gap-3">
-        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-leaf-50 text-forest">
-          <FlaskConical className="h-5 w-5" />
-        </div>
-        <div>
-          <h2 className="type-heading-2 text-ink">Additives</h2>
-          <p className="type-body mt-1 font-bold text-soil-600">{summary}</p>
-        </div>
-      </div>
+    <div style={{ background: "#ffffff", borderRadius: 14, border: "0.5px solid #e0d8cc", overflow: "hidden" }}>
+      {additives.map((additive, index) => {
+        const safety = (additive.risk ?? "moderate") as SafetyRating;
+        const styles = SAFETY_STYLES[safety] ?? SAFETY_STYLES.moderate;
+        const isOpen = openCode === additive.code;
+        const isLast = index === additives.length - 1;
 
-      <div className="flex min-w-0 flex-wrap gap-2">
-        {additives.map((additive) => {
-          const isOpen = openCode === additive.code;
-          const style = riskStyles[additive.risk];
+        return (
+          <div key={additive.code}>
+            <button
+              type="button"
+              onClick={() => setOpenCode(isOpen ? null : additive.code)}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 12px",
+                borderBottom: isLast && !isOpen ? "none" : "0.5px solid #f5f0e8",
+                background: "transparent",
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              {/* Coloured dot */}
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: styles.dot, flexShrink: 0 }} />
 
-          return (
-            <div key={additive.code} className="w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={() => setOpenCode(isOpen ? null : additive.code)}
-                className={`type-body-sm flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl border px-4 py-2 text-left font-bold transition active:scale-[0.99] sm:w-auto ${style.pill}`}
-              >
-                <span>{additiveTitle(additive)}</span>
-                <ChevronDown className={`h-4 w-4 shrink-0 transition ${isOpen ? "rotate-180" : ""}`} />
-              </button>
-              {isOpen ? (
-                <div className={`type-body-sm mt-2 rounded-2xl border p-3 shadow-sm ${style.panel}`}>
-                  <p className="font-bold">{style.label}</p>
-                  <p className="mt-1">{additive.description}</p>
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-    </section>
+              {/* Name + description */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: "#1e1e18", lineHeight: 1.3 }}>
+                  {additive.code.toUpperCase()} {additive.name}
+                </p>
+                {!isOpen && additive.description ? (
+                  <p style={{ fontSize: 11, color: "#9a8e7e", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {additive.description}
+                  </p>
+                ) : null}
+              </div>
+
+              {/* Safety tag */}
+              <span style={{ fontSize: 10, fontWeight: 700, borderRadius: 6, padding: "2px 7px", flexShrink: 0, background: styles.tag.bg, color: styles.tag.color }}>
+                {safetyLabel(safety, lang)}
+              </span>
+            </button>
+
+            {/* Expanded description */}
+            {isOpen ? (
+              <div style={{ padding: "6px 12px 10px 27px", borderBottom: isLast ? "none" : "0.5px solid #f5f0e8", background: styles.tag.bg }}>
+                <p style={{ fontSize: 12, color: styles.dot, lineHeight: 1.5 }}>{additive.description}</p>
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
   );
 }

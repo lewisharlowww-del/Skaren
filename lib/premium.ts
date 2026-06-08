@@ -1,51 +1,25 @@
-export const premiumStorageKey = "skaren-premium-active";
-export const supportAmountStorageKey = "skaren-support-amount-nok";
-export const supporterBadgeStorageKey = "skaren-supporter-badge";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-export function getAccountSupportStorageKeys(email?: string | null) {
-  const normalizedEmail = email?.trim().toLowerCase();
+/**
+ * Checks the current user's premium status from the Supabase `profiles` table.
+ * Returns false if the user is not signed in, has no profile row, or on any error.
+ */
+export async function getUserPremiumStatus(supabase: SupabaseClient): Promise<boolean> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return false;
 
-  if (!normalizedEmail) {
-    return {
-      premium: premiumStorageKey,
-      amount: supportAmountStorageKey,
-      badge: supporterBadgeStorageKey
-    };
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("is_premium")
+      .eq("id", user.id)
+      .single();
+
+    if (error || !data) return false;
+    return Boolean((data as { is_premium?: boolean }).is_premium);
+  } catch {
+    return false;
   }
-
-  return {
-    premium: `${premiumStorageKey}:${normalizedEmail}`,
-    amount: `${supportAmountStorageKey}:${normalizedEmail}`,
-    badge: `${supporterBadgeStorageKey}:${normalizedEmail}`
-  };
-}
-
-export function getSupporterBadge(amountNok: number) {
-  if (amountNok >= 1000) return "Skaren Founder";
-  if (amountNok >= 200) return "Founding Supporter";
-  return "Supporter";
-}
-
-export function isPremiumMetadata(metadata: Record<string, unknown> | null | undefined) {
-  return metadata?.plan === "premium" || metadata?.premium === true || metadata?.supporter === true;
-}
-
-export function getStoredSupportStatus(email?: string | null) {
-  const keys = getAccountSupportStorageKeys(email);
-  const amount = Number(window.localStorage.getItem(keys.amount) ?? "0");
-
-  return {
-    isSupporter: window.localStorage.getItem(keys.premium) === "true",
-    amountNok: Number.isFinite(amount) ? amount : 0,
-    badge: window.localStorage.getItem(keys.badge) ?? getSupporterBadge(Number.isFinite(amount) ? amount : 0)
-  };
-}
-
-export function saveStoredSupportStatus({ email, amountNok, badge }: { email?: string | null; amountNok: number; badge?: string }) {
-  const keys = getAccountSupportStorageKeys(email);
-  const resolvedBadge = badge ?? getSupporterBadge(amountNok);
-
-  window.localStorage.setItem(keys.premium, "true");
-  window.localStorage.setItem(keys.amount, String(amountNok));
-  window.localStorage.setItem(keys.badge, resolvedBadge);
 }

@@ -15,8 +15,9 @@ export function normalizeEcoGrade(value?: string | null): EcoGrade {
   return "unknown";
 }
 
-export const hasEcoData = (product: any): boolean => {
-  const grade = String(product?.ecoscore_grade ?? product?.eco_score_grade ?? product?.ecoGrade ?? "").toLowerCase().trim();
+export const hasEcoData = (product: unknown): boolean => {
+  const p = product as Record<string, unknown> | null | undefined;
+  const grade = String(p?.ecoscore_grade ?? p?.eco_score_grade ?? p?.ecoGrade ?? "").toLowerCase().trim();
   return (
     !!grade &&
     grade !== "unknown" &&

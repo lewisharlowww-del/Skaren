@@ -23,6 +23,7 @@ type KassalappProduct = {
   thumbnail?: string | null;
   url?: string | null;
   ean?: string | number | null;
+  barcode?: string | number | { ean?: string | number | null } | null;
   store_prices?: KassalappStorePrice[] | null;
   store?: { name?: string | null; code?: string | null; logo?: string | null } | null;
   current_price?: number | string | null;
@@ -80,6 +81,17 @@ export class KassalappLookupError extends Error {
   }
 }
 
+export class KassalappSearchError extends Error {
+  constructor(
+    message = "Kassalapp search failed.",
+    public readonly status?: number,
+    public readonly details?: string
+  ) {
+    super(message);
+    this.name = "KassalappSearchError";
+  }
+}
+
 function firstText(...values: Array<string | number | null | undefined>) {
   for (const value of values) {
     const text = String(value ?? "").trim();
@@ -111,6 +123,15 @@ function imageFromProduct(product: KassalappProduct) {
     ?? normalizeImageUrl(imageFromList);
 }
 
+function barcodeFromProduct(product: KassalappProduct) {
+  const nestedBarcode =
+    typeof product.barcode === "object" && product.barcode
+      ? product.barcode.ean
+      : product.barcode;
+
+  return firstText(product.ean, nestedBarcode);
+}
+
 export function cleanForKassalappSearch(name: string): string {
   return name
     .replace(/\d+(?:[.,]\d+)?\s*(g|kg|ml|l|cl|stk|pk)\b/gi, "")
@@ -131,6 +152,66 @@ function uniqueSearchTerms(terms: string[]) {
       seen.add(key);
       return true;
     });
+}
+
+const englishToNorwegianSearchTerms: Record<string, string[]> = {
+  milk: ["melk"],
+  "whole milk": ["helmelk"],
+  "low fat milk": ["lettmelk"],
+  yogurt: ["yoghurt", "yogurt"],
+  yoghurt: ["yoghurt"],
+  cheese: ["ost"],
+  butter: ["smør"],
+  cream: ["fløte"],
+  chicken: ["kylling"],
+  beef: ["storfe", "kjøttdeig"],
+  meat: ["kjøtt"],
+  mince: ["kjøttdeig"],
+  salmon: ["laks"],
+  fish: ["fisk"],
+  bread: ["brød"],
+  egg: ["egg"],
+  eggs: ["egg"],
+  juice: ["juice"],
+  soda: ["brus"],
+  water: ["vann"],
+  chocolate: ["sjokolade"],
+  coffee: ["kaffe"],
+  tea: ["te"],
+  apple: ["eple"],
+  banana: ["banan"],
+  orange: ["appelsin"],
+  potato: ["potet"],
+  tomato: ["tomat"],
+  pasta: ["pasta"],
+  rice: ["ris"],
+  cereal: ["frokostblanding"],
+  ham: ["skinke"],
+  sausage: ["pølse"]
+};
+
+function expandKassalappSearchQueries(query: string) {
+  const cleanedQuery = cleanForKassalappSearch(query);
+  const normalized = cleanedQuery.toLowerCase();
+  const aliases = englishToNorwegianSearchTerms[normalized] ?? [];
+  const words = normalized.split(" ").filter(Boolean);
+  const translatedWords = words.map(
+    (word) => englishToNorwegianSearchTerms[word]?.[0] ?? word
+  );
+  const translatedPhrase =
+    translatedWords.some((word, index) => word !== words[index])
+      ? translatedWords.join(" ")
+      : "";
+  const wordAliases = words.flatMap(
+    (word) => englishToNorwegianSearchTerms[word] ?? []
+  );
+
+  return uniqueSearchTerms([
+    ...aliases,
+    translatedPhrase,
+    ...wordAliases,
+    cleanedQuery || query
+  ]);
 }
 
 function normalizeStoreName(value: KassalappStorePrice) {
@@ -263,28 +344,28 @@ function uniqueByText<T>(values: T[], getKey: (value: T) => string) {
 function unwrapKassalappProducts(data: KassalappResponse): { ean: string | null; products: KassalappProduct[] } {
   if ("data" in data && data.data?.products?.length) {
     return {
-      ean: firstText(data.data.ean),
+      ean: barcodeFromProduct(data.data),
       products: [data.data, ...data.data.products]
     };
   }
 
   if ("data" in data && data.data) {
     return {
-      ean: firstText(data.data.ean),
+      ean: barcodeFromProduct(data.data),
       products: [data.data]
     };
   }
 
   if ("product" in data && data.product) {
     return {
-      ean: firstText(data.product.ean),
+      ean: barcodeFromProduct(data.product),
       products: [data.product]
     };
   }
 
   if ("name" in data || "ean" in data || "image" in data) {
     return {
-      ean: firstText(data.ean),
+      ean: barcodeFromProduct(data),
       products: [data]
     };
   }
@@ -407,7 +488,7 @@ export async function fetchKassalappProduct(barcode: string) {
     const firstProductWithStore = products.find((product) => normalizeProductStore(product));
 
     return {
-      barcode: ean ?? firstText(rawProduct.ean) ?? barcode.trim(),
+      barcode: ean ?? barcodeFromProduct(rawProduct) ?? barcode.trim(),
       name,
       brand: firstText(rawProduct.brand, rawProduct.vendor) ?? "Brand not listed",
       ingredients: firstText(rawProduct.ingredientList, rawProduct.ingredient_list, rawProduct.ingredients),
@@ -431,79 +512,97 @@ export async function fetchKassalappProduct(barcode: string) {
 export async function fetchKassalappImageByEan(ean: string) {
   const product = await fetchKassalappProduct(ean).catch(() => null);
   const image = product?.image ?? null;
-
-  console.log("[Kassalapp] EAN lookup image:", image, "for ean:", ean);
-
   return image;
 }
 
 export async function searchKassalappProducts(
   query: string,
   limit = 6,
-  options: { categoryId?: number; category?: string } = {}
+  options: { categoryId?: number; category?: string; includeBrandMatch?: boolean } = {}
 ): Promise<KassalappSearchProduct[]> {
   const apiKey = process.env.KASSALAPP_API_KEY;
   if (!apiKey) return [];
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-  const cleanedQuery = cleanForKassalappSearch(query);
-  const url = new URL("https://kassal.app/api/v1/products");
-  if (cleanedQuery || query.trim()) {
-    url.searchParams.set("search", cleanedQuery || query);
-  }
-  if (options.categoryId) {
-    url.searchParams.set("category_id", String(options.categoryId));
-  }
-  if (options.category) {
-    url.searchParams.set("category", options.category);
-  }
-  url.searchParams.set("unique", "true");
-  url.searchParams.set("exclude_without_ean", "true");
-  url.searchParams.set("size", String(Math.min(20, Math.max(limit, 6))));
-
   try {
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`
-      },
-      cache: "no-store",
-      signal: controller.signal
-    });
+    const searchQueries = expandKassalappSearchQueries(query);
+    const requests: Array<{ search?: string; brand?: string }> = [
+      ...searchQueries.map((search) => ({ search })),
+      ...(options.includeBrandMatch ? [{ brand: query.trim() }] : [])
+    ];
+    const results: KassalappSearchProduct[] = [];
 
-    if (!response.ok) {
-      console.error("[Kassalapp] Search failed:", response.status, cleanedQuery || query || `category ${options.categoryId ?? options.category ?? ""}`);
-      return [];
+    for (const searchRequest of requests) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const url = new URL("https://kassal.app/api/v1/products");
+      if (searchRequest.search) {
+        url.searchParams.set("search", searchRequest.search);
+      }
+      if (searchRequest.brand) {
+        url.searchParams.set("brand", searchRequest.brand);
+      }
+      if (options.categoryId) {
+        url.searchParams.set("category_id", String(options.categoryId));
+      }
+      if (options.category) {
+        url.searchParams.set("category", options.category);
+      }
+      url.searchParams.set("unique", "1");
+      url.searchParams.set("exclude_without_ean", "1");
+      url.searchParams.set("size", String(Math.min(100, Math.max(limit, 6))));
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`
+        },
+        cache: "no-store",
+        signal: controller.signal
+      });
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        const details = await response.text().catch(() => "");
+        console.error(
+          "[Kassalapp] Search failed:",
+          response.status,
+          searchRequest.search ?? searchRequest.brand ?? `category ${options.categoryId ?? options.category ?? ""}`
+        );
+        throw new KassalappSearchError("Kassalapp search failed.", response.status, details);
+      }
+
+      const rawResponse = (await response.json()) as KassalappSearchResponse;
+      const products = unwrapKassalappSearchProducts(rawResponse)
+        .map<KassalappSearchProduct | null>((product) => {
+          const name = firstText(product.name);
+          const barcode = barcodeFromProduct(product);
+          if (!name || !barcode) return null;
+
+          return {
+            barcode,
+            name,
+            brand: firstText(product.brand, product.vendor) ?? "Brand not listed",
+            image: imageFromProduct(product),
+            categories: normalizeCategories(product)
+          };
+        })
+        .filter((product): product is KassalappSearchProduct => Boolean(product));
+
+      results.push(...products);
+
     }
 
-    const rawResponse = (await response.json()) as KassalappSearchResponse;
-    const products = unwrapKassalappSearchProducts(rawResponse);
-    console.log("[Kassalapp] Search returned:", products.length, "products for:", cleanedQuery || query || `category ${options.categoryId ?? options.category ?? ""}`);
-
-    return products
-      .map((product) => {
-        const name = firstText(product.name);
-        if (!name) return null;
-
-        const result = {
-          barcode: firstText(product.ean),
-          name,
-          brand: firstText(product.brand, product.vendor) ?? "Brand not listed",
-          image: imageFromProduct(product),
-          categories: normalizeCategories(product)
-        };
-
-        console.log("[Kassalapp] Found product:", result.name, "image:", result.image);
-
-        return result;
+    return uniqueByText(results, (product) => product.barcode ?? product.name)
+      .sort((a, b) => {
+        const aStartsWith = a.name.toLowerCase().startsWith(query.toLowerCase());
+        const bStartsWith = b.name.toLowerCase().startsWith(query.toLowerCase());
+        if (aStartsWith !== bStartsWith) return Number(bStartsWith) - Number(aStartsWith);
+        return Number(Boolean(b.image)) - Number(Boolean(a.image));
       })
-      .filter((product): product is KassalappSearchProduct => Boolean(product))
-      .sort((a, b) => Number(Boolean(b.image)) - Number(Boolean(a.image)))
       .slice(0, limit);
   } catch (error) {
     console.error("[Kassalapp] Search error:", error instanceof Error ? error.message : String(error));
-    return [];
-  } finally {
-    clearTimeout(timeout);
+    if (error instanceof KassalappSearchError) throw error;
+    throw new KassalappSearchError();
   }
 }

@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Info } from "lucide-react";
-import { t } from "@/lib/i18n";
 
 export function HomeInfoPopover() {
   const [open, setOpen] = useState(false);
@@ -36,7 +35,7 @@ export function HomeInfoPopover() {
     <div ref={wrapperRef} className="relative z-10">
       <button
         type="button"
-        aria-label={open ? t("home.info.close") : t("home.info.open")}
+        aria-label={open ? "Close info" : "What does Skaren check?"}
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
         className={`focus-ring tap-feedback grid h-12 w-12 place-items-center rounded-full border transition ${
@@ -51,27 +50,19 @@ export function HomeInfoPopover() {
       {open && (
         <div className="animate-fade-up absolute right-0 top-14 w-[min(18.5rem,calc(100vw-4rem))] rounded-[1.35rem] border border-white/15 bg-white p-4 text-ink shadow-phone">
           <p className="type-section-label text-forest">
-            {t("home.info.title")}
+            What Skaren checks
           </p>
           <p className="type-body-sm mt-2 text-soil-600">
-            {t("home.info.body")}
+            Each scan gives you a full health and eco breakdown of the product.
           </p>
           <div className="type-body-sm mt-4 grid gap-2 font-bold text-ink">
-            <span className="rounded-2xl bg-leaf-50 px-3 py-2">
-              {t("home.info.health_grade")}
-            </span>
-            <span className="rounded-2xl bg-leaf-50 px-3 py-2">
-              {t("home.info.additives")}
-            </span>
-            <span className="rounded-2xl bg-leaf-50 px-3 py-2">
-              {t("home.info.nova")}
-            </span>
-            <span className="rounded-2xl bg-leaf-50 px-3 py-2">
-              {t("home.info.allergens")}
-            </span>
+            <span className="rounded-2xl bg-leaf-50 px-3 py-2">Health &amp; Eco grades</span>
+            <span className="rounded-2xl bg-leaf-50 px-3 py-2">Additives &amp; safety</span>
+            <span className="rounded-2xl bg-leaf-50 px-3 py-2">NOVA processing level</span>
+            <span className="rounded-2xl bg-leaf-50 px-3 py-2">Allergens</span>
           </div>
           <p className="type-caption mt-3 text-soil-500">
-            {t("home.info.disclaimer")}
+            Data sourced from Open Food Facts and Kassalapp. Grades are indicative only.
           </p>
         </div>
       )}

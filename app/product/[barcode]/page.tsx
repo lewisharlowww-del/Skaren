@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { AlertCircle, ArrowLeft, Barcode, ChevronDown, Leaf, MapPin, RotateCcw, ShoppingBag, Tags } from "lucide-react";
@@ -13,6 +13,11 @@ import { calculateHealthGrade, hasNokkelhullLabel, nutritionDataFromKassalapp } 
 import { getProductEmoji } from "@/lib/kassalapp";
 import { cacheProductLocally, readLocalProduct } from "@/lib/localProducts";
 import { supabase } from "@/lib/supabase";
+import { getUserPremiumStatus } from "@/lib/premium";
+import {
+  consumeSearchProductHistoryMarker,
+  saveProductToHistory
+} from "@/lib/productHistory";
 import type { GradeLetter, ProductInsight, ProductResult } from "@/lib/types";
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 
@@ -29,50 +34,17 @@ type ProductError = {
 
 const productLoadingMessages = ["Checking product data...", "Checking ingredients...", "Checking product grades...", "Analyzing nutrition..."];
 
-function ProductLoadingState({ barcode }: { barcode: string }) {
-  const [messageIndex, setMessageIndex] = useState(0);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setMessageIndex((index) => (index + 1) % productLoadingMessages.length);
-    }, 1050);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
+function ProductLoadingState({ barcode: _barcode }: { barcode: string }) {
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 14, scale: 0.99 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 8, scale: 0.99 }}
-      transition={{ type: "spring", stiffness: 160, damping: 25 }}
-      className="mt-3 overflow-hidden rounded-[2rem] border border-white/70 bg-white/80 p-4 shadow-glass backdrop-blur-2xl"
-    >
-      <div className="rounded-[1.7rem] bg-gradient-to-br from-cream via-white to-leaf-100 p-5">
-        <div className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-forest text-cream shadow-phone scan-glow">
-          <Barcode className="h-12 w-12" />
-        </div>
-        <p className="mt-5 text-center text-xs font-black uppercase tracking-[0.18em] text-forest">Product report</p>
-        <h1 className="mt-2 text-center text-2xl font-black tracking-[-0.04em] text-ink">{productLoadingMessages[messageIndex]}</h1>
-        <p className="mt-2 text-center text-sm font-semibold text-soil-600">Barcode {barcode}</p>
-
-        <div className="mt-6 overflow-hidden rounded-full bg-white">
-          <div className="scan-progress-line h-2 rounded-full bg-forest" />
-        </div>
-
-        <div className="mt-6 grid gap-3">
-          <div className="skeleton-shimmer h-48 rounded-[1.5rem] bg-white/80" />
-          <div className="grid grid-cols-[5rem_1fr] gap-3">
-            <div className="skeleton-shimmer h-20 rounded-[1.25rem] bg-white/80" />
-            <div className="space-y-3">
-              <div className="skeleton-shimmer h-5 rounded-full bg-white/80" />
-              <div className="skeleton-shimmer h-5 w-2/3 rounded-full bg-white/80" />
-              <div className="skeleton-shimmer h-9 rounded-full bg-white/80" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </motion.section>
+    <div className="flex flex-col items-center justify-center gap-4" style={{ height: "100dvh", background: "#faf7f2" }}>
+      <svg className="animate-spin" width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <circle cx="18" cy="18" r="14" stroke="#e0d8cc" strokeWidth="3" />
+        <path d="M18 4 A14 14 0 0 1 32 18" stroke="#2d4a26" strokeWidth="3" strokeLinecap="round" />
+      </svg>
+      <p style={{ color: "#9a8e7e", fontSize: 13, fontFamily: "Manrope, sans-serif" }}>
+        Loading product...
+      </p>
+    </div>
   );
 }
 
@@ -440,49 +412,54 @@ function findNutritionForRow(product: ProductResult, matches: string[], excludes
 }
 
 function getNutritionValueTone(label: string, amount: number) {
+  const good     = "bg-[#ddeedd] text-[#2a5030]";
+  const moderate = "bg-[#f0e8d0] text-[#706030]";
+  const poor     = "bg-[#e8d8d4] text-[#703030]";
+  const neutral  = "bg-[#ece0d4] text-[#704830]";
+
   if (label === "Calories") {
-    if (amount < 150) return "bg-emerald-50 text-emerald-800";
-    if (amount <= 400) return "bg-amber-50 text-amber-800";
-    return "bg-rose-50 text-rose-800";
+    if (amount < 150) return good;
+    if (amount <= 400) return moderate;
+    return poor;
   }
 
   if (label === "Sugars") {
-    if (amount < 5) return "bg-emerald-50 text-emerald-800";
-    if (amount <= 15) return "bg-amber-50 text-amber-800";
-    return "bg-rose-50 text-rose-800";
+    if (amount < 5) return good;
+    if (amount <= 15) return moderate;
+    return poor;
   }
 
   if (label === "Fat") {
-    if (amount < 5) return "bg-emerald-50 text-emerald-800";
-    if (amount <= 17) return "bg-amber-50 text-amber-800";
-    return "bg-rose-50 text-rose-800";
+    if (amount < 5) return good;
+    if (amount <= 17) return moderate;
+    return poor;
   }
 
   if (label === "Saturated fat") {
-    if (amount < 1.5) return "bg-emerald-50 text-emerald-800";
-    if (amount <= 5) return "bg-amber-50 text-amber-800";
-    return "bg-rose-50 text-rose-800";
+    if (amount < 1.5) return good;
+    if (amount <= 5) return moderate;
+    return poor;
   }
 
   if (label === "Salt") {
-    if (amount < 0.3) return "bg-emerald-50 text-emerald-800";
-    if (amount <= 1.5) return "bg-amber-50 text-amber-800";
-    return "bg-rose-50 text-rose-800";
+    if (amount < 0.3) return good;
+    if (amount <= 1.5) return moderate;
+    return poor;
   }
 
   if (label === "Protein") {
-    if (amount > 15) return "bg-emerald-50 text-emerald-800";
-    if (amount >= 5) return "bg-amber-50 text-amber-800";
-    return "bg-soil-100 text-soil-700";
+    if (amount > 15) return good;
+    if (amount >= 5) return moderate;
+    return neutral;
   }
 
   if (label === "Fiber") {
-    if (amount >= 6) return "bg-emerald-50 text-emerald-800";
-    if (amount >= 3) return "bg-amber-50 text-amber-800";
-    return "bg-soil-100 text-soil-700";
+    if (amount >= 6) return good;
+    if (amount >= 3) return moderate;
+    return neutral;
   }
 
-  return "bg-soil-100 text-soil-700";
+  return neutral;
 }
 
 function getNutritionRows(product: ProductResult) {
@@ -612,7 +589,7 @@ function getKeyInsights(product: ProductResult): ProductInsight[] {
   };
   const scoredInsights = product.aiSummary
     .map((insight, index) => {
-      const rawText = (typeof insight === "string" ? insight : insight.text).replace(/^[-•\d.\s]+/, "").trim();
+      const rawText = (typeof insight === "string" ? insight : insight.text).replace(/^[-•]\s*/, "").trim();
       const text = productFatPercent && rawText.startsWith("% fat")
         ? `${productFatPercent}${rawText}`
         : rawText;
@@ -743,6 +720,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [error, setError] = useState<ProductError | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPremium, setIsPremium] = useState(false);
+  const historySaveBarcode = useRef<string | null>(null);
 
   async function loadProduct(options: { skipCache?: boolean } = {}) {
     setLoading(true);
@@ -826,41 +804,32 @@ export default function ProductPage({ params }: ProductPageProps) {
   }, [params.barcode]);
 
   useEffect(() => {
+    if (!product || product.barcode !== params.barcode) return;
+    if (historySaveBarcode.current === params.barcode) return;
+    if (!consumeSearchProductHistoryMarker(params.barcode)) return;
+
+    historySaveBarcode.current = params.barcode;
+    void saveProductToHistory(product);
+  }, [params.barcode, product]);
+
+  useEffect(() => {
     let active = true;
 
     async function loadPremiumStatus() {
-      const { data: sessionData } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
-      const response = sessionData.session?.access_token
-        ? await fetch("/api/stripe/premium-status", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${sessionData.session.access_token}`
-            }
-          }).catch(() => null)
-        : null;
-      const premiumStatus = (await response?.json().catch(() => null)) as { premium?: boolean } | null;
-      if (active) setIsPremium(Boolean(premiumStatus?.premium));
+      const premium = supabase ? await getUserPremiumStatus(supabase) : false;
+      if (active) setIsPremium(premium);
     }
 
     loadPremiumStatus();
 
     const listener = supabase?.auth.onAuthStateChange((_event, session) => {
-      if (!session?.access_token) {
+      if (!session?.user) {
         setIsPremium(false);
         return;
       }
-
-      void fetch("/api/stripe/premium-status", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`
-        }
-      })
-        .then((response) => response.json())
-        .then((status: { premium?: boolean }) => setIsPremium(Boolean(status?.premium)))
-        .catch(() => setIsPremium(false));
+      if (supabase) {
+        void getUserPremiumStatus(supabase).then((premium) => setIsPremium(premium));
+      }
     });
 
     return () => {
@@ -950,6 +919,7 @@ export default function ProductPage({ params }: ProductPageProps) {
             visibleIngredients={visibleIngredients}
             hasNutritionSignal={hasNutritionSignal}
             getEcoGrade={getEcoGrade}
+            isPremium={isPremium}
           />
         ) : null}
       </main>

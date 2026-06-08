@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { AppFooter } from "@/components/AppFooter";
 import { PwaShell } from "@/components/PwaShell";
+import { LanguageProvider } from "@/lib/language-context";
 import { colors } from "@/styles/tokens";
 import "./globals.css";
 import "@/styles/globals.css";
@@ -47,10 +47,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="no">
-      <body className="min-h-screen antialiased">
-        <PwaShell />
-        {children}
-        <AppFooter />
+      <body className="min-h-screen antialiased bg-[#f7f2ea]">
+        <LanguageProvider>
+          <PwaShell />
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );
