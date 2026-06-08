@@ -11,6 +11,7 @@ import { useUser } from '@/hooks/useUser'
 import { t } from '@/lib/i18n'
 import { useLang } from '@/lib/language-context'
 import { getUserPremiumStatus } from '@/lib/premium'
+import { readLocalProduct } from '@/lib/localProducts'
 import { supabase } from '@/lib/supabase'
 import type { GradeLetter, ScanRecord } from '@/lib/types'
 
@@ -130,6 +131,7 @@ function ScanRow({
   const ecoGrade = getEcoGrade(scan)
   const time = formatTime(scan.created_at)
   const initial = (scan.product_name ?? '?')[0].toUpperCase()
+  const image = scan.product_image ?? readLocalProduct(scan.barcode)?.displayImage ?? null
 
   return (
     <Link
@@ -140,10 +142,10 @@ function ScanRow({
     >
       {/* Thumbnail */}
       <div className="w-10 h-10 rounded-xl bg-[#eaf3de] flex items-center justify-center flex-shrink-0 overflow-hidden">
-        {scan.product_image ? (
+        {image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={scan.product_image}
+            src={image}
             alt={scan.product_name}
             className="w-full h-full object-contain p-0.5"
             loading="lazy"

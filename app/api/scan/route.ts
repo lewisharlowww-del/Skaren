@@ -28,6 +28,11 @@ async function saveScanToHistory(product: ProductResult, userId: string): Promis
     const additives = product.additives ?? [];
     const additivesToAvoid = additives.filter((a) => a.risk === "avoid").length;
 
+    const additivesModerate = additives.filter((a) => a.risk === "moderate").length;
+    const additiveDetails = additives.filter(
+      (a) => a.risk === "avoid" || a.risk === "moderate"
+    );
+
     const payload = {
       user_id: userId,
       barcode: product.barcode,
@@ -38,12 +43,30 @@ async function saveScanToHistory(product: ProductResult, userId: string): Promis
       ecoscan_score: gradeLetterToScore(healthGrade ?? environmentalGrade ?? "C"),
       additives_total: additives.length,
       additives_to_avoid: additivesToAvoid,
+      additives_moderate: additivesModerate,
+      additives_details: additiveDetails.length > 0 ? additiveDetails : null,
+      product_image: product.displayImage ?? null,
     };
 
     const { error } = await admin.from("scans").insert(payload);
     if (error) {
-      console.error("[Scan] DB save error:", error.message);
-      return false;
+      // If extended columns don't exist in schema, fall back to core fields only
+      console.warn("[Scan] Full save failed, trying minimal payload:", error.message);
+      const { error: minError } = await admin.from("scans").insert({
+        user_id: payload.user_id,
+        barcode: payload.barcode,
+        product_name: payload.product_name,
+        brand: payload.brand,
+        health_grade: payload.health_grade,
+        environmental_grade: payload.environmental_grade,
+        ecoscan_score: payload.ecoscan_score,
+        additives_total: payload.additives_total,
+        additives_to_avoid: payload.additives_to_avoid,
+      });
+      if (minError) {
+        console.error("[Scan] Minimal save also failed:", minError.message);
+        return false;
+      }
     }
     return true;
   } catch (err) {
