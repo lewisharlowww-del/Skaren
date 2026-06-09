@@ -24,7 +24,7 @@ export function BottomNav() {
   );
 
   return (
-    <nav className="fixed inset-x-3 z-50 grid grid-cols-5 rounded-[1.6rem] border border-black/[0.07] bg-white/90 dark:bg-[#242018]/92 dark:border-[#2e2a24]/50 p-1.5 shadow-phone backdrop-blur-2xl sm:hidden" style={{ bottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
+    <nav className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-black/[0.07] bg-white/95 dark:bg-[#242018]/96 dark:border-[#2e2a24]/50 px-2 pt-1.5 backdrop-blur-2xl sm:hidden" style={{ paddingBottom: 'calc(0.375rem + env(safe-area-inset-bottom))' }}>
       {navItems.map((item) => {
         const itemPath = item.href.split("?")[0];
         const active =
