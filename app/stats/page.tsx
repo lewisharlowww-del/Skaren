@@ -393,7 +393,7 @@ export default function StatsPage() {
     <>
       <BottomNav />
       <main className="min-h-screen bg-[var(--sk-brand-mist)] pb-36 text-[var(--sk-text-primary)]">
-        <div className="mx-auto w-full max-w-xl px-4 pb-8 pt-6">
+        <div className="mx-auto w-full max-w-xl px-4 pb-8 pt-safe">
           <header>
             <p className="sk-label">{text.label}</p>
             <h1 className="type-heading-1 mt-1">{text.rangeTitle[range]}</h1>

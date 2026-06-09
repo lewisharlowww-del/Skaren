@@ -625,7 +625,7 @@ export default function AccountPage() {
   return (
     <div className="min-h-screen bg-[var(--sk-brand-mist)]">
       <main
-        className="mx-auto min-h-screen w-full max-w-[430px] overflow-x-hidden bg-[var(--sk-brand-mist)] pb-32 pt-4 sm:max-w-lg sm:pt-8"
+        className="mx-auto min-h-screen w-full max-w-[430px] overflow-x-hidden bg-[var(--sk-brand-mist)] pb-32 pt-safe sm:max-w-lg"
       >
         {/* Page title */}
         <div className="px-4 pb-5 pt-1">

@@ -334,7 +334,7 @@ export default function HistoryPage() {
     <div className="min-h-screen bg-[var(--sk-brand-mist)]">
       <BottomNav />
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 h-36 bg-gradient-to-t from-[var(--sk-brand-mist)] via-[var(--sk-brand-mist)]/85 to-transparent sm:hidden" />
-      <main className="mx-auto min-h-screen w-full max-w-[430px] overflow-x-hidden bg-[var(--sk-brand-mist)] pb-48 pt-4 sm:max-w-lg sm:pb-32 sm:pt-8">
+      <main className="mx-auto min-h-screen w-full max-w-[430px] overflow-x-hidden bg-[var(--sk-brand-mist)] pb-48 pt-safe sm:max-w-lg sm:pb-32">
         {/* Page title */}
         <div className="flex items-start justify-between gap-4 px-5 pb-3">
           <div>

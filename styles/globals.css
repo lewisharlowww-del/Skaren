@@ -324,3 +324,14 @@ html.dark .bg-\[\#2d4a26\] {
 html.dark .border-\[\#2d4a26\] {
   border-color: #3a6030 !important;
 }
+
+
+/* ── Safe-area top padding (Dynamic Island / notch) ─────────────────────── */
+.pt-safe {
+  padding-top: calc(env(safe-area-inset-top) + 1rem);
+}
+@media (min-width: 640px) {
+  .pt-safe {
+    padding-top: 2rem;
+  }
+}

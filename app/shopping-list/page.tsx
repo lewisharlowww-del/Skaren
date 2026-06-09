@@ -900,7 +900,7 @@ export default function ShoppingListPage() {
     <>
       <BottomNav />
       <main className="min-h-screen bg-[var(--sk-brand-mist)] pb-36 text-[var(--sk-text-primary)]">
-        <div className="mx-auto w-full max-w-xl px-4 pb-8 pt-6">
+        <div className="mx-auto w-full max-w-xl px-4 pb-8 pt-safe">
           <header className="flex items-start justify-between gap-4">
             <div>
               <p className="type-section-label text-[var(--sk-text-faint)]">{t('list_section_label', lang)}</p>
