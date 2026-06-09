@@ -24,7 +24,7 @@ export function BottomNav() {
   );
 
   return (
-    <nav className="fixed inset-x-3 bottom-3 z-50 grid grid-cols-5 rounded-[1.6rem] border border-black/[0.07] bg-white/90 dark:bg-[#242018]/92 dark:border-[#2e2a24]/50 p-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] shadow-phone backdrop-blur-2xl sm:hidden">
+    <nav className="fixed inset-x-3 z-50 grid grid-cols-5 rounded-[1.6rem] border border-black/[0.07] bg-white/90 dark:bg-[#242018]/92 dark:border-[#2e2a24]/50 p-1.5 shadow-phone backdrop-blur-2xl sm:hidden" style={{ bottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
       {navItems.map((item) => {
         const itemPath = item.href.split("?")[0];
         const active =
