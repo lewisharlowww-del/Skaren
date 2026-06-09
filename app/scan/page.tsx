@@ -4,10 +4,11 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, ScanBarcode, Search } from "lucide-react";
+import { CheckCircle2, Crown, ScanBarcode, Search } from "lucide-react";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { BottomNav } from "@/components/BottomNav";
 import { Spinner } from "@/components/Spinner";
+import { useUser } from "@/hooks/useUser";
 import { t } from "@/lib/i18n";
 import { useLang } from "@/lib/language-context";
 import { PhoneFrame } from "@/components/PhoneFrame";
@@ -17,21 +18,7 @@ import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { getUserPremiumStatus } from "@/lib/premium";
 import type { ProductResult } from "@/lib/types";
 
-const freeGuestScanLimit = 5;
 const loadingMessages = ["Reading barcode...", "Checking ingredients...", "Checking product grades...", "Analyzing nutrition..."];
-
-function getGuestScanKey() {
-  const date = new Date();
-  return `skaren-guest-scans:${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function getGuestScanCount() {
-  return Number(window.localStorage.getItem(getGuestScanKey()) ?? "0");
-}
-
-function recordGuestScan() {
-  window.localStorage.setItem(getGuestScanKey(), String(getGuestScanCount() + 1));
-}
 
 
 function ScanLoadingOverlay({ barcode, scanSuccess, saved }: { barcode: string; scanSuccess: boolean; saved: boolean }) {
@@ -119,33 +106,24 @@ function ScanLoadingOverlay({ barcode, scanSuccess, saved }: { barcode: string; 
 export default function ScanPage() {
   const router = useRouter();
   const { lang } = useLang();
+  const { user, loading: userLoading } = useUser();
   const [barcode, setBarcode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [scanSuccess, setScanSuccess] = useState(false);
   const [savedToHistory, setSavedToHistory] = useState(false);
-  const [isSignedIn, setIsSignedIn] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
-  const [guestScansUsed, setGuestScansUsed] = useState(0);
 
   useEffect(() => {
     let active = true;
 
     async function loadSession() {
-      const { data } = (await supabase?.auth.getUser()) ?? { data: { user: null } };
-      if (active) {
-        setIsSignedIn(Boolean(data.user));
-      }
-
       const premium = supabase ? await getUserPremiumStatus(supabase) : false;
       if (active) setIsPremium(premium);
     }
 
     loadSession();
-    setGuestScansUsed(getGuestScanCount());
-
     const listener = supabase?.auth.onAuthStateChange((_event, session) => {
-      setIsSignedIn(Boolean(session?.user));
       if (session?.user && supabase) {
         void getUserPremiumStatus(supabase).then((premium) => setIsPremium(premium));
       } else {
@@ -162,16 +140,11 @@ export default function ScanPage() {
   async function analyzeBarcode(nextBarcode: string) {
     const cleanBarcode = nextBarcode.trim();
     if (!cleanBarcode) {
-      setError("Enter a barcode or scan one with your camera.");
+      setError(t('scan_error_empty', lang));
       return;
     }
 
-    const isGuestAtLimit = !isSignedIn && !isPremium && getGuestScanCount() >= freeGuestScanLimit;
-
-    if (isGuestAtLimit) {
-      setError("Free guest scanning includes 5 scans per month. Log in and support Skaren to unlock unlimited scans.");
-      return;
-    }
+    const isSignedIn = Boolean(user);
 
     setLoading(true);
     setScanSuccess(false);
@@ -202,7 +175,7 @@ export default function ScanPage() {
         sessionStorage.setItem(
           `skaren-error:${cleanBarcode}`,
           JSON.stringify({
-            message: response.status === 404 ? "We couldn't find this product. Try another barcode or check the number is correct." : "Something went wrong. Please try again.",
+            message: response.status === 404 ? t('scan_error_not_found', lang) : t('scan_error_generic', lang),
             type: response.status === 404 ? "not-found" : "retry"
           })
         );
@@ -217,9 +190,6 @@ export default function ScanPage() {
       if (data.savedToHistory) {
         setSavedToHistory(true);
         vibrate([12, 24, 18]);
-      } else if (!isSignedIn && !isPremium) {
-        recordGuestScan();
-        setGuestScansUsed(getGuestScanCount());
       }
 
       setScanSuccess(true);
@@ -230,7 +200,7 @@ export default function ScanPage() {
       sessionStorage.setItem(
         `skaren-error:${cleanBarcode}`,
         JSON.stringify({
-          message: "Something went wrong. Please try again.",
+          message: t('scan_error_generic', lang),
           type: "retry"
         })
       );
@@ -256,8 +226,9 @@ export default function ScanPage() {
         <div
           className="relative overflow-hidden"
           style={{
-            height: "46vh",
-            background: "#111",
+            height: "min(40vh, 25rem)",
+            minHeight: 270,
+            background: "var(--sk-brand-forest)",
           }}
         >
           {/* Real camera feed fills the full area */}
@@ -273,7 +244,7 @@ export default function ScanPage() {
           {/* Decorative overlay: dark vignette + corner brackets + text */}
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
             {/* Vignette */}
-            <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.55) 100%)" }} />
+            <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, rgba(82,115,75,0.08) 18%, rgba(25,38,23,0.82) 100%)" }} />
 
             {/* Corner brackets */}
             <div className="relative z-10" style={{ width: 200, height: 150 }}>
@@ -301,7 +272,7 @@ export default function ScanPage() {
           {/* Divider */}
           <div className="mb-3 flex items-center gap-3">
             <div className="h-px flex-1 bg-[#e0d8cc]" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#9a8e7e]">{t('scan_enter_manually', lang)}</span>
+            <span className="type-section-label text-[#9a8e7e]">{t('scan_enter_manually', lang)}</span>
             <div className="h-px flex-1 bg-[#e0d8cc]" />
           </div>
           <form onSubmit={handleAnalyze} className="space-y-2">
@@ -333,7 +304,7 @@ export default function ScanPage() {
                   </motion.span>
                 )}
               </AnimatePresence>
-              {scanSuccess ? "Product found" : loading ? t('loading', lang) : t('scan_analyze', lang)}
+              {scanSuccess ? t('scan_product_found', lang) : loading ? t('loading', lang) : t('scan_analyze', lang)}
             </button>
             {error ? (
               <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-medium text-rose-700">{error}</div>
@@ -342,7 +313,7 @@ export default function ScanPage() {
           {/* Search products row — premium feature */}
           <div className="mt-3 flex items-center gap-3">
             <div className="h-px flex-1 bg-[#e0d8cc]" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#9a8e7e]">{t('scan_or_explore', lang)}</span>
+            <span className="type-section-label text-[#9a8e7e]">{t('scan_or_explore', lang)}</span>
             <div className="h-px flex-1 bg-[#e0d8cc]" />
           </div>
           <Link
@@ -353,8 +324,17 @@ export default function ScanPage() {
               <Search className="h-5 w-5 text-[#2d4a26]" />
             </div>
             <div className="flex-1">
-              <p className="text-[14px] font-bold text-[#2d4a26]">{t('scan_search_products', lang)}</p>
-              <p className="text-[11px] text-[#9a8e7e]">{isPremium ? t('scan_find_without_scanning', lang) : t('pro_feature', lang)}</p>
+              <p className="flex items-center gap-1.5 text-[14px] font-bold text-[#2d4a26]">
+                {t('scan_search_products', lang)}
+                {!isPremium ? (
+                  <Crown
+                    className="h-4 w-4 text-[#8a7a30]"
+                    strokeWidth={2}
+                    aria-label={t('pro_feature', lang)}
+                  />
+                ) : null}
+              </p>
+              <p className="text-[12px] text-[#9a8e7e]">{isPremium ? t('scan_find_without_scanning', lang) : t('pro_feature', lang)}</p>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b0a090" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 18l6-6-6-6"/>
@@ -362,17 +342,19 @@ export default function ScanPage() {
           </Link>
           {/* Status */}
           <div className="mt-3 flex justify-center">
-            {isSignedIn ? (
-              <span className="rounded-full bg-[#eaf3de] px-4 py-2 text-[11px] font-bold text-[#2d4a26]">
+            {userLoading ? (
+              <span className="h-8 w-36 animate-pulse rounded-full bg-[#eaf3de]" aria-label="Checking account" />
+            ) : user ? (
+              <span className="rounded-full bg-[#eaf3de] px-4 py-2 text-[12px] font-bold text-[#2d4a26]">
                 {t('scan_signed_in', lang)}
               </span>
             ) : (
-              <p className="text-center text-[11px] text-[#9a8e7e]">
-                Free scans: {Math.min(guestScansUsed, freeGuestScanLimit)}/{freeGuestScanLimit} this month
-                {" · "}
+              <p className="text-center text-[12px] text-[#9a8e7e]">
                 <Link href="/login?next=%2Fscan" className="font-bold text-[#2d4a26] underline underline-offset-2">
-                  Log in
+                  {t('scan_log_in', lang)}
                 </Link>
+                {" · "}
+                {t('scan_free_hint', lang)}
               </p>
             )}
           </div>

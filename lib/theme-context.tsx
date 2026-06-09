@@ -11,7 +11,7 @@ type ThemeContextValue = {
 };
 
 const ThemeContext = createContext<ThemeContextValue>({
-  preference: "system",
+  preference: "light",
   resolved: "light",
   setPreference: () => {},
 });
@@ -35,17 +35,17 @@ function applyTheme(resolved: "light" | "dark") {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [preference, setPreferenceState] = useState<ThemePreference>("system");
+  const [preference, setPreferenceState] = useState<ThemePreference>("light");
   const [resolved, setResolved] = useState<"light" | "dark">("light");
 
   // Initialise from localStorage on mount
   useEffect(() => {
-    const stored = (localStorage.getItem(STORAGE_KEY) ?? "system") as ThemePreference;
-    const sys = getSystemTheme();
-    const res = stored === "system" ? sys : stored;
+    const saved = localStorage.getItem(STORAGE_KEY);
+    const stored: ThemePreference = saved === "dark" ? "dark" : "light";
+    if (saved !== stored) localStorage.setItem(STORAGE_KEY, stored);
     setPreferenceState(stored);
-    setResolved(res);
-    applyTheme(res);
+    setResolved(stored);
+    applyTheme(stored);
   }, []);
 
   // Listen for system theme changes when preference is "system"

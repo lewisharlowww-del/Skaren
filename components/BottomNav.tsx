@@ -46,7 +46,7 @@ export function BottomNav() {
             }`}
           >
             <item.icon className={`h-[1.1rem] w-[1.1rem] ${item.primary ? "" : active ? "stroke-[2.4px]" : ""}`} />
-            <span style={{ fontSize: 10 }}>{t(item.key, lang)}</span>
+            <span style={{ fontSize: 11 }}>{t(item.key, lang)}</span>
           </Link>
         );
       })}

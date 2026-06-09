@@ -112,7 +112,7 @@ function UL({ items }: { items: string[] }) {
 export default function PrivacyPage() {
   const router = useRouter();
 
-  const LAST_UPDATED = "June 2025";
+  const LAST_UPDATED = "June 2026";
 
   const sections: Section[] = [
     {

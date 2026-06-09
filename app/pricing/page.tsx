@@ -8,12 +8,13 @@ import { useLang } from "@/lib/language-context";
 const freeFeatures = [
   "Scan any product barcode",
   "Health and Eco grades",
+  "Ingredients list",
   "Basic nutrition table (per 100g)",
   "30 days of scan history",
 ];
 
 const proFeatures = [
-  "Full product breakdown: NOVA, additives, allergens & ingredients",
+  "NOVA processing level, additives & allergens",
   "Daily intake progress bars for every nutrient",
   "AI-powered key health insights per product",
   "Shopping list with health grade tracking",

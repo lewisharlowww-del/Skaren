@@ -27,9 +27,25 @@ function fallbackInsight(stats: InsightStats, language: "no" | "en") {
   const strong = (stats.gradeBreakdown.A ?? 0) + (stats.gradeBreakdown.B ?? 0);
   const weaker = (stats.gradeBreakdown.D ?? 0) + (stats.gradeBreakdown.E ?? 0);
 
+  if (stats.additivesToAvoid > 0) {
+    return language === "no"
+      ? "Et produkt inneholdt et tilsetningsstoff som bør unngås; sammenlign ingredienslisten neste gang."
+      : "One product contained an additive to avoid; compare its ingredient list with an alternative next time.";
+  }
+
+  if (stats.additivesModerate > 0) {
+    return language === "no"
+      ? "Moderate tilsetningsstoffer dukket opp denne perioden; se etter et enklere alternativ neste gang."
+      : "Moderate additives appeared this period; look for one simpler alternative next time.";
+  }
+
   return language === "no"
-    ? `${stats.totalScans} skanninger ga snitt ${stats.avgHealthGrade}, med ${strong} sterke og ${weaker} svakere valg; sammenlign ett alternativ neste gang.`
-    : `${stats.totalScans} scans averaged ${stats.avgHealthGrade}, with ${strong} strong and ${weaker} weaker choices; compare one alternative next time.`;
+    ? weaker > strong
+      ? "Flere svakere valg preget perioden; sammenlign ett alternativ før neste kjøp."
+      : "De fleste valgene var balanserte; fortsett å sammenligne produkter med tydelig ingrediensliste."
+    : weaker > strong
+      ? "Weaker choices shaped this period; compare one alternative before your next purchase."
+      : "Most choices were balanced; keep comparing products with a clear ingredient list.";
 }
 
 export async function POST(request: Request) {

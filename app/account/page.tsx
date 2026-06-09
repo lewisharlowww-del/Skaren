@@ -88,14 +88,6 @@ type AccountUser = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function getInitials(email?: string): string {
-  if (!email) return "?";
-  const local = email.split("@")[0];
-  const parts = local.split(/[._-]/);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return local.slice(0, 2).toUpperCase();
-}
-
 function getDisplayName(email?: string): string {
   if (!email) return "Skaren user";
   const local = email.split("@")[0];
@@ -120,18 +112,18 @@ function computeStreak(dates: (string | undefined | null)[]): number {
   return streak;
 }
 
-function getGamificationBadge(scanCount: number): string {
-  if (scanCount >= 100) return "Eco Champion";
-  if (scanCount >= 25) return "Eco Pioneer";
-  if (scanCount >= 5) return "Eco Explorer";
-  if (scanCount >= 1) return "Eco Curious";
-  return "New Scanner";
+function getGamificationBadge(scanCount: number, lang: Language): string {
+  const no = lang === "no";
+  if (scanCount >= 100) return no ? "Mester"     : "Champion";
+  if (scanCount >= 25)  return no ? "Pioner"     : "Pioneer";
+  if (scanCount >= 5)   return no ? "Utforsker"  : "Explorer";
+  if (scanCount >= 1)   return no ? "Nysgjerrig" : "Curious";
+  return no ? "Ny skanner" : "New scanner";
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function ProfileCard({
-  initials,
   name,
   email,
   isPremium,
@@ -141,7 +133,6 @@ function ProfileCard({
   joinedDate,
   lang,
 }: {
-  initials: string;
   name: string;
   email: string;
   isPremium: boolean;
@@ -151,7 +142,7 @@ function ProfileCard({
   joinedDate: string;
   lang: Language;
 }) {
-  const gamificationBadge = getGamificationBadge(scanCount);
+  const gamificationBadge = getGamificationBadge(scanCount, lang);
 
   return (
     <section
@@ -170,7 +161,7 @@ function ProfileCard({
 
       <div className="flex items-center justify-between gap-3">
         <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#c7d5c4]">
-          Skaren membership
+          {t("account_membership_label", lang)}
         </p>
         {checkingPremium ? (
           <span className="h-6 w-20 animate-pulse rounded-full bg-white/10" />
@@ -188,24 +179,15 @@ function ProfileCard({
             }}
           >
             {isPremium ? <Crown className="h-3 w-3" /> : null}
-            {isPremium ? t("account_pro_member", lang) : "Member"}
+            {isPremium ? t("account_pro_member", lang) : t("account_free_member", lang)}
           </span>
         )}
       </div>
 
-      <div className="mt-5 flex items-center gap-4">
-        <div
-          className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full border"
-          style={{
-            backgroundColor: "#f5f0e8",
-            borderColor: "rgba(255,255,255,0.48)",
-          }}
-        >
-          <span className="text-[18px] font-black text-[#2d4a26]">{initials}</span>
-        </div>
+      <div className="mt-7">
         <div className="min-w-0">
           <p
-            className="truncate text-[22px] font-bold leading-tight text-white"
+            className="truncate text-[24px] font-bold leading-tight text-white"
             style={{ fontFamily: "Satoshi, sans-serif" }}
           >
             {name}
@@ -219,23 +201,23 @@ function ProfileCard({
           <ScanBarcode className="mb-2 h-4 w-4 text-[#a9c1a5]" />
           <p className="text-[17px] font-bold leading-none text-white">{scanCount}</p>
           <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#a9c1a5]">
-            {t("account_scans", lang)}
+            {lang === "no" ? "visninger" : "views"}
           </p>
         </div>
         <div className="border-r border-white/15 px-3">
           <Flame className="mb-2 h-4 w-4 text-[#d8c78f]" />
           <p className="text-[17px] font-bold leading-none text-white">{streakDays}</p>
           <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#a9c1a5]">
-            Day streak
+            {t("account_streak_label", lang)}
           </p>
         </div>
         <div className="pl-3">
           <Leaf className="mb-2 h-4 w-4 text-[#a9c1a5]" />
           <p className="truncate text-[12px] font-bold leading-none text-white">
-            {gamificationBadge.replace("Eco ", "")}
+            {gamificationBadge}
           </p>
           <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#a9c1a5]">
-            Level
+            {t("account_level_label", lang)}
           </p>
         </div>
       </div>
@@ -379,17 +361,17 @@ function DeleteDialog({
             </button>
           </div>
           <h2 className="mt-3 text-[20px] font-black" style={{ fontFamily: "Satoshi, sans-serif", color: "var(--sk-status-danger)" }}>
-            Delete account?
+            {t('account_delete_title', lang)}
           </h2>
           <p className="mt-1 text-[13px]" style={{ color: "var(--sk-text-secondary)" }}>
-            Signed in as <span className="font-semibold" style={{ color: "var(--sk-text-primary)" }}>{email}</span>
+            {lang === 'no' ? 'Innlogget som' : 'Signed in as'} <span className="font-semibold" style={{ color: "var(--sk-text-primary)" }}>{email}</span>
           </p>
         </div>
 
         {/* Body */}
         <div className="px-6 py-5">
           <p className="text-[13px] leading-relaxed" style={{ color: "var(--sk-text-secondary)" }}>
-            This will permanently delete your account and all associated data — scan history, stats, preferences, and notifications. <span className="font-semibold" style={{ color: "var(--sk-text-primary)" }}>This cannot be undone.</span>
+            {t('account_delete_body', lang)} <span className="font-semibold" style={{ color: "var(--sk-text-primary)" }}>{email}</span> {t('account_delete_body2', lang)}
           </p>
 
           <div className="mt-5 flex flex-col gap-2.5">
@@ -400,7 +382,7 @@ function DeleteDialog({
               className="w-full rounded-2xl py-3.5 text-[14px] font-black text-white transition-opacity active:opacity-80 disabled:opacity-50"
               style={{ background: "#aa1818" }}
             >
-              {loading ? "Deleting…" : "Yes, delete my account"}
+              {loading ? t('account_deleting', lang) : t('account_delete_confirm', lang)}
             </button>
             <button
               type="button"
@@ -409,7 +391,7 @@ function DeleteDialog({
               className="w-full rounded-2xl py-3.5 text-[14px] font-semibold transition-colors disabled:opacity-40"
               style={{ border: "1px solid var(--sk-border-default)", background: "transparent", color: "var(--sk-text-primary)" }}
             >
-              Cancel
+              {t('cancel', lang)}
             </button>
           </div>
         </div>
@@ -459,19 +441,22 @@ export default function AccountPage() {
 
     async function loadUser() {
       try {
-        const { data } = (await supabase?.auth.getUser()) ?? { data: { user: null } };
+        const { data } = (await supabase?.auth.getSession()) ?? {
+          data: { session: null },
+        };
+        const sessionUser = data.session?.user ?? null;
 
         if (!active) return;
 
-        if (!data.user) {
-          router.push("/login?next=%2Faccount");
+        if (!sessionUser) {
+          router.replace("/login?next=%2Faccount");
           return;
         }
 
         setUser({
-          id: data.user.id,
-          email: data.user.email ?? undefined,
-          created_at: data.user.created_at,
+          id: sessionUser.id,
+          email: sessionUser.email ?? undefined,
+          created_at: sessionUser.created_at,
         });
         setIsPremium(false);
 
@@ -480,7 +465,7 @@ export default function AccountPage() {
           const { data: scansData } = await supabase
             .from("scans")
             .select("created_at, health_grade, additives_to_avoid, additives_moderate")
-            .eq("user_id", data.user.id)
+            .eq("user_id", sessionUser.id)
             .order("created_at", { ascending: false });
 
           if (active && scansData) {
@@ -524,12 +509,12 @@ export default function AccountPage() {
     try {
       const { data: sessionData } = await supabase!.auth.getSession();
       const token = sessionData.session?.access_token;
-      if (!token) { setExportError("Not logged in"); return; }
+      if (!token) { setExportError(t('account_export_not_logged_in', lang)); return; }
 
       const res = await fetch("/api/account/export", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) { setExportError("Export failed. Try again."); return; }
+      if (!res.ok) { setExportError(t('account_export_failed', lang)); return; }
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -635,7 +620,6 @@ export default function AccountPage() {
       )
     : "";
 
-  const initials = getInitials(user?.email);
   const displayName = getDisplayName(user?.email);
 
   return (
@@ -659,7 +643,6 @@ export default function AccountPage() {
         <div className="px-4">
           {/* ── Profile card ── */}
           <ProfileCard
-            initials={initials}
             name={displayName}
             email={user?.email ?? ""}
             isPremium={isPremium}
@@ -713,7 +696,7 @@ export default function AccountPage() {
                       <div className="flex items-center gap-3.5 px-5 py-3">
                         <div className="flex-1">
                           <p className="text-[13px] font-semibold" style={{ color: "var(--sk-text-primary)" }}>Push notifications</p>
-                          <p className="text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{permState === "granted" && pushSub ? "Enabled" : "Off — tap to enable"}</p>
+                          <p className="text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{permState === "granted" && pushSub ? t('account_notif_enabled', lang) : t('account_notif_off', lang)}</p>
                         </div>
                         {permState === "granted" && pushSub ? (
                           <button
@@ -721,14 +704,14 @@ export default function AccountPage() {
                             onClick={disableNotifications}
                             className="text-[12px] font-semibold rounded-lg px-3 py-1.5 disabled:opacity-50"
                             style={{ color: "var(--sk-status-danger)", border: "1px solid var(--sk-border-red)" }}
-                          >Turn off</button>
+                          >{t('account_notif_turn_off', lang)}</button>
                         ) : (
                           <button
                             disabled={notifSaving}
                             onClick={enableNotifications}
                             className="text-[12px] font-semibold text-white rounded-lg px-3 py-1.5 disabled:opacity-50"
                             style={{ background: "var(--sk-brand-forest)" }}
-                          >{notifSaving ? "..." : "Enable"}</button>
+                          >{notifSaving ? "..." : t('account_notif_enable', lang)}</button>
                         )}
                       </div>
                       {permState === "granted" && pushSub && (
@@ -835,15 +818,17 @@ export default function AccountPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{t('account_appearance', lang)}</p>
-                  <p className="mt-0.5 text-[11px] truncate" style={{ color: "var(--sk-text-muted)" }}>{t('account_appearance_sub', lang)}</p>
+                  <p className="mt-0.5 text-[12px] truncate" style={{ color: "var(--sk-text-muted)" }}>
+                    {themePref === "light" ? t('account_theme_light', lang) : t('account_theme_dark', lang)}
+                  </p>
                 </div>
                 <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: appearanceOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
               </button>
               {appearanceOpen && (
                 <div className="px-5 pb-4 flex gap-3" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
                   {([
-                    { value: "light" as const, label: "Light", icon: <Sun size={15} /> },
-                    { value: "dark" as const, label: "Dark", icon: <Moon size={15} /> },
+                    { value: "light" as const, label: t('account_theme_light', lang), icon: <Sun size={15} /> },
+                    { value: "dark" as const, label: t('account_theme_dark', lang), icon: <Moon size={15} /> },
                   ]).map((opt) => {
                     const active = themePref === opt.value;
                     return (
@@ -871,7 +856,7 @@ export default function AccountPage() {
             <Divider />
             {/* Badges accordion */}
             {(() => {
-              const badges = computeBadges({ scans: scanSummaries, streakDays, joinedAt: user?.created_at });
+              const badges = computeBadges({ scans: scanSummaries, streakDays, joinedAt: user?.created_at, lang });
               const earned = earnedCount(badges);
               return (
                 <div>
@@ -884,15 +869,15 @@ export default function AccountPage() {
                       <span style={{ fontSize: 16, lineHeight: 1 }}>🏅</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>Badges</p>
-                      <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{earned} of {badges.length} earned</p>
+                      <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{t("account_badges", lang)}</p>
+                      <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{earned} {t("account_badges_of", lang)} {badges.length} {t("account_badges_earned_suffix", lang)}</p>
                     </div>
                     <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: badgesOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
                   </button>
                   {badgesOpen && (
                     <div className="px-4 pb-5" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
                       <div className="pt-4">
-                        <BadgesSection badges={badges} />
+                        <BadgesSection badges={badges} lang={lang} />
                       </div>
                     </div>
                   )}
@@ -931,7 +916,7 @@ export default function AccountPage() {
                     style={{ background: "var(--sk-brand-forest)" }}
                     onClick={() => void exportData()}
                   >
-                    {exportLoading ? "Preparing…" : "Download CSV"}
+                    {exportLoading ? t('account_export_preparing', lang) : t('account_export_csv', lang)}
                   </button>
                 </div>
               )}
@@ -957,7 +942,7 @@ export default function AccountPage() {
                   <p>Your data is stored on <span style={{ color: "var(--sk-text-primary)", fontWeight: 600 }}>Supabase (EU)</span> and is encrypted at rest and in transit. We do not sell or share your data with advertisers.</p>
                   <p>Product lookups use the open <span style={{ color: "var(--sk-text-primary)", fontWeight: 600 }}>Open Food Facts</span> database — no personal data is sent in those requests.</p>
                   <p>You can export or delete all your data at any time from this screen. Deletion removes your data within 30 days.</p>
-                  <p style={{ color: "var(--sk-text-muted)", fontSize: 11 }}>Last updated June 2025 · Skaren AS, Oslo, Norway</p>
+                  <p style={{ color: "var(--sk-text-muted)", fontSize: 11 }}>Last updated June 2026 · Skaren AS, Oslo, Norway</p>
                 </div>
               )}
             </div>
@@ -994,7 +979,7 @@ export default function AccountPage() {
                     ))}
                   </ul>
                   <p>Governed by Norwegian law. Disputes resolved by the courts of Oslo, Norway.</p>
-                  <p style={{ color: "var(--sk-text-muted)", fontSize: 11 }}>Last updated June 2025</p>
+                  <p style={{ color: "var(--sk-text-muted)", fontSize: 11 }}>Last updated June 2026</p>
                 </div>
               )}
             </div>

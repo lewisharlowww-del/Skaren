@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendPushNotification } from "@/lib/webpush";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceRoleKey) return null;
+  return createClient(url, serviceRoleKey);
+}
 
 // Vercel Cron or manual trigger — secured by CRON_SECRET
 function isAuthorized(request: Request): boolean {
@@ -53,6 +55,11 @@ export async function GET(request: Request) {
 }
 
 async function handleStreakReminder() {
+  const supabaseAdmin = getSupabaseAdmin();
+  if (!supabaseAdmin) {
+    return NextResponse.json({ error: "Server configuration unavailable" }, { status: 503 });
+  }
+
   // Find users with streak-enabled subscriptions who haven't scanned today
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -128,6 +135,11 @@ async function handleStreakReminder() {
 }
 
 async function handleWeeklySummary() {
+  const supabaseAdmin = getSupabaseAdmin();
+  if (!supabaseAdmin) {
+    return NextResponse.json({ error: "Server configuration unavailable" }, { status: 503 });
+  }
+
   const now = new Date();
   const weekStart = new Date(now);
   weekStart.setDate(weekStart.getDate() - 7);

@@ -34,7 +34,10 @@ export default function AuthPage() {
     const { error } = (await supabase?.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/account")}`
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/account")}`,
+        queryParams: {
+          prompt: "select_account",
+        },
       }
     })) ?? { error: new Error("Supabase is not configured yet.") };
 

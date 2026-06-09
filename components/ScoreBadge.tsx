@@ -1,4 +1,5 @@
 import type { GradeLetter } from "@/lib/types";
+import type { Language } from "@/lib/i18n";
 
 type ScoreBadgeProps = {
   grade: GradeLetter | null;
@@ -21,6 +22,18 @@ export const gradeDescriptions: Record<GradeLetter, string> = {
   D: "Poor",
   E: "Very Poor"
 };
+
+const gradeDescriptionsNo: Record<GradeLetter, string> = {
+  A: "Utmerket",
+  B: "Bra",
+  C: "Middels",
+  D: "Svak",
+  E: "Veldig svak",
+};
+
+export function getGradeLabel(grade: GradeLetter, lang: Language = "en"): string {
+  return lang === "no" ? gradeDescriptionsNo[grade] : gradeDescriptions[grade];
+}
 
 export function ScoreBadge({ grade, label = "ECO GRADE", size = "sm" }: ScoreBadgeProps) {
   const large = size === "lg";

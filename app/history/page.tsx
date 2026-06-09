@@ -97,22 +97,19 @@ function formatTime(dateStr?: string): string {
 function GradeBadge({
   grade,
   label,
-  shortLabel,
 }: {
   grade: Grade
   label: string
-  shortLabel: string
 }) {
   const s = GRADE_STYLES[grade]
   return (
     <span
-      className="inline-flex h-8 min-w-8 flex-col items-center justify-center rounded-lg px-1 font-black leading-none"
+      className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-[13px] font-black leading-none"
       style={{ background: s.bg, color: s.color }}
       aria-label={`${label}: ${grade}`}
       title={`${label}: ${grade}`}
     >
-      <span className="text-[10px] font-bold uppercase opacity-80">{shortLabel}</span>
-      <span className="mt-0.5 text-[12px]">{grade}</span>
+      {grade}
     </span>
   )
 }
@@ -160,7 +157,7 @@ function ScanRow({
         <p className="text-[14px] font-bold text-[#2d4a26] truncate leading-tight">
           {scan.product_name}
         </p>
-        <p className="text-[11px] text-[#9a8e7e] mt-0.5">
+        <p className="text-[12px] text-[#9a8e7e] mt-0.5">
           {scan.brand ?? scan.barcode}
         </p>
       </div>
@@ -171,18 +168,16 @@ function ScanRow({
           <GradeBadge
             grade={healthGrade}
             label={t('product_health', lang)}
-            shortLabel={t('history_health_short', lang)}
           />
           {ecoGrade ? (
             <GradeBadge
               grade={ecoGrade}
               label={t('product_eco', lang)}
-              shortLabel={t('history_eco_short', lang)}
             />
           ) : null}
         </div>
-        <span className="text-[11px] text-[var(--sk-text-secondary)]">
-          {count > 1 ? `${count} ${t('history_scans_count', lang)} · ` : ''}
+        <span className="text-[12px] text-[var(--sk-text-secondary)]">
+          {count > 1 ? `${count} ${lang === 'no' ? 'visninger' : 'views'} · ` : ''}
           {time}
         </span>
       </div>
@@ -351,8 +346,10 @@ export default function HistoryPage() {
             </h1>
             <p className="text-[12px] text-[#9a8e7e] mt-0.5" style={{ fontFamily: "Manrope, sans-serif" }}>
               {monthlyCount > 0
-                ? `${monthlyCount} ${t('history_scans_this_month', lang)}`
-                : t('history_no_scans_this_month', lang)}
+                ? `${monthlyCount} ${lang === 'no' ? 'produktvisninger denne måneden' : 'product views this month'}`
+                : lang === 'no'
+                  ? 'Ingen produktvisninger denne måneden'
+                  : 'No product views yet this month'}
             </p>
           </div>
           <div className="relative" ref={menuRef}>
@@ -425,10 +422,14 @@ export default function HistoryPage() {
           {groupedScans.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
               <span className="text-5xl">🌿</span>
-              <p className="text-[15px] font-bold text-[#2d4a26]">{t('history_no_scans', lang)}</p>
+              <p className="text-[15px] font-bold text-[#2d4a26]">
+                {lang === 'no' ? 'Ingen produktvisninger funnet' : 'No product views found'}
+              </p>
               <p className="text-[13px] text-[#9a8e7e] max-w-[240px]">
                 {activeFilter === 'all'
-                  ? t('history_no_scans_sub', lang)
+                  ? lang === 'no'
+                    ? 'Skann eller søk etter produkter for å bygge historikken.'
+                    : 'Scan or search for products to build your history.'
                   : t('history_filter_hint', lang)}
               </p>
             </div>
@@ -438,7 +439,7 @@ export default function HistoryPage() {
                 <div className="sticky top-0 z-20 -mx-1 mb-2 bg-[var(--sk-brand-mist)]/95 px-2 py-2 backdrop-blur-md">
                   <h2
                     id={`history-${group.label.replace(/\W+/g, '-').toLowerCase()}`}
-                    className="text-[11px] font-bold uppercase"
+                    className="text-[12px] font-bold uppercase"
                     style={{ color: "var(--sk-text-muted)", letterSpacing: "0.12em", fontFamily: "Manrope, sans-serif" }}
                   >
                     {group.label}

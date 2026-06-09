@@ -26,6 +26,7 @@ import {
   type BadgeResult,
   earnedCount,
 } from "@/lib/badges";
+import { t, type Language } from "@/lib/i18n";
 
 // ── Icon + color config per badge ─────────────────────────────────────────────
 
@@ -61,7 +62,7 @@ const BADGE_STYLES: Record<BadgeId, BadgeStyle> = {
 
 // ── Single badge tile ─────────────────────────────────────────────────────────
 
-function BadgeTile({ badge }: { badge: BadgeResult }) {
+function BadgeTile({ badge, lang }: { badge: BadgeResult; lang: Language }) {
   const s = BADGE_STYLES[badge.id as BadgeId];
   const earned = badge.earned;
 
@@ -125,7 +126,7 @@ function BadgeTile({ badge }: { badge: BadgeResult }) {
         fontFamily: "Manrope, sans-serif",
         maxWidth: 64,
       }}>
-        {badge.name}
+        {t(badge.nameKey as Parameters<typeof t>[0], lang)}
       </p>
 
       {/* Progress bar or earned label */}
@@ -149,7 +150,7 @@ function BadgeTile({ badge }: { badge: BadgeResult }) {
           fontFamily: "Manrope, sans-serif",
           fontWeight: earned ? 700 : 400,
         }}>
-          {earned ? "Earned" : "Locked"}
+          {earned ? t("badge_earned_label", lang) : t("badge_locked_label", lang)}
         </p>
       )}
     </div>
@@ -158,7 +159,7 @@ function BadgeTile({ badge }: { badge: BadgeResult }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function BadgesSection({ badges }: { badges: BadgeResult[] }) {
+export function BadgesSection({ badges, lang = "en" }: { badges: BadgeResult[]; lang?: Language }) {
   const total = badges.length;
   const earned = earnedCount(badges);
 
@@ -175,7 +176,7 @@ export function BadgesSection({ badges }: { badges: BadgeResult[] }) {
           borderRadius: 99,
           padding: "3px 10px",
         }}>
-          {earned} / {total} earned
+          {earned} / {total} {t("account_badges_earned_suffix", lang)}
         </span>
       </div>
 
@@ -200,7 +201,7 @@ export function BadgesSection({ badges }: { badges: BadgeResult[] }) {
               color: "var(--sk-text-muted)",
               marginBottom: 14,
             }}>
-              {cat.label}
+              {t(cat.labelKey as Parameters<typeof t>[0], lang)}
             </p>
 
             <div style={{
@@ -209,7 +210,7 @@ export function BadgesSection({ badges }: { badges: BadgeResult[] }) {
               gap: "14px 6px",
             }}>
               {catBadges.map((badge) => (
-                <BadgeTile key={badge.id} badge={badge} />
+                <BadgeTile key={badge.id} badge={badge} lang={lang} />
               ))}
             </div>
           </div>

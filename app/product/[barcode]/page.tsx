@@ -10,7 +10,9 @@ import { Additives } from "@/components/Additives";
 import { DailyIntake } from "@/components/DailyIntake";
 import { getEcoGrade, getNutritionGrade } from "@/lib/ecoscore";
 import { calculateHealthGrade, hasNokkelhullLabel, nutritionDataFromKassalapp } from "@/lib/healthscore";
+import { t, type Language } from "@/lib/i18n";
 import { getProductEmoji } from "@/lib/kassalapp";
+import { useLang } from "@/lib/language-context";
 import { cacheProductLocally, readLocalProduct } from "@/lib/localProducts";
 import { supabase } from "@/lib/supabase";
 import { getUserPremiumStatus } from "@/lib/premium";
@@ -20,7 +22,6 @@ import {
 } from "@/lib/productHistory";
 import type { GradeLetter, ProductInsight, ProductResult } from "@/lib/types";
 import { ProductPageLayout } from "@/components/ProductPageLayout";
-import { SkarenLoader } from "@/components/SkarenLoader";
 
 type ProductPageProps = {
   params: {
@@ -202,29 +203,30 @@ function getFactTone(label: string, amount: number) {
   return "bg-rose-50 text-rose-800 border-rose-100";
 }
 
-function getQuickFacts(product: ProductResult) {
+function getQuickFacts(product: ProductResult, lang: Language = "en") {
   const facts = [
-    { label: "Calories", entry: findNutrition(product, ["energy", "energi", "calories", "calorie", "kcal", "kj"]) },
-    { label: "Sugar", entry: findNutrition(product, ["sugars", "sugar", "sukker", "sukkerarter"]) },
-    { label: "Fat", entry: findNutrition(product, ["fat", "fett"]) },
-    { label: "Protein", entry: findNutrition(product, ["protein", "proteins"]) },
-    { label: "Salt", entry: findNutrition(product, ["salt"]) }
+    { key: "nutrition_calories" as const, matchKey: "Calories", entry: findNutrition(product, ["energy", "energi", "calories", "calorie", "kcal", "kj"]) },
+    { key: "nutrition_sugars" as const,   matchKey: "Sugar",    entry: findNutrition(product, ["sugars", "sugar", "sukker", "sukkerarter"]) },
+    { key: "nutrition_fat" as const,      matchKey: "Fat",      entry: findNutrition(product, ["fat", "fett"]) },
+    { key: "nutrition_protein" as const,  matchKey: "Protein",  entry: findNutrition(product, ["protein", "proteins"]) },
+    { key: "nutrition_salt" as const,     matchKey: "Salt",     entry: findNutrition(product, ["salt"]) }
   ];
 
   return facts.map((fact) => {
     if (!fact.entry) return null;
 
-    const amount = fact.label === "Calories" ? normalizeCalories(fact.entry.amount, fact.entry.unit) : fact.entry.amount;
-    const value = fact.label === "Calories"
+    const amount = fact.matchKey === "Calories" ? normalizeCalories(fact.entry.amount, fact.entry.unit) : fact.entry.amount;
+    const value = fact.matchKey === "Calories"
       ? `${Math.round(amount)} kcal`
       : `${Number.isInteger(fact.entry.amount) ? fact.entry.amount : fact.entry.amount.toFixed(1)}${fact.entry.unit ? ` ${fact.entry.unit}` : ""}`;
 
     return {
-      label: fact.label,
+      label: t(fact.key, lang),
+      matchKey: fact.matchKey,
       value,
-      tone: getFactTone(fact.label, amount)
+      tone: getFactTone(fact.matchKey, amount)
     };
-  }).filter((fact): fact is { label: string; value: string; tone: string } => Boolean(fact));
+  }).filter((fact): fact is { label: string; matchKey: string; value: string; tone: string } => Boolean(fact));
 }
 
 function hasNutritionSignal(product: ProductResult) {
@@ -449,16 +451,16 @@ function getNutritionValueTone(label: string, amount: number) {
   return neutral;
 }
 
-function getNutritionRows(product: ProductResult) {
+function getNutritionRows(product: ProductResult, lang: Language = "en") {
   const wanted = [
-    { label: "Calories", matches: ["energy", "energi", "calories", "calorie", "kcal", "kj"], calories: true, preferredUnits: ["kcal"] },
-    { label: "Fat", matches: ["fat", "fett"], excludes: ["saturated", "mettede", "mettet"] },
-    { label: "Saturated fat", matches: ["saturated", "mettede", "mettet"] },
-    { label: "Carbs", matches: ["carbohydrate", "karbohydrat"] },
-    { label: "Sugars", matches: ["sugars", "sugar", "sukker", "sukkerarter"] },
-    { label: "Fiber", matches: ["fiber", "fibre", "kostfiber"] },
-    { label: "Protein", matches: ["protein", "proteins"] },
-    { label: "Salt", matches: ["salt"] }
+    { key: "nutrition_calories" as const,      matchKey: "Calories",      matches: ["energy", "energi", "calories", "calorie", "kcal", "kj"], calories: true, preferredUnits: ["kcal"] },
+    { key: "nutrition_fat" as const,           matchKey: "Fat",           matches: ["fat", "fett"], excludes: ["saturated", "mettede", "mettet"] },
+    { key: "nutrition_saturated_fat" as const, matchKey: "Saturated fat", matches: ["saturated", "mettede", "mettet"] },
+    { key: "nutrition_carbs" as const,         matchKey: "Carbs",         matches: ["carbohydrate", "karbohydrat"] },
+    { key: "nutrition_sugars" as const,        matchKey: "Sugars",        matches: ["sugars", "sugar", "sukker", "sukkerarter"] },
+    { key: "nutrition_fiber" as const,         matchKey: "Fiber",         matches: ["fiber", "fibre", "kostfiber"] },
+    { key: "nutrition_protein" as const,       matchKey: "Protein",       matches: ["protein", "proteins"] },
+    { key: "nutrition_salt" as const,          matchKey: "Salt",          matches: ["salt"] }
   ];
 
   return wanted
@@ -474,13 +476,14 @@ function getNutritionRows(product: ProductResult) {
       const amount = "calories" in item ? normalizeCalories(nutrition.amount, nutrition.unit) : nutrition.amount;
 
       return {
-        label: item.label,
+        label: t(item.key, lang),
+        matchKey: item.matchKey,
         amount,
-        displayAmount: item.label === "Calories" ? `${Math.round(amount)} kcal` : formatNutritionAmount(nutrition.amount, nutrition.unit),
-        tone: getNutritionValueTone(item.label, amount)
+        displayAmount: item.matchKey === "Calories" ? `${Math.round(amount)} kcal` : formatNutritionAmount(nutrition.amount, nutrition.unit),
+        tone: getNutritionValueTone(item.matchKey, amount)
       };
     })
-    .filter((row): row is { label: string; amount: number; displayAmount: string; tone: string } => Boolean(row));
+    .filter((row): row is { label: string; matchKey: string; amount: number; displayAmount: string; tone: string } => Boolean(row));
 }
 
 function visibleIngredients(product: ProductResult) {
@@ -603,8 +606,9 @@ function getKeyInsights(product: ProductResult): ProductInsight[] {
 }
 
 function NutritionInsights({ product, isPremium }: { product: ProductResult; isPremium: boolean }) {
+  const { lang } = useLang();
   const [ingredientsOpen, setIngredientsOpen] = useState(false);
-  const nutritionRows = getNutritionRows(product);
+  const nutritionRows = getNutritionRows(product, lang);
   const ingredients = visibleIngredients(product);
   const insights = isPremium ? getKeyInsights(product) : [];
   const hasDetails = nutritionRows.length > 0 || product.allergens.length > 0 || Boolean(ingredients) || insights.length > 0;
@@ -703,14 +707,17 @@ function NutritionInsights({ product, isPremium }: { product: ProductResult; isP
 }
 
 export default function ProductPage({ params }: ProductPageProps) {
+  const { lang } = useLang();
   const [product, setProduct] = useState<ProductResult | null>(null);
   const [error, setError] = useState<ProductError | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingSlow, setLoadingSlow] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const historySaveBarcode = useRef<string | null>(null);
 
   async function loadProduct(options: { skipCache?: boolean } = {}) {
     setLoading(true);
+    setLoadingSlow(false);
     setError(null);
 
     try {
@@ -726,21 +733,18 @@ export default function ProductPage({ params }: ProductPageProps) {
         return;
       }
 
-      const cached = sessionStorage.getItem(`skaren:v2:${params.barcode}`);
+      const cached =
+        sessionStorage.getItem(`skaren:${params.barcode}`) ??
+        sessionStorage.getItem(`skaren:v2:${params.barcode}`);
       if (cached && !options.skipCache) {
         const cachedProduct = withProductDefaults(JSON.parse(cached) as ProductResult);
-        const canUseCachedProduct = cachedProduct.displayImageSource === "kassalapp" || !navigator.onLine;
-
-        if (canUseCachedProduct) {
-          setProduct(cachedProduct);
-          setLoading(false);
-
-          return;
-        }
+        setProduct(cachedProduct);
+        setLoading(false);
+        return;
       }
 
       const localProduct = readLocalProduct(params.barcode);
-      if (localProduct && !options.skipCache && !navigator.onLine) {
+      if (localProduct && !options.skipCache) {
         setProduct(withProductDefaults(localProduct));
         setLoading(false);
         return;
@@ -789,6 +793,15 @@ export default function ProductPage({ params }: ProductPageProps) {
     // loadProduct intentionally depends only on the route barcode.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.barcode]);
+
+  useEffect(() => {
+    if (!loading) {
+      setLoadingSlow(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setLoadingSlow(true), 3500);
+    return () => window.clearTimeout(timer);
+  }, [loading]);
 
   useEffect(() => {
     if (!product || product.barcode !== params.barcode) return;
@@ -871,7 +884,45 @@ export default function ProductPage({ params }: ProductPageProps) {
     <>
       <main className="w-full">
         {loading ? (
-          <SkarenLoader message="Loading product" />
+          <div className="flex min-h-screen flex-col bg-[var(--sk-brand-mist)]">
+            <header className="flex items-center px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
+              <Link
+                href="/scan"
+                aria-label="Back to scan"
+                className="focus-ring grid h-11 w-11 place-items-center rounded-full text-[var(--sk-brand-forest)]"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Link>
+            </header>
+            <div className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4 pt-6">
+              <div className="h-28 animate-pulse rounded-2xl border border-[var(--sk-border-default)] bg-white/70" />
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="h-40 animate-pulse rounded-2xl border border-[var(--sk-border-default)] bg-white/70" />
+                <div className="h-40 animate-pulse rounded-2xl border border-[var(--sk-border-default)] bg-white/70" />
+              </div>
+              <div className="mt-4 h-32 animate-pulse rounded-2xl border border-[var(--sk-border-default)] bg-white/70" />
+              <div className="mt-8 text-center" role="status">
+                <p className="type-heading-3 text-[var(--sk-text-primary)]">
+                  {loadingSlow ? "This is taking longer than usual" : "Building product report"}
+                </p>
+                <p className="type-body-sm mx-auto mt-2 max-w-xs text-[var(--sk-text-muted)]">
+                  {loadingSlow
+                    ? "You can retry now or return to the scanner."
+                    : "Checking product data, nutrition, and grades."}
+                </p>
+                {loadingSlow ? (
+                  <button
+                    type="button"
+                    onClick={() => void loadProduct({ skipCache: true })}
+                    className="focus-ring mt-4 inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--sk-border-default)] bg-white px-5 text-sm font-bold text-[var(--sk-brand-forest)]"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Retry
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
         ) : error ? (
           <div className="mx-auto mt-8 max-w-xl rounded-[2rem] border border-black/5 bg-white p-6 text-center shadow-soft sm:mt-10 sm:p-8">
             <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-rose-50 text-rose-600">
@@ -902,7 +953,7 @@ export default function ProductPage({ params }: ProductPageProps) {
           <ProductPageLayout
             product={product}
             getKeyInsights={getKeyInsights}
-            getNutritionRows={getNutritionRows}
+            getNutritionRows={(p) => getNutritionRows(p, lang)}
             visibleIngredients={visibleIngredients}
             hasNutritionSignal={hasNutritionSignal}
             getEcoGrade={getEcoGrade}

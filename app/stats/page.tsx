@@ -43,25 +43,25 @@ const copy = {
     label: "Your stats",
     rangeTitle: { week: "This week", month: "This month", all: "All time" },
     rangeTab: { week: "Week", month: "Month", all: "All" },
-    totalScans: "Total scans",
+    totalScans: "Product views",
     averageGrade: "Avg health grade",
     gradeBreakdown: "Grade distribution",
     additives: "Additives",
     weeklyInsight: "Weekly insight",
     rangeInsight: "Range insight",
-    mostScanned: "Most scanned",
-    recentlyScanned: "Recently scanned",
-    scan: "scan",
-    scans: "scans",
+    mostScanned: "Most viewed",
+    recentlyScanned: "Recently viewed",
+    scan: "view",
+    scans: "views",
     noPrior: "No previous period",
-    allTime: "Across all scans",
+    allTime: "Across all product views",
     more: "more than last",
     fewer: "fewer than last",
     unchanged: "Same as last period",
     gradeUp: "Up from",
     gradeDown: "Down from",
     gradeSame: "Unchanged from",
-    mixed: "Mixed period",
+    mixed: "A mix of choices",
     strong: "Strong period",
     balanced: "Balanced period",
     improve: "Room to improve",
@@ -72,7 +72,7 @@ const copy = {
     noFlagged: "No flagged additives",
     flaggedFound: "Flagged additives",
     across: "Across",
-    selectedScans: "selected scans",
+    selectedScans: "selected product views",
     toAvoid: "To avoid",
     moderate: "Moderate",
     occurrence: "occurrence",
@@ -80,16 +80,16 @@ const copy = {
     whatItDoes: "What it does",
     loadMore: "Load more",
     noAdditiveDetails: "Details are unavailable for older history entries.",
-    noScans: "No scans yet",
+    noScans: "No product views yet",
     noScansSuffix: { week: "this week", month: "this month", all: "" },
-    emptyHelp: "Scan your first product to see your stats.",
+    emptyHelp: "Scan or search for a product to start seeing your stats.",
     scanNow: "Scan now"
   },
   no: {
     label: "Din statistikk",
     rangeTitle: { week: "Denne uken", month: "Denne måneden", all: "Hele perioden" },
     rangeTab: { week: "Uke", month: "Måned", all: "Alt" },
-    totalScans: "Skanninger",
+    totalScans: "Produktvisninger",
     averageGrade: "Snitt helsevurdering",
     gradeBreakdown: "Karakterfordeling",
     additives: "Tilsetningsstoffer",
@@ -97,8 +97,8 @@ const copy = {
     rangeInsight: "Periodens innsikt",
     mostScanned: "Mest skannet",
     recentlyScanned: "Nylig skannet",
-    scan: "skanning",
-    scans: "skanninger",
+    scan: "visning",
+    scans: "visninger",
     noPrior: "Ingen forrige periode",
     allTime: "Alle skanninger",
     more: "flere enn sist",
@@ -107,7 +107,7 @@ const copy = {
     gradeUp: "Opp fra",
     gradeDown: "Ned fra",
     gradeSame: "Uendret fra",
-    mixed: "Blandet periode",
+    mixed: "En blanding av valg",
     strong: "Sterk periode",
     balanced: "Balansert periode",
     improve: "Rom for forbedring",
@@ -118,7 +118,7 @@ const copy = {
     noFlagged: "Ingen markerte tilsetningsstoffer",
     flaggedFound: "Markerte tilsetningsstoffer",
     across: "På tvers av",
-    selectedScans: "valgte skanninger",
+    selectedScans: "valgte produktvisninger",
     toAvoid: "Bør unngås",
     moderate: "Moderate",
     occurrence: "forekomst",
@@ -161,10 +161,10 @@ function ScanTrend({
   text: StatsCopy;
 }) {
   if (range === "all") {
-    return <p className="mt-2 text-[11px] text-[var(--sk-text-muted)]">{text.allTime}</p>;
+    return <p className="mt-2 text-[12px] text-[var(--sk-text-muted)]">{text.allTime}</p>;
   }
   if (value === null) {
-    return <p className="mt-2 text-[11px] text-[var(--sk-text-muted)]">{text.noPrior}</p>;
+    return <p className="mt-2 text-[12px] text-[var(--sk-text-muted)]">{text.noPrior}</p>;
   }
 
   const Icon = value > 0 ? ArrowUpRight : value < 0 ? ArrowDownRight : Minus;
@@ -176,11 +176,13 @@ function ScanTrend({
         : "text-[var(--sk-status-neutral)]";
 
   return (
-    <span className={`mt-2 inline-flex items-center gap-1 text-[11px] font-semibold ${tone}`}>
+    <span className={`mt-2 inline-flex items-center gap-1 text-[12px] font-semibold ${tone}`}>
       <Icon className="h-3.5 w-3.5" />
       {value === 0
         ? text.unchanged
-        : `${Math.abs(value)}% ${value > 0 ? text.more : text.fewer}`}
+        : `${Math.abs(value)}% ${value > 0 ? text.more : text.fewer} ${
+            range === "week" ? (text === copy.no ? "uke" : "week") : (text === copy.no ? "måned" : "month")
+          }`}
     </span>
   );
 }
@@ -197,10 +199,10 @@ function GradeTrend({
   text: StatsCopy;
 }) {
   if (range === "all") {
-    return <p className="mt-2 text-[11px] text-[var(--sk-text-muted)]">{text.allTime}</p>;
+    return <p className="mt-2 text-[12px] text-[var(--sk-text-muted)]">{text.allTime}</p>;
   }
   if (direction === "none" || !previous) {
-    return <p className="mt-2 text-[11px] text-[var(--sk-text-muted)]">{text.noPrior}</p>;
+    return <p className="mt-2 text-[12px] text-[var(--sk-text-muted)]">{text.noPrior}</p>;
   }
 
   const Icon = direction === "up" ? ArrowUpRight : direction === "down" ? ArrowDownRight : Minus;
@@ -214,7 +216,7 @@ function GradeTrend({
     direction === "up" ? text.gradeUp : direction === "down" ? text.gradeDown : text.gradeSame;
 
   return (
-    <span className={`mt-2 inline-flex items-center gap-1 text-[11px] font-semibold ${tone}`}>
+    <span className={`mt-2 inline-flex items-center gap-1 text-[12px] font-semibold ${tone}`}>
       <Icon className="h-3.5 w-3.5" />
       {label} {previous}
     </span>
@@ -279,7 +281,7 @@ function AdditiveDisclosure({
         <span className="block text-[13px] font-bold" style={{ color }}>
           {label}
         </span>
-        <span className="mt-0.5 block text-[10px] text-[var(--sk-text-secondary)]">
+        <span className="mt-0.5 block text-[12px] text-[var(--sk-text-secondary)]">
           {count} {count === 1 ? text.occurrence : text.occurrences}
         </span>
       </span>
@@ -324,13 +326,13 @@ function AdditiveDisclosure({
                     <p className="text-[13px] font-bold text-[var(--sk-text-primary)]">
                       {additive.code} · {additive.name}
                     </p>
-                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.08em]" style={{ color }}>
+                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color }}>
                       {text.whatItDoes}
                     </p>
                   </div>
                   {additive.count > 1 && (
                     <span
-                      className="shrink-0 rounded-full px-2 py-1 text-[10px] font-bold"
+                      className="shrink-0 rounded-full px-2 py-1 text-[11px] font-bold"
                       style={{ background, color }}
                     >
                       ×{additive.count}
@@ -542,7 +544,7 @@ export default function StatsPage() {
                         {flaggedAdditives}
                       </p>
                     </div>
-                    <p className="pt-1 text-right text-[10px] leading-relaxed text-[var(--sk-text-muted)]">
+                    <p className="pt-1 text-right text-[12px] leading-relaxed text-[var(--sk-text-muted)]">
                       {text.across} {stats.totalScans} {text.selectedScans}
                     </p>
                   </div>

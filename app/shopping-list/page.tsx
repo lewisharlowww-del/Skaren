@@ -11,6 +11,7 @@ import {
   Pencil,
   Plus,
   RotateCcw,
+  ScanBarcode,
   Search,
   ShoppingBasket,
   Trash2,
@@ -362,8 +363,8 @@ function AddProductSheet({
       });
       setAddedMessage(
         savedItem
-          ? `${product.name} added to your list.`
-          : `${product.name} is already on your list.`
+          ? `${product.name} ${lang === 'no' ? 'ble lagt til listen.' : 'added to your list.'}`
+          : `${product.name} ${t('list_already_on_list', lang)}`
       );
       setName("");
       setQuantityAmount("");
@@ -374,7 +375,7 @@ function AddProductSheet({
       setSelectedProduct(null);
       onClose();
     } catch {
-      setSearchError("This product could not be added. Please try again.");
+      setSearchError(t('list_error_add', lang));
     } finally {
       addInFlightRef.current = false;
       setAddingProductKey(null);
@@ -402,13 +403,13 @@ function AddProductSheet({
           addedFromScan: false
         });
         if (!savedItem) {
-          setSearchError(`${name.trim()} is already on your list.`);
+          setSearchError(`${name.trim()} ${t('list_already_on_list', lang)}`);
           return;
         }
       }
       onClose();
     } catch {
-      setSearchError("This item could not be saved. Please try again.");
+      setSearchError(t('list_error_save', lang));
     } finally {
       addInFlightRef.current = false;
       setAddingProductKey(null);
@@ -446,7 +447,7 @@ function AddProductSheet({
           <div>
             <p className="type-section-label text-[var(--sk-text-faint)]">{t('list_section_label', lang)}</p>
             <h2 id="add-product-title" className="type-heading-2 mt-1 text-[var(--sk-text-primary)]">
-              {editingItem ? "Edit item" : t('list_add_product', lang)}
+              {editingItem ? t('list_edit_item', lang) : t('list_add_product', lang)}
             </h2>
           </div>
           <button
@@ -463,7 +464,7 @@ function AddProductSheet({
           <div>
             <div className="flex items-center justify-between gap-3">
               <span className="type-section-label text-[var(--sk-text-muted)]">
-                {customMode ? "Item name" : "Product name"}
+                {customMode ? t('list_item_name', lang) : t('list_product_name', lang)}
               </span>
               {!editingItem ? (
                 <button
@@ -493,7 +494,7 @@ function AddProductSheet({
                   setSelectedProduct(null);
                   setAddedMessage("");
                 }}
-                placeholder={customMode ? "Enter item name" : "Search actual products"}
+                placeholder={customMode ? t('list_item_name_placeholder', lang) : t('list_search_actual_products', lang)}
                 autoComplete="off"
                 className="focus-ring h-12 w-full rounded-xl border border-[var(--sk-border-default)] bg-white pl-12 pr-11 text-sm text-[var(--sk-text-primary)] placeholder:text-[var(--sk-text-muted)]"
               />
@@ -603,7 +604,7 @@ function AddProductSheet({
                         {product.name}
                       </span>
                       <span className="mt-0.5 block truncate text-xs text-[var(--sk-text-muted)]">
-                        {product.brand || "Brand not listed"}
+                        {product.brand || t('list_brand_unknown', lang)}
                       </span>
                     </span>
                     {isAdding ? (
@@ -733,12 +734,12 @@ function AddProductSheet({
             className="focus-ring type-button w-full rounded-2xl bg-[var(--sk-brand-forest)] px-4 py-4 text-white disabled:cursor-not-allowed disabled:opacity-45"
           >
             {addingProductKey
-              ? "Saving..."
+              ? t('list_saving', lang)
               : editingItem
-                ? "Save changes"
+                ? t('list_save_changes', lang)
                 : customMode
-                  ? "Add custom item"
-                  : "Save product"}
+                  ? t('list_add_custom', lang)
+                  : t('list_save_product', lang)}
           </button>
         </div>
       </section>
@@ -937,7 +938,7 @@ export default function ShoppingListPage() {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search your list"
+                placeholder={t('list_search_placeholder', lang)}
                 className="focus-ring h-12 w-full rounded-2xl border border-[var(--sk-border-default)] bg-white pl-11 pr-4 text-sm"
                 autoFocus
               />
@@ -981,6 +982,26 @@ export default function ShoppingListPage() {
               <h2 className="type-heading-3 mt-5">{t('list_empty_title', lang)}</h2>
               <p className="type-body-sm mt-2 max-w-xs text-[var(--sk-text-muted)]">
                 {t('list_empty_subtitle', lang)}
+              </p>
+              <div className="mt-6 grid w-full grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSheetOpen(true)}
+                  className="focus-ring flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border border-[var(--sk-border-default)] bg-white px-3 text-[13px] font-bold text-[var(--sk-brand-forest)]"
+                >
+                  <Search className="h-5 w-5" />
+                  {t('list_search_products', lang)}
+                </button>
+                <Link
+                  href="/scan"
+                  className="focus-ring flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border border-[var(--sk-border-default)] bg-white px-3 text-[13px] font-bold text-[var(--sk-brand-forest)]"
+                >
+                  <ScanBarcode className="h-5 w-5" />
+                  {t('list_scan_product', lang)}
+                </Link>
+              </div>
+              <p className="mt-4 max-w-xs text-[12px] leading-relaxed text-[var(--sk-text-muted)]">
+                {t('list_scan_grade_hint', lang)}
               </p>
             </section>
           ) : (
@@ -1044,14 +1065,16 @@ export default function ShoppingListPage() {
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={() => setSheetOpen(true)}
-            className="focus-ring type-button mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--sk-brand-forest)] px-4 py-4 text-white"
-          >
-            <Plus className="h-5 w-5" />
-            {t('list_add_product', lang)}
-          </button>
+          {items.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setSheetOpen(true)}
+              className="focus-ring type-button mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--sk-brand-forest)] px-4 py-4 text-white"
+            >
+              <Plus className="h-5 w-5" />
+              {t('list_add_product', lang)}
+            </button>
+          ) : null}
         </div>
       </main>
 

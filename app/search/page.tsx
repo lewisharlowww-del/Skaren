@@ -25,6 +25,7 @@ type SearchResponse = {
 };
 
 const resultsPerPage = 20;
+const recentSearchesKey = "skaren:recent-product-searches";
 
 export default function ProductSearchPage() {
   const router = useRouter();
@@ -37,6 +38,7 @@ export default function ProductSearchPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [visibleCount, setVisibleCount] = useState(resultsPerPage);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -58,6 +60,16 @@ export default function ProductSearchPage() {
     };
   }, []);
 
+  useEffect(() => {
+    try {
+      setRecentSearches(
+        JSON.parse(window.localStorage.getItem(recentSearchesKey) ?? "[]") as string[]
+      );
+    } catch {
+      setRecentSearches([]);
+    }
+  }, []);
+
   async function searchProducts(event?: FormEvent) {
     event?.preventDefault();
     const cleanQuery = query.trim();
@@ -72,6 +84,14 @@ export default function ProductSearchPage() {
     setError("");
     setHasSearched(true);
     setVisibleCount(resultsPerPage);
+    const nextRecent = [
+      cleanQuery,
+      ...recentSearches.filter(
+        (item) => item.toLocaleLowerCase() !== cleanQuery.toLocaleLowerCase()
+      )
+    ].slice(0, 5);
+    setRecentSearches(nextRecent);
+    window.localStorage.setItem(recentSearchesKey, JSON.stringify(nextRecent));
 
     try {
       const { data: sessionData } = (await supabase?.auth.getSession()) ?? {
@@ -184,7 +204,7 @@ export default function ProductSearchPage() {
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
-              <p className="type-section-label text-[var(--sk-text-muted)]">Kassalapp</p>
+              <p className="type-section-label text-[var(--sk-text-muted)]">Norwegian product search</p>
               <h1 className="type-heading-2">Search products</h1>
             </div>
           </header>
@@ -239,6 +259,28 @@ export default function ProductSearchPage() {
                 <p className="type-body-sm mt-2 max-w-xs text-[var(--sk-text-muted)]">
                   Search products sold in Norwegian grocery stores, then open the full Skaren report.
                 </p>
+                {recentSearches.length > 0 ? (
+                  <div className="mt-6 w-full max-w-sm text-left">
+                    <p className="type-section-label text-[var(--sk-text-muted)]">
+                      Recent searches
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {recentSearches.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => {
+                            setQuery(item);
+                            window.setTimeout(() => inputRef.current?.focus(), 0);
+                          }}
+                          className="focus-ring min-h-10 rounded-full border border-[var(--sk-border-default)] bg-white px-4 text-[13px] font-semibold text-[var(--sk-brand-forest)]"
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
 

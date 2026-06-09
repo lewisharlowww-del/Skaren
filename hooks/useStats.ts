@@ -97,14 +97,10 @@ function resolveGrade(scan: StatsScanRecord): GradeLetter {
 }
 
 function scoreToDisplayGrade(score: number) {
-  if (score >= 95) return "A";
-  if (score >= 85) return "A-";
-  if (score >= 75) return "B+";
-  if (score >= 65) return "B";
-  if (score >= 55) return "C+";
-  if (score >= 45) return "C";
-  if (score >= 35) return "D+";
-  if (score >= 25) return "D";
+  if (score >= 80) return "A";
+  if (score >= 60) return "B";
+  if (score >= 40) return "C";
+  if (score >= 20) return "D";
   return "E";
 }
 
@@ -155,6 +151,10 @@ function insightMatchesScanCount(text: string, totalScans: number) {
   return statedCount === totalScans;
 }
 
+function insightAddsValue(text: string) {
+  return !/\b(?:average|averaged|snitt|gjennomsnitt)\b/i.test(text);
+}
+
 function fallbackInsight(
   stats: Omit<StatsData, "weeklyInsight">,
   language: Language
@@ -168,11 +168,27 @@ function fallbackInsight(
   const strong = stats.gradeBreakdown.A + stats.gradeBreakdown.B;
   const weaker = stats.gradeBreakdown.D + stats.gradeBreakdown.E;
 
-  if (language === "no") {
-    return `${stats.totalScans} skanninger ga snitt ${stats.avgHealthGrade}, med ${strong} sterke og ${weaker} svakere valg; sammenlign ett alternativ neste gang.`;
+  if (stats.additivesToAvoid > 0) {
+    return language === "no"
+      ? "Et produkt inneholdt et tilsetningsstoff som bør unngås; sammenlign ingredienslisten neste gang."
+      : "One product contained an additive to avoid; compare its ingredient list with an alternative next time.";
   }
 
-  return `${stats.totalScans} scans averaged ${stats.avgHealthGrade}, with ${strong} strong and ${weaker} weaker choices; compare one alternative next time.`;
+  if (stats.additivesModerate > 0) {
+    return language === "no"
+      ? "Moderate tilsetningsstoffer dukket opp denne perioden; se etter et enklere alternativ neste gang."
+      : "Moderate additives appeared this period; look for one simpler alternative next time.";
+  }
+
+  if (language === "no") {
+    return weaker > strong
+      ? "Flere svakere valg preget perioden; sammenlign ett alternativ før neste kjøp."
+      : "De fleste valgene var balanserte; fortsett å sammenligne produkter med tydelig ingrediensliste.";
+  }
+
+  return weaker > strong
+    ? "Weaker choices shaped this period; compare one alternative before your next purchase."
+    : "Most choices were balanced; keep comparing products with a clear ingredient list.";
 }
 
 export function useStats(range: StatsRange, language: Language = "en") {
@@ -412,7 +428,8 @@ export function useStats(range: StatsRange, language: Language = "en") {
     if (cached) {
       const cleaned = cleanInsight(cached);
       setWeeklyInsight(
-        insightMatchesScanCount(cleaned, statsWithoutInsight.totalScans)
+        insightMatchesScanCount(cleaned, statsWithoutInsight.totalScans) &&
+          insightAddsValue(cleaned)
           ? cleaned
           : fallbackInsight(statsWithoutInsight, language)
       );
@@ -443,7 +460,7 @@ export function useStats(range: StatsRange, language: Language = "en") {
         const text = insightMatchesScanCount(
           generated,
           statsWithoutInsight.totalScans
-        )
+        ) && insightAddsValue(generated)
           ? generated
           : fallback;
 

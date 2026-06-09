@@ -3,11 +3,16 @@ export function ThemeScript() {
   const script = `
 (function(){
   try {
-    var p = localStorage.getItem('skaren:theme') || 'system';
-    var dark = p === 'dark' || (p === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    var stored = localStorage.getItem('skaren:theme');
+    var p = stored === 'dark' ? 'dark' : 'light';
+    if (stored !== p) localStorage.setItem('skaren:theme', p);
+    var dark = p === 'dark';
     if (dark) {
       document.documentElement.classList.add('dark');
       document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.removeAttribute('data-theme');
     }
   } catch(e) {}
 })();

@@ -61,6 +61,22 @@ textarea {
   background: rgba(76, 175, 125, 0.35);
 }
 
+.sk-auth-background {
+  background:
+    radial-gradient(
+      circle at 50% 22%,
+      color-mix(in srgb, var(--sk-brand-leaf) 16%, transparent) 0%,
+      color-mix(in srgb, var(--sk-brand-forest) 7%, transparent) 28%,
+      transparent 56%
+    ),
+    linear-gradient(
+      180deg,
+      var(--sk-brand-mist) 0%,
+      var(--sk-surface-card-green) 48%,
+      var(--sk-brand-mist-dark) 100%
+    );
+}
+
 @layer components {
   .type-display-xl {
     font-family: var(--font-brand);

@@ -3,8 +3,15 @@
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, CheckCircle2, LogIn, LogOut, ScanBarcode, UserRound } from "lucide-react";
-import { AppHeader } from "@/components/AppHeader";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  LogIn,
+  LogOut,
+  UserRound
+} from "lucide-react";
 import { SkarenMark, SkarenWordmark } from "@/components/SkarenLogo";
 import { SupabaseNotice } from "@/components/SupabaseNotice";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
@@ -23,14 +30,29 @@ function GoogleIcon() {
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/dashboard";
+  const requestedNext = searchParams.get("next");
+  const next =
+    requestedNext?.startsWith("/") && !requestedNext.startsWith("//")
+      ? requestedNext
+      : "/account";
   const confirmed = searchParams.get("confirmed") === "1";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
+  const destinationLabel = next.startsWith("/account")
+    ? "your account"
+    : next.startsWith("/stats")
+      ? "your stats"
+      : next.startsWith("/history")
+        ? "your history"
+        : "Skaren";
 
   useEffect(() => {
     let active = true;
@@ -61,11 +83,18 @@ function LoginContent() {
   async function handleGoogleSignIn() {
     setLoading(true);
     setMessage("");
+    setEmailError("");
+    setPasswordError("");
 
     const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
     const { error } = (await supabase?.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo }
+      options: {
+        redirectTo,
+        queryParams: {
+          prompt: "select_account",
+        },
+      }
     })) ?? { error: new Error("Supabase is not configured yet.") };
 
     setLoading(false);
@@ -79,13 +108,25 @@ function LoginContent() {
     event.preventDefault();
     setLoading(true);
     setMessage("");
+    setEmailError("");
+    setPasswordError("");
 
     const action = await supabase?.auth.signInWithPassword({ email, password });
 
     setLoading(false);
 
     if (action?.error) {
-      setMessage(action.error.message);
+      const errorText = action.error.message.toLowerCase();
+      if (errorText.includes("email")) {
+        setEmailError(action.error.message);
+      } else if (
+        errorText.includes("credential") ||
+        errorText.includes("password")
+      ) {
+        setPasswordError("The email or password is incorrect.");
+      } else {
+        setMessage(action.error.message);
+      }
       return;
     }
 
@@ -96,38 +137,56 @@ function LoginContent() {
     router.push(next);
   }
 
+  async function handleForgotPassword() {
+    setMessage("");
+    setEmailError("");
+    if (!email.trim()) {
+      setEmailError("Enter your email address first.");
+      return;
+    }
+
+    setResettingPassword(true);
+    const { error } = (await supabase?.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`
+    })) ?? { error: new Error("Supabase is not configured yet.") };
+    setResettingPassword(false);
+
+    if (error) {
+      setEmailError(error.message);
+      return;
+    }
+    setMessage("Password reset link sent. Check your email.");
+  }
+
   return (
-    <>
-      <AppHeader />
-      <main className="page-fade-up mx-auto grid w-full max-w-[430px] items-start gap-4 px-4 pb-36 pt-4 md:min-h-[calc(100vh-5rem)] md:max-w-6xl md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-8 md:py-10">
-        <section className="mx-auto max-w-xl text-center md:mx-0 md:text-left">
-          <SkarenMark className="mx-auto mb-3 h-11 w-11 md:mx-0 md:mb-4 md:h-14 md:w-14" iconClassName="h-6 w-6 text-white md:h-8 md:w-8" />
-          <p className="type-section-label text-forest">Welcome back</p>
-          <h1 className="type-display-lg mt-2 text-ink">
-            Track smarter choices instantly.
-          </h1>
-          <p className="type-body-lg mx-auto mt-3 max-w-md text-soil-600 md:mx-0">
-            Save your scans, follow your progress, and unlock deeper product insights.
-          </p>
+    <div className="sk-auth-background min-h-[100dvh]">
+      <header className="border-b border-black/[0.06] bg-white/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-md items-center justify-between px-5 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
+          <Link href="/" className="focus-ring flex items-center gap-2.5">
+            <SkarenMark className="h-9 w-9" />
+            <SkarenWordmark className="text-[1.45rem]" />
+          </Link>
           <Link
             href="/scan"
-            className="focus-ring tap-feedback type-button mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-forest shadow-sm"
+            className="focus-ring inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[12px] font-bold text-forest"
           >
-            <ScanBarcode className="h-5 w-5" />
-            Scan without logging in
+            Skip login
+            <ArrowLeft className="h-4 w-4 rotate-180" />
           </Link>
-        </section>
+        </div>
+      </header>
 
-        <section className="mx-auto w-full max-w-[24rem] rounded-[2rem] border border-white/70 bg-white/88 p-5 shadow-glass backdrop-blur-xl sm:p-7">
-          <div className="text-center">
-            <SkarenMark className="mx-auto mb-3 h-11 w-11" iconClassName="h-6 w-6 text-white" />
-            <h2 className="type-heading-2 text-ink">
-              <SkarenWordmark />
-            </h2>
+      <main className="page-fade-up mx-auto w-full max-w-[430px] px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-5">
+        <section className="mx-auto w-full max-w-[24rem]">
+          <div className="mb-5">
+            <p className="type-section-label text-forest">Welcome back</p>
+            <h1 className="type-heading-1 mt-1.5 text-ink">Sign in to Skaren</h1>
             <p className="type-body-sm mt-2 text-soil-600">
-              {signedInEmail ? "Your account is active on this device." : "Sign in to keep your product reports synced."}
+              Continue to {destinationLabel} and keep your product reports synced.
             </p>
           </div>
+
+          <div className="rounded-[1.5rem] border border-white/70 bg-white/90 p-5 shadow-glass backdrop-blur-xl sm:p-7">
 
           {!isSupabaseConfigured ? <SupabaseNotice /> : null}
 
@@ -148,11 +207,11 @@ function LoginContent() {
               </div>
               <div className="mt-5 grid gap-3">
                 <Link
-                  href="/account"
+                  href={next}
                 className="focus-ring tap-feedback type-button inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 text-white shadow-phone"
                 >
                   <UserRound className="h-5 w-5" />
-                  Go to account
+                  Continue to {destinationLabel}
                 </Link>
                 <button
                   type="button"
@@ -173,7 +232,7 @@ function LoginContent() {
                 className="focus-ring tap-feedback type-button inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-full bg-white px-5 py-4 text-ink shadow-sm ring-1 ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <GoogleIcon />
-                Continue with Google
+                {loading ? "Connecting..." : "Continue with Google"}
               </button>
 
               <div className="type-section-label flex items-center gap-3 text-soil-400">
@@ -186,28 +245,78 @@ function LoginContent() {
                 <label className="type-body-sm block font-bold text-soil-900">
                   Email
                   <input
-                    className="focus-ring mt-2 min-h-12 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 font-medium"
+                    className={`focus-ring mt-2 min-h-12 w-full rounded-2xl border bg-white px-4 py-3 font-medium ${
+                      emailError ? "border-rose-400" : "border-black/10"
+                    }`}
                     type="email"
                     value={email}
-                    onChange={(event) => setEmail(event.target.value)}
+                    onChange={(event) => {
+                      setEmail(event.target.value);
+                      setEmailError("");
+                    }}
                     autoComplete="email"
+                    aria-invalid={Boolean(emailError)}
+                    aria-describedby={emailError ? "login-email-error" : undefined}
+                    disabled={loading || resettingPassword}
                     required
                   />
+                  {emailError ? (
+                    <span id="login-email-error" className="mt-1.5 block text-xs font-semibold text-rose-700">
+                      {emailError}
+                    </span>
+                  ) : null}
                 </label>
-                <label className="type-body-sm block font-bold text-soil-900">
-                  Password
-                  <input
-                    className="focus-ring mt-2 min-h-12 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 font-medium"
-                    type="password"
-                    minLength={6}
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    autoComplete="current-password"
-                    required
-                  />
-                </label>
+                <div>
+                  <div className="flex items-center justify-between gap-3">
+                    <label htmlFor="login-password" className="type-body-sm font-bold text-soil-900">
+                      Password
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => void handleForgotPassword()}
+                      disabled={loading || resettingPassword || !isSupabaseConfigured}
+                      className="focus-ring min-h-9 text-[11px] font-bold text-forest disabled:opacity-50"
+                    >
+                      {resettingPassword ? "Sending..." : "Forgot password?"}
+                    </button>
+                  </div>
+                  <div className="relative mt-2">
+                    <input
+                      id="login-password"
+                      className={`focus-ring min-h-12 w-full rounded-2xl border bg-white py-3 pl-4 pr-12 font-medium ${
+                        passwordError ? "border-rose-400" : "border-black/10"
+                      }`}
+                      type={showPassword ? "text" : "password"}
+                      minLength={6}
+                      value={password}
+                      onChange={(event) => {
+                        setPassword(event.target.value);
+                        setPasswordError("");
+                      }}
+                      autoComplete="current-password"
+                      aria-invalid={Boolean(passwordError)}
+                      aria-describedby={passwordError ? "login-password-error" : undefined}
+                      disabled={loading || resettingPassword}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((shown) => !shown)}
+                      className="focus-ring absolute right-1 top-1 grid h-10 w-10 place-items-center rounded-xl text-soil-500"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      aria-pressed={showPassword}
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                  {passwordError ? (
+                    <p id="login-password-error" className="mt-1.5 text-xs font-semibold text-rose-700">
+                      {passwordError}
+                    </p>
+                  ) : null}
+                </div>
                 <button
-                  disabled={loading || !isSupabaseConfigured}
+                  disabled={loading || resettingPassword || !isSupabaseConfigured}
                   className="focus-ring tap-feedback type-button inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 text-white shadow-phone disabled:cursor-not-allowed disabled:bg-soil-600"
                 >
                   <LogIn className="h-5 w-5" />
@@ -215,7 +324,19 @@ function LoginContent() {
                 </button>
               </form>
               {confirmed ? <p className="rounded-2xl bg-leaf-50 p-4 text-sm font-bold text-forest">Email confirmed. You can log in now.</p> : null}
-              {message ? <p className="rounded-2xl bg-rose-50 p-4 text-sm font-bold text-rose-700">{message}</p> : null}
+              {message ? (
+                <p
+                  className={`rounded-2xl p-4 text-sm font-bold ${
+                    message.startsWith("Password reset")
+                      ? "bg-leaf-50 text-forest"
+                      : "bg-rose-50 text-rose-700"
+                  }`}
+                  role="status"
+                  aria-live="polite"
+                >
+                  {message}
+                </p>
+              ) : null}
             </div>
           )}
 
@@ -227,13 +348,10 @@ function LoginContent() {
               </Link>
             </p>
           ) : null}
-          <Link href="/scan" className="mt-5 inline-flex w-full items-center justify-center gap-2 text-sm font-black text-forest">
-            Continue to scan
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+          </div>
         </section>
       </main>
-    </>
+    </div>
   );
 }
 

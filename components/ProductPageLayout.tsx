@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronRight, Crown, Info, ListPlus } from "lucide-react";
 import { DailyIntake } from "@/components/DailyIntake";
 import { Additives } from "@/components/Additives";
-import { gradeDescriptions } from "@/components/ScoreBadge";
+import { getGradeLabel } from "@/components/ScoreBadge";
 import { useShoppingList } from "@/hooks/useShoppingList";
 import { hasEcoData } from "@/lib/ecoscore";
 import { t } from "@/lib/i18n";
@@ -85,17 +85,19 @@ function getGradeBorder(g: GradeLetter | null) {
   return g ? GRADE_BORDERS[g] ?? CARD_BORDER : CARD_BORDER;
 }
 
-function getHealthGradeBasis(product: ProductResult, hasNutrition: boolean) {
-  if (!hasNutrition) return "Needs nutrition data to grade.";
-  if (product.hasNokkelhull) return "Uses nutrition data + Norwegian Nøkkelhull label.";
-  if (product.kassalappNutrition.length > 0) return "Uses calories, sugar, salt, fat, protein & fiber.";
-  return "Based on the official Nutri-Score.";
+function getHealthGradeBasis(product: ProductResult, hasNutrition: boolean, lang: "en" | "no" = "en") {
+  const no = lang === "no";
+  if (!hasNutrition) return no ? "Trenger næringsdata for å gi karakter." : "Needs nutrition data to grade.";
+  if (product.hasNokkelhull) return no ? "Bruker næringsdata + Nøkkelhull-merket." : "Uses nutrition data + Norwegian Nøkkelhull label.";
+  if (product.kassalappNutrition.length > 0) return no ? "Bruker kalorier, sukker, salt, fett, protein og fiber." : "Uses calories, sugar, salt, fat, protein & fiber.";
+  return no ? "Basert på offisiell Nutri-Score." : "Based on the official Nutri-Score.";
 }
 
-function getEcoGradeBasis(hasEco: boolean) {
+function getEcoGradeBasis(hasEco: boolean, lang: "en" | "no" = "en") {
+  const no = lang === "no";
   return hasEco
-    ? "Based on the official Open Food Facts Eco-Score."
-    : "No official Eco-Score available yet.";
+    ? (no ? "Basert på offisiell Open Food Facts Eco-Score." : "Based on the official Open Food Facts Eco-Score.")
+    : (no ? "Ingen offisiell Eco-Score tilgjengelig ennå." : "No official Eco-Score available yet.");
 }
 
 function getGradeSummary(
@@ -178,7 +180,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function PremiumNudge({ label }: { label: string }) {
+function PremiumNudge({ label, lang = "en" }: { label: string; lang?: "en" | "no" }) {
   return (
     <Link
       href="/pricing"
@@ -189,8 +191,8 @@ function PremiumNudge({ label }: { label: string }) {
         <Crown className="h-4 w-4" style={{ color: "var(--sk-grade-d-text)" }} />
       </div>
       <div className="flex-1">
-        <p className="type-body-sm font-bold" style={{ color: "var(--sk-grade-d-text)" }}>Pro feature</p>
-        <p className="type-caption" style={{ color: MUTED }}>{label} · Upgrade to unlock</p>
+        <p className="type-body-sm font-bold" style={{ color: "var(--sk-grade-d-text)" }}>{t('pro_feature', lang)}</p>
+        <p className="type-caption" style={{ color: MUTED }}>{label} · {t('upgrade_to_unlock', lang)}</p>
       </div>
       <ChevronRight className="h-4 w-4" style={{ color: "var(--sk-grade-c-text)" }} />
     </Link>
@@ -380,17 +382,17 @@ export function ProductPageLayout({
             {product.name}
           </span>
           {healthGrade ? (
-            <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 6px", background: GRADE_BACKGROUNDS[healthGrade], color: GRADE_COLORS[healthGrade], flexShrink: 0 }}>
+            <span style={{ fontSize: 12, fontWeight: 800, borderRadius: 6, padding: "2px 7px", background: GRADE_BACKGROUNDS[healthGrade], color: GRADE_COLORS[healthGrade], flexShrink: 0 }}>
               {healthGrade}
             </span>
           ) : null}
           {ecoGrade ? (
-            <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 6px", background: GRADE_BACKGROUNDS[ecoGrade], color: GRADE_COLORS[ecoGrade], flexShrink: 0 }}>
+            <span style={{ fontSize: 12, fontWeight: 800, borderRadius: 6, padding: "2px 7px", background: GRADE_BACKGROUNDS[ecoGrade], color: GRADE_COLORS[ecoGrade], flexShrink: 0 }}>
               {ecoGrade}
             </span>
           ) : null}
         </div>
-        <span ref={scanResultRef} style={{ opacity: 1, color: MUTED, fontFamily: "Manrope, sans-serif", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", willChange: "opacity" }}>
+        <span ref={scanResultRef} style={{ opacity: 1, color: MUTED, fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", willChange: "opacity" }}>
           {t('scan_result', lang)}
         </span>
         <div className="h-10 w-10" aria-hidden="true" />
@@ -409,10 +411,6 @@ export function ProductPageLayout({
           willChange: "opacity",
         }}
       >
-        {/* Blurred orbs */}
-        <div style={{ position: "absolute", right: -10, top: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(120,200,80,.38)", filter: "blur(22px)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", left: 55, bottom: -20, width: 70, height: 70, borderRadius: "50%", background: "rgba(240,180,60,.32)", filter: "blur(16px)", pointerEvents: "none" }} />
-
         {/* Content row */}
         <div
           ref={heroContentRef}
@@ -460,7 +458,7 @@ export function ProductPageLayout({
 
           {/* Text */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h2
+            <h1
               style={{
                 fontSize: 15,
                 fontWeight: 800,
@@ -474,9 +472,9 @@ export function ProductPageLayout({
               }}
             >
               {product.name}
-            </h2>
+            </h1>
             {product.brand && (
-              <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--sk-text-muted)", marginTop: 3 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--sk-text-muted)", marginTop: 3 }}>
                 {product.brand}
               </p>
             )}
@@ -488,7 +486,7 @@ export function ProductPageLayout({
                 border: "0.5px solid var(--sk-grade-a-border)",
                 borderRadius: 20,
                 padding: "3px 10px",
-                fontSize: 11,
+                fontSize: 12,
                 color: "var(--sk-grade-a-text)",
                 fontWeight: 600,
               }}
@@ -527,12 +525,12 @@ export function ProductPageLayout({
           <div className="grid grid-cols-2">
             <div className="flex flex-col items-center gap-2 px-4 py-4">
               <div style={{ width: 72, height: 72, borderRadius: "50%", border: `2.5px solid ${getGradeBorder(healthGrade)}`, background: getGradeBackground(healthGrade), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3 }}>
-                <span className="type-grade" style={{ fontSize: 28, color: getColor(healthGrade), fontFamily: "Manrope, sans-serif" }}>
+                <span className="type-grade" style={{ fontSize: 24, color: getColor(healthGrade), fontFamily: "Manrope, sans-serif" }}>
                   {healthGrade ?? "–"}
                 </span>
                 {healthGrade ? (
-                  <span style={{ fontSize: 10, fontWeight: 700, lineHeight: 1, color: getColor(healthGrade), textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                    {gradeDescriptions[healthGrade]}
+                  <span style={{ fontSize: 9, fontWeight: 700, lineHeight: 1, color: getColor(healthGrade), textTransform: "uppercase", letterSpacing: 0, whiteSpace: "nowrap" }}>
+                    {getGradeLabel(healthGrade, lang)}
                   </span>
                 ) : null}
               </div>
@@ -552,12 +550,12 @@ export function ProductPageLayout({
               }}
             >
               <div style={{ width: 72, height: 72, borderRadius: "50%", border: hasOfficialEcoData ? `2.5px solid ${getGradeBorder(ecoGrade)}` : `2px dashed ${CARD_BORDER}`, background: hasOfficialEcoData ? getGradeBackground(ecoGrade) : CARD_BG, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3 }}>
-                <span className="type-grade" style={{ fontSize: 28, color: hasOfficialEcoData ? getColor(ecoGrade) : MUTED, fontFamily: "Manrope, sans-serif" }}>
+                <span className="type-grade" style={{ fontSize: 24, color: hasOfficialEcoData ? getColor(ecoGrade) : MUTED, fontFamily: "Manrope, sans-serif" }}>
                   {ecoGrade ?? "–"}
                 </span>
                 {ecoGrade ? (
-                  <span style={{ fontSize: 10, fontWeight: 700, lineHeight: 1, color: getColor(ecoGrade), textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                    {gradeDescriptions[ecoGrade]}
+                  <span style={{ fontSize: 9, fontWeight: 700, lineHeight: 1, color: getColor(ecoGrade), textTransform: "uppercase", letterSpacing: 0, whiteSpace: "nowrap" }}>
+                    {getGradeLabel(ecoGrade, lang)}
                   </span>
                 ) : null}
               </div>
@@ -582,11 +580,11 @@ export function ProductPageLayout({
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <p style={{ fontSize: 13, color: "var(--sk-text-secondary)" }}>
                 <span style={{ fontWeight: 700, color: "var(--sk-text-primary)" }}>{t('product_health', lang)}: </span>
-                {getHealthGradeBasis(product, Boolean(healthGrade))}
+                {getHealthGradeBasis(product, Boolean(healthGrade), lang)}
               </p>
               <p style={{ fontSize: 13, color: "var(--sk-text-secondary)" }}>
                 <span style={{ fontWeight: 700, color: "var(--sk-text-primary)" }}>{t('product_eco', lang)}: </span>
-                {getEcoGradeBasis(hasOfficialEcoData)}
+                {getEcoGradeBasis(hasOfficialEcoData, lang)}
               </p>
             </div>
           </div>
@@ -642,7 +640,7 @@ export function ProductPageLayout({
                     <span
                       key={label}
                       style={{
-                        fontSize: 11,
+                        fontSize: 12,
                         lineHeight: 1.25,
                         textAlign:
                           index === 0
@@ -664,7 +662,7 @@ export function ProductPageLayout({
                 </div>
               </div>
             ) : (
-              <PremiumNudge label={t('product_processing', lang)} />
+              <PremiumNudge label={t('product_processing', lang)} lang={lang} />
             )}
           </div>
         ) : null}
@@ -673,7 +671,7 @@ export function ProductPageLayout({
         <div className="mb-4 flex flex-col gap-2.5">
           <SectionLabel>{t('product_allergens', lang)}</SectionLabel>
           {!isPremium ? (
-            <PremiumNudge label={t('product_allergens', lang)} />
+            <PremiumNudge label={t('product_allergens', lang)} lang={lang} />
           ) : product.allergens.length > 0 ? (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
               {product.allergens.map((a) => (
@@ -723,7 +721,7 @@ export function ProductPageLayout({
           {isPremium ? (
             <DailyIntake nutrition={product.kassalappNutrition} lang={lang} />
           ) : (
-            <PremiumNudge label={t('product_daily_impact', lang)} />
+            <PremiumNudge label={t('product_daily_impact', lang)} lang={lang} />
           )}
         </div>
 
@@ -733,12 +731,12 @@ export function ProductPageLayout({
           {isPremium ? (
             <Additives additives={allAdditives} lang={lang} />
           ) : (
-            <PremiumNudge label={t('product_additives', lang)} />
+            <PremiumNudge label={t('product_additives', lang)} lang={lang} />
           )}
         </div>
 
-        {/* 7. KEY INSIGHTS */}
-        {insights.length > 0 && (
+        {/* 7. KEY INSIGHTS — premium only */}
+        {isPremium && insights.length > 0 && (
           <div className="mb-4 flex flex-col gap-2.5">
             <SectionLabel>{t('product_key_insights', lang)}</SectionLabel>
             {insights.map((insight) => {
@@ -758,17 +756,13 @@ export function ProductPageLayout({
           </div>
         )}
 
-        {/* 8. INGREDIENTS */}
-        {(ingredients != null || !isPremium) && (
+        {/* 8. INGREDIENTS — free for all users */}
+        {ingredients != null && (
           <div className="mb-4 flex flex-col gap-2.5">
             <SectionLabel>{t('product_ingredients', lang)}</SectionLabel>
-            {!isPremium ? (
-              <PremiumNudge label={t('product_ingredients', lang)} />
-            ) : ingredients ? (
-              <div style={{ background: CARD_BG, borderRadius: 14, border: `0.5px solid ${CARD_BORDER}`, padding: "12px 14px" }}>
-                <p style={{ fontSize: 13, color: "var(--sk-text-secondary)", lineHeight: 1.6 }}>{ingredients}</p>
-              </div>
-            ) : null}
+            <div style={{ background: CARD_BG, borderRadius: 14, border: `0.5px solid ${CARD_BORDER}`, padding: "12px 14px" }}>
+              <p style={{ fontSize: 13, color: "var(--sk-text-secondary)", lineHeight: 1.6 }}>{ingredients}</p>
+            </div>
           </div>
         )}
 

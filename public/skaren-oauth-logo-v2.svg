@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Skaren S logo</title>
+  <desc id="desc">A centered cream S monogram inside scanner corners on a forest green square.</desc>
+  <rect width="512" height="512" rx="104" fill="#2d4a26"/>
+
+  <g fill="none" stroke="#f5f0e8" stroke-width="28" stroke-linecap="round">
+    <path d="M104 176V124c0-17 13-30 30-30h52"/>
+    <path d="M326 94h52c17 0 30 13 30 30v52"/>
+    <path d="M104 336v52c0 17 13 30 30 30h52"/>
+    <path d="M326 418h52c17 0 30-13 30-30v-52"/>
+  </g>
+
+  <path
+    d="M337 173c-24-25-59-39-96-36-48 4-80 30-80 66 0 41 40 54 89 62 55 9 91 22 91 65 0 40-37 69-89 72-41 2-79-13-105-43"
+    fill="none"
+    stroke="#f5f0e8"
+    stroke-width="42"
+    stroke-linecap="round"
+    transform="translate(10 -14)"
+  />
+</svg>
