@@ -39,7 +39,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: colors.brand.forest
+  themeColor: colors.brand.forest,
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -52,7 +57,7 @@ export default function RootLayout({
       <head>
         <ThemeScript />
       </head>
-      <body className="min-h-screen antialiased bg-[#f7f2ea] dark:bg-[#1a1714]">
+      <body className="min-h-screen antialiased bg-[#f7f2ea] dark:bg-[#1a1714]" suppressHydrationWarning>
         <ThemeProvider>
           <LanguageProvider>
             <PwaShell />
