@@ -7,7 +7,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Set WebView background to app cream to prevent white flash while remote URL loads
+        let cream = UIColor(red: 0.882, green: 0.843, blue: 0.776, alpha: 1.0)
+        if let rootVC = window?.rootViewController as? CAPBridgeViewController {
+            rootVC.webView?.backgroundColor = cream
+            rootVC.webView?.scrollView.backgroundColor = cream
+            rootVC.webView?.isOpaque = false
+        }
         return true
     }
 
