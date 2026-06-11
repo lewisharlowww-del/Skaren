@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { PwaShell } from "@/components/PwaShell";
-import SplashWrapper from "@/components/SplashWrapper";
 import { ThemeScript } from "@/components/ThemeScript";
 import { LanguageProvider } from "@/lib/language-context";
 import { ThemeProvider } from "@/lib/theme-context";
@@ -62,7 +61,7 @@ export default function RootLayout({
         <ThemeProvider>
           <LanguageProvider>
             <PwaShell />
-            <SplashWrapper>{children}</SplashWrapper>
+            {children}
           </LanguageProvider>
         </ThemeProvider>
       </body>
