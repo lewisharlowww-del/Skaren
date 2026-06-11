@@ -30,8 +30,9 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const c = ctx;
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -49,31 +50,31 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
 
     let raf: number;
     function draw() {
-      ctx.fillStyle = '#e8e0d4';
-      ctx.fillRect(0, 0, W, H);
+      c.fillStyle = '#e8e0d4';
+      c.fillRect(0, 0, W, H);
 
-      ctx.strokeStyle = 'rgba(29,74,38,0.04)';
-      ctx.lineWidth = 0.5;
-      for (let x = 0; x < W; x += 22) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-      for (let y = 0; y < H; y += 22) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+      c.strokeStyle = 'rgba(29,74,38,0.04)';
+      c.lineWidth = 0.5;
+      for (let x = 0; x < W; x += 22) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke(); }
+      for (let y = 0; y < H; y += 22) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
 
-      const vg = ctx.createRadialGradient(W/2, H/2, H*.1, W/2, H/2, H*.75);
+      const vg = c.createRadialGradient(W/2, H/2, H*.1, W/2, H/2, H*.75);
       vg.addColorStop(0, 'rgba(0,0,0,0)');
       vg.addColorStop(1, 'rgba(0,0,0,0.07)');
-      ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+      c.fillStyle = vg; c.fillRect(0, 0, W, H);
 
-      const cg = ctx.createRadialGradient(W/2, H*.42, 0, W/2, H*.42, W*.4);
+      const cg = c.createRadialGradient(W/2, H*.42, 0, W/2, H*.42, W*.4);
       cg.addColorStop(0, 'rgba(74,140,92,0.09)');
       cg.addColorStop(1, 'rgba(74,140,92,0)');
-      ctx.fillStyle = cg; ctx.fillRect(0, 0, W, H);
+      c.fillStyle = cg; c.fillRect(0, 0, W, H);
 
       pts.forEach(p => {
         p.x += p.vx; p.y += p.vy;
         if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
         if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = p.warm ? `rgba(154,142,126,${p.a})` : `rgba(29,74,38,${p.a})`;
-        ctx.fill();
+        c.beginPath(); c.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        c.fillStyle = p.warm ? `rgba(154,142,126,${p.a})` : `rgba(29,74,38,${p.a})`;
+        c.fill();
       });
 
       raf = requestAnimationFrame(draw);
