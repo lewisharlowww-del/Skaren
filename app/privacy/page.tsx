@@ -3,7 +3,7 @@ import { LegalPage } from "@/components/LegalPage";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | Skaren",
-  description: "How Skaren handles account data, scan history, product data, and third-party services."
+  description: "How Skaren collects, uses, and protects your personal data.",
 };
 
 export default function PrivacyPage() {
@@ -11,44 +11,67 @@ export default function PrivacyPage() {
     <LegalPage
       eyebrow="Privacy"
       title="Privacy Policy"
-      updated="May 25, 2026"
-      intro="This policy explains what Skaren collects, why it is collected, and how you can control your data."
+      updated="June 11, 2026"
+      intro="Skaren is built on the principle that your data belongs to you. This policy explains exactly what we collect, why we collect it, and how you stay in control."
       sections={[
+        {
+          title: "Who we are",
+          body: [
+            "Skaren is operated by Skaren AS, based in Oslo, Norway. We are the data controller for any personal data processed through the Skaren app and website.",
+            "If you have any questions about this policy, contact us at hello@skaren.app.",
+          ],
+        },
         {
           title: "What we collect",
           body: [
-            "If you create an account, Skaren may collect your email address, authentication details, and basic account settings.",
-            "When you scan products, Skaren may store your barcode, product name, brand, grade, image reference, and scan date so your history and dashboard can work."
-          ]
+            "When you create an account, we collect your email address and the date your account was created. We do not collect your name, phone number, or any payment details.",
+            "When you scan products, we store the barcode, product name, brand, health grade, and scan date — so your history, stats, and badges work correctly.",
+            "If you enable push notifications, we store a device token to deliver those notifications. You can turn this off at any time in Account settings.",
+          ],
         },
         {
-          title: "Product and scan data",
+          title: "How we use your data",
           body: [
-            "Scan history is used to show your recent scans, product grades, progress, badges, and streaks.",
-            "You can use product scanning without an account, but signed-in features may store scan history in your account."
-          ]
+            "Your data is used solely to provide and improve the Skaren experience. This includes showing your scan history, calculating badges and streaks, and personalising your stats.",
+            "We may use aggregated, anonymised analytics to understand how the app is used and which features to improve. This data cannot be traced back to you.",
+            "We do not use your data for advertising, profiling, or any commercial purpose beyond running Skaren.",
+          ],
+        },
+        {
+          title: "Data storage and security",
+          body: [
+            "Your data is stored securely on Supabase infrastructure hosted in the European Union. All data is encrypted at rest and in transit.",
+            "We apply strict access controls and do not share your personal data with any third party, except as required to operate the service (e.g. authentication infrastructure).",
+          ],
         },
         {
           title: "Third-party services",
           body: [
-            "Skaren uses Kassalapp for Norwegian product data, product images, store data, nutrition, allergens, and labels. It uses Open Food Facts for public product data such as Eco-Score, additives, NOVA processing level, categories, packaging, origins, and ingredients.",
-            "Supabase powers authentication and database storage. If AI features are enabled, Skaren may send product fields such as name, category, ingredients, and grades to a configured AI provider to create plain-English insights."
-          ]
+            "Product lookups use open databases to retrieve nutritional and environmental data. No personal information is included in these requests — only the barcode you scanned.",
+            "Authentication is handled securely via Supabase. We do not store passwords directly.",
+          ],
         },
         {
-          title: "Analytics",
+          title: "Your rights",
           body: [
-            "Skaren may use privacy-conscious analytics if enabled, to understand app performance and which screens need improvement.",
-            "Analytics should be used to improve the app, not to sell personal data."
-          ]
+            "Under GDPR, you have the right to access, correct, or delete your personal data at any time. You can delete your account and all associated data directly from Account settings in the app.",
+            "You also have the right to object to processing, request data portability, or lodge a complaint with the Norwegian Data Protection Authority (Datatilsynet).",
+            "To exercise any of these rights, contact us at hello@skaren.app.",
+          ],
         },
         {
-          title: "Your choices",
+          title: "Age requirement",
           body: [
-            "You can delete your account and scan history directly in the app under Account settings. For any other questions, contact hello@skaren.app.",
-            "Skaren does not sell your personal data."
-          ]
-        }
+            "Skaren is intended for users aged 16 and older, in line with GDPR requirements. Users in jurisdictions where the minimum age is 13 may use the app from that age.",
+            "We do not knowingly collect data from children below the applicable minimum age.",
+          ],
+        },
+        {
+          title: "Changes to this policy",
+          body: [
+            "We may update this policy as the app evolves. When we make significant changes, we will notify you through the app. The latest version is always available at skaren.app/privacy.",
+          ],
+        },
       ]}
     />
   );

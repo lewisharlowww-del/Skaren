@@ -940,10 +940,9 @@ export default function AccountPage() {
                 <div className="px-5 pb-4 space-y-3 text-[13px] leading-relaxed" style={{ borderTop: "0.5px solid var(--sk-border-muted)", color: "var(--sk-text-secondary)" }}>
                   <p className="pt-3">Skaren is intended for users aged 16 and older (or 13 where local law permits). By creating an account you confirm you meet this requirement.</p>
                   <p>We store your email address and scan history so the app works across devices. We collect only what is necessary — nothing more.</p>
-                  <p>Your data is stored securely on Supabase servers in the EU. We do not sell your data, share it with advertisers, or use it for any purpose outside of running Skaren.</p>
+                  <p>Your data is stored securely on servers in the EU. We do not sell your data, share it with advertisers, or use it for any purpose outside of running Skaren.</p>
                   <p>Skaren may use privacy-conscious analytics to understand which parts of the app are used most. This data is aggregated and never linked to your identity.</p>
-                  <p>Product information comes from Kassalapp and Open Food Facts. No personal information is sent in those lookups.</p>
-                  <p>You can delete your account and all your data from this screen at any time. For privacy requests, contact <span style={{ color: "var(--sk-text-green)" }}>hello@skaren.app</span>.</p>
+                  <p>For privacy requests, contact <span style={{ color: "var(--sk-text-green)" }}>hello@skaren.app</span>.</p>
                   <p style={{ color: "var(--sk-text-muted)", fontSize: 11 }}>Last updated June 2026 · Skaren AS, Oslo, Norway</p>
                 </div>
               )}
@@ -968,7 +967,7 @@ export default function AccountPage() {
                   <p className="pt-3">By using Skaren you agree to use it for personal, non-commercial purposes only. You will not attempt to scrape, copy, or reverse-engineer any part of the app or its data.</p>
                   <p>Skaren is provided as-is. Product data comes from third-party databases and may not always match the product in your hand — always check the label.</p>
                   <p>Skaren Premium costs 49 kr/month and includes a 7-day free trial. Your subscription renews automatically each month unless cancelled. You can cancel at any time through your App Store subscription settings — cancellation takes effect at the end of the current billing period.</p>
-                  <p>You can delete your account at any time from this screen. Skaren is governed by Norwegian law.</p>
+                  <p>Skaren is governed by Norwegian law.</p>
                   <p style={{ color: "var(--sk-text-muted)", fontSize: 11 }}>Last updated June 2026</p>
                 </div>
               )}

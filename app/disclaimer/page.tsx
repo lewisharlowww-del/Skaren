@@ -3,58 +3,59 @@ import { LegalPage } from "@/components/LegalPage";
 
 export const metadata: Metadata = {
   title: "Disclaimer | Skaren",
-  description: "Important limits of product grades, product data, nutrition information, and environmental estimates."
+  description: "Important limits of Skaren's product grades, nutrition data, and environmental estimates.",
 };
 
 export default function DisclaimerPage() {
   return (
     <LegalPage
       eyebrow="Disclaimer"
-      title="Important Disclaimer"
-      updated="May 25, 2026"
-      intro="Skaren is designed to make product information easier to understand, but it has clear limits."
+      title="Nutrition & Data Disclaimer"
+      updated="June 11, 2026"
+      intro="Skaren is designed to make product information easier to understand — but it has limits. Please read this before relying on any grade, score, or data point in the app."
       sections={[
         {
-          title: "Not a medical service",
+          title: "Not a medical tool",
           body: [
-            "Skaren is not a medical service and does not diagnose, treat, or prevent any health condition.",
-            "If you have allergies, medical needs, pregnancy-related needs, or a specific diet, check official product packaging and speak with a qualified professional."
-          ]
+            "Skaren is not a medical device, medical service, or health authority. Nothing in the app constitutes medical advice, diagnosis, or treatment.",
+            "If you have a health condition, allergy, food intolerance, or specific dietary requirement, always consult a qualified healthcare professional and rely on the physical product label — not Skaren grades.",
+          ],
         },
         {
-          title: "Not an official nutrition authority",
+          title: "Health grades are simplified estimates",
           body: [
-            "Skaren is not an official nutrition authority and does not replace national food guidance.",
-            "Health grades are simplified estimates based on available nutrition data, labels, product category signals, and practical thresholds for sugar, salt, fat, protein, fiber, and calories."
-          ]
+            "Skaren's A–E health grades are calculated from available nutritional data using general thresholds for sugar, salt, fat, protein, fibre, and calories. They are intended to help you compare products at a glance.",
+            "These grades are not validated by any health authority, and they do not account for your individual health status, dietary needs, medications, or medical history.",
+          ],
         },
         {
-          title: "Not an environmental certification",
+          title: "Environmental grades are estimates",
           body: [
-            "Skaren is not an official environmental certification system.",
-            "Environmental grades are estimates based on available product data such as Eco-Score, packaging, origin, and category information."
-          ]
+            "Environmental grades in Skaren are based on publicly available data including Eco-Score, packaging information, country of origin, and product category. They are estimates, not official certifications.",
+            "Skaren is not affiliated with or endorsed by any environmental certification body.",
+          ],
         },
         {
-          title: "Additives and NOVA are guidance",
+          title: "Additive and NOVA information",
           body: [
-            "Additives and E-number explanations are simplified guidance, not a personal safety assessment.",
-            "NOVA processing level depends on available product data and may be missing or incorrect."
-          ]
+            "Additive flags and E-number explanations in Skaren are simplified summaries based on publicly available safety assessments. They are not personalised risk assessments.",
+            "NOVA processing levels depend on available ingredient data and may be missing or incorrect for some products. A NOVA level alone does not determine whether a product is suitable for your diet.",
+          ],
         },
         {
-          title: "Data may be incomplete",
+          title: "Data may be incomplete or incorrect",
           body: [
-            "Skaren uses third-party product databases, including Kassalapp and Open Food Facts. These sources may have missing, user-submitted, or outdated information.",
-            "Scores should be treated as helpful signals, not perfect truth."
-          ]
+            "Product data in Skaren is sourced from third-party open databases. These sources rely partly on user-submitted data and may contain missing, outdated, or incorrect information.",
+            "Skaren scores should be treated as helpful signals for comparison — not as definitive or precise measurements. Always check the physical packaging for allergen, ingredient, and nutritional information.",
+          ],
         },
         {
-          title: "Use your own judgement",
+          title: "Your responsibility",
           body: [
-            "Skaren can help you compare products faster, but final shopping and health decisions are yours."
-          ]
-        }
+            "Final food, health, and shopping decisions are always yours. Skaren is a tool to help you make more informed choices — it does not make choices for you.",
+            "Skaren AS accepts no liability for decisions made based on information provided by the app.",
+          ],
+        },
       ]}
     />
   );
