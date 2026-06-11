@@ -885,41 +885,70 @@ export default function ProductPage({ params }: ProductPageProps) {
       <main className="w-full">
         {loading ? (
           <div className="flex min-h-screen flex-col bg-[var(--sk-brand-mist)]">
+            <style>{`
+              @keyframes sk-scan { 0%{top:18%} 50%{top:80%} 100%{top:18%} }
+              @keyframes sk-ring { 0%,100%{transform:scale(0.93);opacity:0.65} 50%{transform:scale(1.05);opacity:0.28} }
+              @keyframes sk-dot { 0%,100%{opacity:0.4;transform:scale(0.88)} 50%{opacity:1;transform:scale(1)} }
+              @keyframes sk-shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
+              .sk-shimmer {
+                background: linear-gradient(90deg, var(--sk-border-default,#ede8df) 25%, color-mix(in srgb, var(--sk-border-default,#ede8df) 60%, white) 50%, var(--sk-border-default,#ede8df) 75%);
+                background-size: 1200px 100%;
+                animation: sk-shimmer 1.6s ease-in-out infinite;
+                border-radius: 10px;
+              }
+            `}</style>
             <header className="flex items-center px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
               <Link
                 href="/scan"
-                aria-label="Back to scan"
+                aria-label={lang === "no" ? "Tilbake til skanner" : "Back to scan"}
                 className="focus-ring grid h-11 w-11 place-items-center rounded-full text-[var(--sk-brand-forest)]"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Link>
             </header>
-            <div className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4 pt-6">
-              <div className="h-28 animate-pulse rounded-2xl border border-[var(--sk-border-default)] bg-white/70" />
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <div className="h-40 animate-pulse rounded-2xl border border-[var(--sk-border-default)] bg-white/70" />
-                <div className="h-40 animate-pulse rounded-2xl border border-[var(--sk-border-default)] bg-white/70" />
-              </div>
-              <div className="mt-4 h-32 animate-pulse rounded-2xl border border-[var(--sk-border-default)] bg-white/70" />
-              <div className="mt-8 text-center" role="status">
-                <p className="type-heading-3 text-[var(--sk-text-primary)]">
-                  {loadingSlow ? "This is taking longer than usual" : "Building product report"}
-                </p>
-                <p className="type-body-sm mx-auto mt-2 max-w-xs text-[var(--sk-text-muted)]">
+
+            <div className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4">
+              <div className="flex flex-1 flex-col items-center justify-center pb-8 pt-2" role="status" aria-live="polite">
+                <div style={{ position: "relative", width: 112, height: 112, marginBottom: 24 }}>
+                  <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1.5px solid var(--sk-brand-forest)", opacity: 0.14, animation: "sk-ring 2.6s ease-in-out infinite" }} />
+                  <div style={{ position: "absolute", inset: 14, borderRadius: "50%", border: "1.5px solid var(--sk-brand-forest)", opacity: 0.2, animation: "sk-ring 2.6s ease-in-out infinite 0.18s" }} />
+                  <div style={{ position: "absolute", inset: 28, borderRadius: "50%", border: "1.5px solid var(--sk-brand-forest)", opacity: 0.28, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ position: "absolute", left: 0, right: 0, height: 1.5, background: "linear-gradient(90deg,transparent,rgba(74,140,92,0.85),transparent)", animation: "sk-scan 2s ease-in-out infinite" }} />
+                  </div>
+                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: 9, height: 9, borderRadius: "50%", background: "#4a8c5c", animation: "sk-dot 2s ease-in-out infinite" }} />
+                  </div>
+                </div>
+
+                <p className="type-heading-3 text-[var(--sk-text-primary)] text-center">
                   {loadingSlow
-                    ? "You can retry now or return to the scanner."
-                    : "Checking product data, nutrition, and grades."}
+                    ? (lang === "no" ? "Dette tar lengre enn vanlig" : "This is taking longer than usual")
+                    : (lang === "no" ? "Analyserer produkt" : "Analyzing product")}
+                </p>
+                <p className="type-body-sm mx-auto mt-2 max-w-xs text-[var(--sk-text-muted)] text-center">
+                  {loadingSlow
+                    ? (lang === "no" ? "Du kan prøve igjen eller gå tilbake." : "You can retry or return to the scanner.")
+                    : (lang === "no" ? "Sjekker næring, ingredienser og karakterer." : "Checking nutrition, ingredients, and grades.")}
                 </p>
                 {loadingSlow ? (
                   <button
                     type="button"
                     onClick={() => void loadProduct({ skipCache: true })}
-                    className="focus-ring mt-4 inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--sk-border-default)] bg-white px-5 text-sm font-bold text-[var(--sk-brand-forest)]"
+                    className="focus-ring mt-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--sk-border-default)] bg-white px-5 text-sm font-bold text-[var(--sk-brand-forest)]"
                   >
                     <RotateCcw className="h-4 w-4" />
-                    Retry
+                    {lang === "no" ? "Prøv igjen" : "Retry"}
                   </button>
                 ) : null}
+              </div>
+
+              <div className="flex flex-col gap-3 pb-8">
+                <div className="sk-shimmer h-28 rounded-2xl" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="sk-shimmer h-36 rounded-2xl" />
+                  <div className="sk-shimmer h-36 rounded-2xl" />
+                </div>
+                <div className="sk-shimmer h-28 rounded-2xl" />
               </div>
             </div>
           </div>
