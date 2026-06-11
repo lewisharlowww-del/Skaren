@@ -10,9 +10,12 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       eyebrow="Privacy"
+      eyebrowNo="Personvern"
       title="Privacy Policy"
+      titleNo="Personvernerklæring"
       updated="June 11, 2026"
       intro="Skaren is built on the principle that your data belongs to you. This policy explains exactly what we collect, why we collect it, and how you stay in control."
+      introNo="Skaren er bygget på prinsippet om at dataene dine tilhører deg. Denne erklæringen forklarer nøyaktig hva vi samler inn, hvorfor vi samler det inn, og hvordan du beholder kontrollen."
       sections={[
         {
           title: "Who we are",
@@ -41,7 +44,7 @@ export default function PrivacyPage() {
           title: "Data storage and security",
           body: [
             "Your data is stored securely on Supabase infrastructure hosted in the European Union. All data is encrypted at rest and in transit.",
-            "We apply strict access controls and do not share your personal data with any third party, except as required to operate the service (e.g. authentication infrastructure).",
+            "We apply strict access controls and do not share your personal data with any third party, except as required to operate the service.",
           ],
         },
         {
@@ -70,6 +73,66 @@ export default function PrivacyPage() {
           title: "Changes to this policy",
           body: [
             "We may update this policy as the app evolves. When we make significant changes, we will notify you through the app. The latest version is always available at skaren.app/privacy.",
+          ],
+        },
+      ]}
+      sectionsNo={[
+        {
+          title: "Hvem vi er",
+          body: [
+            "Skaren drives av Skaren AS, med base i Oslo, Norge. Vi er behandlingsansvarlig for personopplysninger som behandles gjennom Skaren-appen og nettstedet.",
+            "Har du spørsmål om denne erklæringen, kan du kontakte oss på hello@skaren.app.",
+          ],
+        },
+        {
+          title: "Hva vi samler inn",
+          body: [
+            "Når du oppretter en konto, samler vi inn e-postadressen din og datoen kontoen ble opprettet. Vi samler ikke inn navn, telefonnummer eller betalingsinformasjon.",
+            "Når du skanner produkter, lagrer vi strekkode, produktnavn, merkevare, helsekarakter og skannedato — slik at historikk, statistikk og merker fungerer.",
+            "Hvis du aktiverer push-varsler, lagrer vi et enhetstok for å levere disse varslene. Du kan slå dette av når som helst under Kontoinnstillinger.",
+          ],
+        },
+        {
+          title: "Hvordan vi bruker dataene dine",
+          body: [
+            "Dataene dine brukes utelukkende til å levere og forbedre Skaren-opplevelsen. Dette inkluderer å vise skannehistorikk, beregne merker og rekker, og tilpasse statistikken din.",
+            "Vi kan bruke aggregert, anonymisert analyse for å forstå hvordan appen brukes. Disse dataene kan ikke spores tilbake til deg.",
+            "Vi bruker ikke dataene dine til reklame, profilering eller kommersielle formål utover å drive Skaren.",
+          ],
+        },
+        {
+          title: "Lagring og sikkerhet",
+          body: [
+            "Dataene dine lagres sikkert på Supabase-infrastruktur i EU. All data er kryptert i hvile og under overføring.",
+            "Vi har strenge tilgangskontroller og deler ikke personopplysningene dine med tredjeparter, unntatt der det er nødvendig for å drive tjenesten.",
+          ],
+        },
+        {
+          title: "Tredjepartstjenester",
+          body: [
+            "Produktoppslag bruker åpne databaser for å hente ernærings- og miljødata. Ingen personlig informasjon er inkludert i disse forespørslene — kun strekkoden du skannet.",
+            "Autentisering håndteres sikkert via Supabase. Vi lagrer ikke passord direkte.",
+          ],
+        },
+        {
+          title: "Dine rettigheter",
+          body: [
+            "I henhold til GDPR har du rett til å få tilgang til, rette eller slette personopplysningene dine når som helst. Du kan slette kontoen og alle tilknyttede data direkte fra Kontoinnstillinger i appen.",
+            "Du har også rett til å protestere mot behandling, be om dataportabilitet, eller klage til Datatilsynet.",
+            "For å utøve disse rettighetene, kontakt oss på hello@skaren.app.",
+          ],
+        },
+        {
+          title: "Alderskrav",
+          body: [
+            "Skaren er beregnet på brukere fra 16 år og eldre, i tråd med GDPR. I land der minimumsalderen er 13 år, kan appen brukes fra den alderen.",
+            "Vi samler ikke bevisst inn data fra barn under gjeldende minimumsalder.",
+          ],
+        },
+        {
+          title: "Endringer i denne erklæringen",
+          body: [
+            "Vi kan oppdatere denne erklæringen etter hvert som appen utvikler seg. Ved vesentlige endringer vil vi varsle deg via appen. Den nyeste versjonen er alltid tilgjengelig på skaren.app/privacy.",
           ],
         },
       ]}

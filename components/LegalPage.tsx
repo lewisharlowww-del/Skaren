@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { SkarenWordmark } from "@/components/SkarenLogo";
+import { useLang } from "@/lib/language-context";
 
 type LegalSection = {
   title: string;
@@ -8,13 +11,31 @@ type LegalSection = {
 
 type LegalPageProps = {
   eyebrow: string;
+  eyebrowNo: string;
   title: string;
+  titleNo: string;
   updated: string;
   intro: string;
+  introNo: string;
   sections: LegalSection[];
+  sectionsNo: LegalSection[];
 };
 
-export function LegalPage({ eyebrow, title, updated, intro, sections }: LegalPageProps) {
+export function LegalPage({
+  eyebrow, eyebrowNo,
+  title, titleNo,
+  updated,
+  intro, introNo,
+  sections, sectionsNo,
+}: LegalPageProps) {
+  const { lang } = useLang();
+  const no = lang === "no";
+
+  const displayEyebrow = no ? eyebrowNo : eyebrow;
+  const displayTitle   = no ? titleNo   : title;
+  const displayIntro   = no ? introNo   : intro;
+  const displaySections = no ? sectionsNo : sections;
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--sk-brand-mist, #faf7f2)" }}>
 
@@ -38,7 +59,7 @@ export function LegalPage({ eyebrow, title, updated, intro, sections }: LegalPag
             className="text-[11px] font-semibold uppercase tracking-widest"
             style={{ color: "var(--sk-text-muted, #999)" }}
           >
-            {eyebrow}
+            {displayEyebrow}
           </span>
         </div>
       </header>
@@ -51,28 +72,28 @@ export function LegalPage({ eyebrow, title, updated, intro, sections }: LegalPag
             className="mb-3 text-[11px] font-bold uppercase tracking-widest"
             style={{ color: "var(--sk-text-green, #3a6b2a)" }}
           >
-            {eyebrow}
+            {displayEyebrow}
           </p>
           <h1
             className="text-[2.5rem] font-bold leading-tight tracking-tight"
             style={{ color: "var(--sk-text-primary, #1a1a1a)" }}
           >
-            {title}
+            {displayTitle}
           </h1>
           <p
             className="mt-4 text-[1.05rem] leading-relaxed"
             style={{ color: "var(--sk-text-secondary, #555)", maxWidth: "56ch" }}
           >
-            {intro}
+            {displayIntro}
           </p>
           <p className="mt-6 text-[12px]" style={{ color: "var(--sk-text-muted, #aaa)" }}>
-            Last updated {updated} · Skaren AS, Oslo, Norway
+            {no ? "Sist oppdatert" : "Last updated"} {updated} · Skaren AS, Oslo, Norway
           </p>
         </div>
 
         {/* Sections */}
         <div className="mt-10 space-y-10">
-          {sections.map((section, i) => (
+          {displaySections.map((section, i) => (
             <div
               key={section.title}
               className="border-b pb-10"
@@ -121,7 +142,7 @@ export function LegalPage({ eyebrow, title, updated, intro, sections }: LegalPag
             className="text-[0.875rem] font-medium"
             style={{ color: "var(--sk-text-primary, #1a1a1a)" }}
           >
-            Questions? Get in touch.
+            {no ? "Spørsmål? Ta kontakt." : "Questions? Get in touch."}
           </p>
           <a
             href="mailto:hello@skaren.app"
@@ -139,13 +160,10 @@ export function LegalPage({ eyebrow, title, updated, intro, sections }: LegalPag
           <span className="text-[12px]" style={{ color: "var(--sk-text-muted, #aaa)" }}>
             © {new Date().getFullYear()} Skaren AS · Oslo, Norway
           </span>
-          <div
-            className="flex gap-5 text-[12px]"
-            style={{ color: "var(--sk-text-muted, #aaa)" }}
-          >
-            <Link href="/privacy" className="hover:underline">Privacy</Link>
-            <Link href="/terms" className="hover:underline">Terms</Link>
-            <Link href="/disclaimer" className="hover:underline">Disclaimer</Link>
+          <div className="flex gap-5 text-[12px]" style={{ color: "var(--sk-text-muted, #aaa)" }}>
+            <Link href="/privacy" className="hover:underline">{no ? "Personvern" : "Privacy"}</Link>
+            <Link href="/terms" className="hover:underline">{no ? "Vilkår" : "Terms"}</Link>
+            <Link href="/disclaimer" className="hover:underline">{no ? "Ansvarsfraskrivelse" : "Disclaimer"}</Link>
           </div>
         </div>
       </footer>

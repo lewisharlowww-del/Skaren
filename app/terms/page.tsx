@@ -10,9 +10,12 @@ export default function TermsPage() {
   return (
     <LegalPage
       eyebrow="Terms"
+      eyebrowNo="Vilkår"
       title="Terms of Use"
+      titleNo="Brukervilkår"
       updated="June 11, 2026"
       intro="By using Skaren, you agree to these terms. They are written to be clear and fair — please read them before using the app."
+      introNo="Ved å bruke Skaren godtar du disse vilkårene. De er skrevet for å være tydelige og rettferdige — les dem gjerne før du bruker appen."
       sections={[
         {
           title: "About Skaren",
@@ -66,6 +69,62 @@ export default function TermsPage() {
           title: "Changes to these terms",
           body: [
             "We may update these terms as Skaren evolves. Continued use of the app after changes are published constitutes acceptance of the updated terms. The latest version is always available at skaren.app/terms.",
+          ],
+        },
+      ]}
+      sectionsNo={[
+        {
+          title: "Om Skaren",
+          body: [
+            "Skaren er en matvare-skannerapp drevet av Skaren AS i Oslo, Norge. Den hjelper deg å forstå hva produktene du kjøper inneholder, ved å gi ernæringsdata, informasjon om tilsetningsstoffer, NOVA-prosesseringsnivå og miljøkarakterer.",
+            "Skaren er et informasjonsverktøy — ikke en medisinsk, ernæringsmessig eller miljøfaglig myndighet.",
+          ],
+        },
+        {
+          title: "Bruk av appen",
+          body: [
+            "Du kan bruke Skaren til personlige, ikke-kommersielle formål. Du kan ikke skrape, kopiere, redistribuere eller reversenginere noen del av appen, dens data eller APIer.",
+            "Du er ansvarlig for å holde kontoopplysningene dine sikre. Del ikke kontoen din med andre.",
+          ],
+        },
+        {
+          title: "Nøyaktighet av informasjon",
+          body: [
+            "Produktdata i Skaren kommer fra åpne tredjepartsdatabaser og kan være ufullstendige, utdaterte eller unøyaktige. Kontroller alltid informasjonen mot den fysiske produktetiketten før du tar helse-, allergi- eller kostholdsavgjørelser.",
+            "Skarens karakterer er forenklede indikatorer for å hjelpe deg å sammenligne produkter raskt — de er ikke kliniske vurderinger.",
+          ],
+        },
+        {
+          title: "Premium-abonnement",
+          body: [
+            "Skaren Premium koster 49 kr/måned og inkluderer 7 dagers gratis prøveperiode for nye abonnenter. Abonnementet starter ved utløpet av prøveperioden med mindre det kanselleres på forhånd.",
+            "Abonnementer fornyes automatisk hver måned. Du kan kansellere når som helst via App Store-abonnementsinnstillingene. Kanselleringen trer i kraft ved slutten av gjeldende betalingsperiode — du beholder tilgangen frem til da.",
+            "Skaren håndterer ikke betaling direkte. All fakturering administreres av Apple via App Store.",
+          ],
+        },
+        {
+          title: "Ansvarsbegrensning",
+          body: [
+            "Skaren leveres «som den er» uten garantier av noe slag. Vi garanterer ikke uavbrutt tilgang, fullstendighet av data eller egnethet for et bestemt formål.",
+            "Skaren AS er ikke ansvarlig for tap eller skade som oppstår som følge av din bruk av eller avhengighet av appen, inkludert avgjørelser tatt basert på produktkarakterer eller ernæringsinformasjon.",
+          ],
+        },
+        {
+          title: "Sletting av konto",
+          body: [
+            "Du kan slette kontoen din når som helst fra Kontoinnstillinger i appen. Vi kan suspendere eller avslutte kontoer som bryter disse vilkårene.",
+          ],
+        },
+        {
+          title: "Gjeldende lov",
+          body: [
+            "Disse vilkårene er underlagt norsk lov. Eventuelle tvister skal løses av domstolene i Oslo, Norge.",
+          ],
+        },
+        {
+          title: "Endringer i vilkårene",
+          body: [
+            "Vi kan oppdatere disse vilkårene etter hvert som Skaren utvikler seg. Fortsatt bruk av appen etter at endringer er publisert, innebærer aksept av de oppdaterte vilkårene. Den nyeste versjonen er alltid tilgjengelig på skaren.app/terms.",
           ],
         },
       ]}
