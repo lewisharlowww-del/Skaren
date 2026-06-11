@@ -30,7 +30,7 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
     if (!ctx) return;
 
     canvas.width = window.innerWidth;
