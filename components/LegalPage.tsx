@@ -121,7 +121,7 @@ export function LegalPage({ eyebrow, title, updated, intro, sections }: LegalPag
             className="text-[0.875rem] font-medium"
             style={{ color: "var(--sk-text-primary, #1a1a1a)" }}
           >
-            Questions or account deletion requests?
+            Questions? Get in touch.
           </p>
           <a
             href="mailto:hello@skaren.app"

@@ -412,9 +412,6 @@ export default function AccountPage() {
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [badgesOpen, setBadgesOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
-  const [privacyOpen, setPrivacyOpen] = useState(false);
-  const [termsOpen, setTermsOpen] = useState(false);
-  const [disclaimerOpen, setDisclaimerOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [user, setUser] = useState<AccountUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -925,76 +922,44 @@ export default function AccountPage() {
             <Divider />
 
             {/* Privacy Policy */}
-            <div>
-              <button type="button" onClick={() => setPrivacyOpen((o) => !o)} className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
-                  <Lock className="h-4 w-4" style={{ color: "var(--sk-text-green)" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>Privacy Policy</p>
-                  <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>How we collect and use your data</p>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: privacyOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
-              </button>
-              {privacyOpen && (
-                <div className="px-5 pb-4 space-y-3 text-[13px] leading-relaxed" style={{ borderTop: "0.5px solid var(--sk-border-muted)", color: "var(--sk-text-secondary)" }}>
-                  <p className="pt-3">Skaren is intended for users aged 16 and older (or 13 where local law permits). By creating an account you confirm you meet this requirement.</p>
-                  <p>We store your email address and scan history so the app works across devices. We collect only what is necessary — nothing more.</p>
-                  <p>Your data is stored securely on servers in the EU. We do not sell your data, share it with advertisers, or use it for any purpose outside of running Skaren.</p>
-                  <p>Skaren may use privacy-conscious analytics to understand which parts of the app are used most. This data is aggregated and never linked to your identity.</p>
-                  <p>For privacy requests, contact <span style={{ color: "var(--sk-text-green)" }}>hello@skaren.app</span>.</p>
-                  <p style={{ color: "var(--sk-text-muted)", fontSize: 11 }}>Last updated June 2026 · Skaren AS, Oslo, Norway</p>
-                </div>
-              )}
-            </div>
+            <Link href="/privacy" className="flex w-full items-center gap-3.5 px-5 py-4 transition-colors">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
+                <Lock className="h-4 w-4" style={{ color: "var(--sk-text-green)" }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>Privacy Policy</p>
+                <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>How we collect and use your data</p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-faint)" }} />
+            </Link>
 
             <Divider />
 
             {/* Terms of Use */}
-            <div>
-              <button type="button" onClick={() => setTermsOpen((o) => !o)} className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
-                  <FileText className="h-4 w-4" style={{ color: "var(--sk-text-green)" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>Terms of Use</p>
-                  <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>Rules for using Skaren</p>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: termsOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
-              </button>
-              {termsOpen && (
-                <div className="px-5 pb-4 space-y-3 text-[13px] leading-relaxed" style={{ borderTop: "0.5px solid var(--sk-border-muted)", color: "var(--sk-text-secondary)" }}>
-                  <p className="pt-3">By using Skaren you agree to use it for personal, non-commercial purposes only. You will not attempt to scrape, copy, or reverse-engineer any part of the app or its data.</p>
-                  <p>Skaren is provided as-is. Product data comes from third-party databases and may not always match the product in your hand — always check the label.</p>
-                  <p>Skaren Premium costs 49 kr/month and includes a 7-day free trial. Your subscription renews automatically each month unless cancelled. You can cancel at any time through your App Store subscription settings — cancellation takes effect at the end of the current billing period.</p>
-                  <p>Skaren is governed by Norwegian law.</p>
-                  <p style={{ color: "var(--sk-text-muted)", fontSize: 11 }}>Last updated June 2026</p>
-                </div>
-              )}
-            </div>
+            <Link href="/terms" className="flex w-full items-center gap-3.5 px-5 py-4 transition-colors">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
+                <FileText className="h-4 w-4" style={{ color: "var(--sk-text-green)" }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>Terms of Use</p>
+                <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>Rules for using Skaren</p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-faint)" }} />
+            </Link>
 
             <Divider />
 
             {/* Nutrition disclaimer */}
-            <div>
-              <button type="button" onClick={() => setDisclaimerOpen((o) => !o)} className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-d-bg)" }}>
-                  <TriangleAlert className="h-4 w-4 text-orange-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>Nutrition disclaimer</p>
-                  <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>Not medical advice — read before use</p>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: disclaimerOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
-              </button>
-              {disclaimerOpen && (
-                <div className="px-5 pb-4 space-y-3 text-[13px] leading-relaxed" style={{ borderTop: "0.5px solid var(--sk-border-muted)", color: "var(--sk-text-secondary)" }}>
-                  <p className="pt-3">Skaren is not a medical tool. The grades, additive flags, NOVA scores, and nutrition breakdowns are simplified guides to help you compare products — not clinical assessments.</p>
-                  <p>If you have allergies, a medical condition, or specific dietary needs, always rely on the physical product label and consult a healthcare professional.</p>
-                  <p>Product data may be incomplete. Treat Skaren scores as helpful signals, not definitive answers.</p>
-                </div>
-              )}
-            </div>
+            <Link href="/disclaimer" className="flex w-full items-center gap-3.5 px-5 py-4 transition-colors">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-d-bg)" }}>
+                <TriangleAlert className="h-4 w-4 text-orange-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>Nutrition Disclaimer</p>
+                <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>Not medical advice — read before use</p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-faint)" }} />
+            </Link>
 
             <Divider />
 
