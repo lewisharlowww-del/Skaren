@@ -32,7 +32,7 @@ export default function PrivacyPage() {
           title: "Third-party services",
           body: [
             "Skaren uses Kassalapp for Norwegian product data, product images, store data, nutrition, allergens, and labels. It uses Open Food Facts for public product data such as Eco-Score, additives, NOVA processing level, categories, packaging, origins, and ingredients.",
-            "Supabase powers authentication and database storage. Stripe powers supporter payments. If AI features are enabled, Skaren may send product fields such as name, category, ingredients, and grades to a configured AI provider to create plain-English insights."
+            "Supabase powers authentication and database storage. If AI features are enabled, Skaren may send product fields such as name, category, ingredients, and grades to a configured AI provider to create plain-English insights."
           ]
         },
         {
@@ -45,7 +45,7 @@ export default function PrivacyPage() {
         {
           title: "Your choices",
           body: [
-            "You can request account deletion, scan history deletion, or supporter account help by contacting hello@skaren.app.",
+            "You can delete your account and scan history directly in the app under Account settings. For any other questions, contact hello@skaren.app.",
             "Skaren does not sell your personal data."
           ]
         }

@@ -36,17 +36,10 @@ export default function TermsPage() {
           ]
         },
         {
-          title: "Supporter payments",
-          body: [
-            "Supporter payments are optional one-time contributions processed by Stripe.",
-            "Supporter badges and related features may change as Skaren evolves."
-          ]
-        },
-        {
           title: "Accounts",
           body: [
             "If you create an account, keep your login details secure and use the app lawfully.",
-            "You may request deletion of your account by contacting hello@skaren.app."
+            "You can delete your account and all associated data directly from Account settings in the app."
           ]
         },
         {

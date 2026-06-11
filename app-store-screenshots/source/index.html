@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1290, initial-scale=1">
+  <title>Skaren App Store Screenshots</title>
+  <style>
+    @font-face {
+      font-family: "Satoshi";
+      src: url("./Satoshi-Regular.otf") format("opentype");
+      font-weight: 400;
+    }
+    @font-face {
+      font-family: "Satoshi";
+      src: url("./Satoshi-Bold.otf") format("opentype");
+      font-weight: 700;
+    }
+    @font-face {
+      font-family: "Satoshi";
+      src: url("./Satoshi-MediumItalic.otf") format("opentype");
+      font-style: italic;
+      font-weight: 500;
+    }
+    :root {
+      --green: #145c3a;
+      --cream: #f6f1e6;
+      --off-white: #fffdf7;
+      --ink: #123b2a;
+      --lime: #cff641;
+      --soft: #ece5d3;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      width: 1290px;
+      height: 2796px;
+      margin: 0;
+      overflow: hidden;
+      background: var(--cream);
+      font-family: "Satoshi", Arial, sans-serif;
+    }
+    .frame {
+      position: relative;
+      width: 1290px;
+      height: 2796px;
+      overflow: hidden;
+      background: var(--cream);
+      color: var(--ink);
+    }
+    .hero { background: var(--green); color: var(--cream); }
+    .logo {
+      position: absolute;
+      left: 82px;
+      top: 82px;
+      width: 154px;
+      height: 154px;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+      opacity: .94;
+    }
+    h1, p { margin: 0; }
+    .hero h1 {
+      position: absolute;
+      left: 84px;
+      top: 560px;
+      width: 1030px;
+      font-size: 170px;
+      line-height: .94;
+      letter-spacing: -7px;
+      font-weight: 700;
+    }
+    .hero .subtitle {
+      position: absolute;
+      left: 88px;
+      bottom: 330px;
+      width: 1030px;
+      font-size: 69px;
+      line-height: 1.14;
+      letter-spacing: -1px;
+    }
+    .eyebrow {
+      font-size: 31px;
+      line-height: 1;
+      letter-spacing: 7px;
+      text-transform: uppercase;
+      font-weight: 700;
+      opacity: .7;
+    }
+    .heading {
+      font-size: 142px;
+      line-height: .94;
+      letter-spacing: -6px;
+      font-weight: 700;
+    }
+    .editorial {
+      font-family: "Satoshi", Arial, sans-serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: 104px;
+      line-height: 1.02;
+      letter-spacing: -4px;
+    }
+    .support {
+      font-size: 53px;
+      line-height: 1.18;
+      letter-spacing: -1px;
+      font-weight: 700;
+    }
+    .phone {
+      position: absolute;
+      width: 790px;
+      height: 1716px;
+      padding: 26px;
+      border-radius: 112px;
+      background: #090a09;
+      box-shadow: 0 42px 70px rgba(18, 59, 42, .22);
+      outline: 10px solid var(--lime);
+      overflow: hidden;
+    }
+    .phone img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      border-radius: 88px;
+    }
+    .phone::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 38px;
+      width: 230px;
+      height: 66px;
+      transform: translateX(-50%);
+      border-radius: 40px;
+      background: #050505;
+    }
+    .frame-2 .editorial {
+      position: absolute;
+      left: 76px;
+      top: 128px;
+      width: 1120px;
+      font-size: 150px;
+    }
+    .frame-2 .support {
+      position: absolute;
+      left: 88px;
+      top: 880px;
+      width: 680px;
+    }
+    .frame-2 .phone {
+      left: 425px;
+      top: 1080px;
+      transform: rotate(8deg);
+      transform-origin: 50% 50%;
+    }
+    .frame-2 .accent {
+      position: absolute;
+      left: -180px;
+      bottom: -260px;
+      width: 780px;
+      height: 700px;
+      border-radius: 50%;
+      background: #efe7d1;
+    }
+    .frame-3 .heading {
+      position: absolute;
+      left: 74px;
+      top: 130px;
+      width: 1130px;
+    }
+    .pills {
+      position: absolute;
+      right: 70px;
+      top: 670px;
+      width: 610px;
+      display: grid;
+      gap: 26px;
+    }
+    .pill {
+      padding: 28px 44px 30px;
+      border-radius: 999px;
+      background: var(--green);
+      color: var(--off-white);
+      font-size: 41px;
+      line-height: 1;
+      font-weight: 700;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .frame-3 .phone {
+      left: -300px;
+      top: 735px;
+      transform: rotate(-7deg);
+    }
+    .story-card {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 520px;
+      padding: 150px 84px 80px;
+      border-radius: 180px 180px 0 0;
+      background: #eee6d1;
+      color: var(--green);
+      font-size: 70px;
+      line-height: 1.08;
+      font-weight: 700;
+    }
+    .story-card .dot {
+      position: absolute;
+      right: 88px;
+      top: 142px;
+      display: grid;
+      width: 142px;
+      height: 142px;
+      place-items: center;
+      border: 7px solid var(--ink);
+      border-radius: 50%;
+      font-size: 78px;
+    }
+    .frame-4 .heading {
+      position: absolute;
+      left: 78px;
+      top: 110px;
+      width: 1120px;
+    }
+    .frame-4 .editorial {
+      position: absolute;
+      left: 88px;
+      top: 470px;
+      width: 1050px;
+      font-size: 78px;
+      line-height: 1.08;
+    }
+    .frame-4 .phone {
+      left: 250px;
+      top: 790px;
+      width: 790px;
+      height: 1716px;
+    }
+    .frame-4 .band, .frame-5 .band {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 360px;
+      height: 520px;
+      background: var(--green);
+      z-index: 0;
+    }
+    .frame-4 .phone, .frame-5 .phone { z-index: 2; }
+    .frame-5 .phone {
+      left: 250px;
+      top: -100px;
+      width: 790px;
+      height: 1716px;
+    }
+    .frame-5 .heading {
+      position: absolute;
+      left: 78px;
+      bottom: 200px;
+      width: 1120px;
+      font-size: 128px;
+    }
+    .frame-5 .band { bottom: 600px; height: 630px; }
+  </style>
+</head>
+<body>
+  <main id="01" class="frame hero">
+    <img class="logo" src="./skaren-logo.png" alt="">
+    <h1>Know<br>what you<br>eat</h1>
+    <p class="subtitle">Instant health &amp; eco grades for every product you scan</p>
+  </main>
+
+  <main id="02" class="frame frame-2">
+    <div class="accent"></div>
+    <h1 class="editorial">Every additive<br>explained</h1>
+    <p class="support">300+ E-numbers with<br>clear safety ratings</p>
+    <div class="phone"><img src="./additives.png" alt=""></div>
+  </main>
+
+  <main id="03" class="frame frame-3">
+    <h1 class="heading">Track your<br>food habits</h1>
+    <div class="pills">
+      <div class="pill">A–E health grade</div>
+      <div class="pill">Eco impact grade</div>
+      <div class="pill">NOVA processing level</div>
+    </div>
+    <div class="phone"><img src="./stats.png" alt=""></div>
+    <div class="story-card">Full history.<br>Weekly insights.<span class="dot">→</span></div>
+  </main>
+
+  <main id="04" class="frame frame-4">
+    <h1 class="heading">Your full<br>scan history</h1>
+    <p class="editorial">Every product you’ve scanned,<br>always within reach</p>
+    <div class="band"></div>
+    <div class="phone"><img src="./history.png" alt=""></div>
+  </main>
+
+  <main id="05" class="frame frame-5">
+    <div class="band"></div>
+    <div class="phone"><img src="./product.png" alt=""></div>
+    <h1 class="heading">Scan smarter.<br>Live cleaner.</h1>
+  </main>
+
+  <script>
+    const selected = new URLSearchParams(location.search).get("frame") || "01";
+    document.querySelectorAll(".frame").forEach(frame => {
+      frame.style.display = frame.id === selected ? "block" : "none";
+    });
+  </script>
+</body>
+</html>

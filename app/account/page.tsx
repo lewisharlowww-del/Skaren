@@ -924,7 +924,7 @@ export default function AccountPage() {
 
             <Divider />
 
-            {/* Privacy & Legal */}
+            {/* Privacy Policy */}
             <div>
               <button type="button" onClick={() => setPrivacyOpen((o) => !o)} className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
@@ -938,10 +938,12 @@ export default function AccountPage() {
               </button>
               {privacyOpen && (
                 <div className="px-5 pb-4 space-y-3 text-[13px] leading-relaxed" style={{ borderTop: "0.5px solid var(--sk-border-muted)", color: "var(--sk-text-secondary)" }}>
-                  <p className="pt-3">We collect only what is needed to run Skaren: your email address, scan history, and (optionally) a push notification token.</p>
-                  <p>Your data is stored on <span style={{ color: "var(--sk-text-primary)", fontWeight: 600 }}>Supabase (EU)</span> and is encrypted at rest and in transit. We do not sell or share your data with advertisers.</p>
-                  <p>Product lookups use the open <span style={{ color: "var(--sk-text-primary)", fontWeight: 600 }}>Open Food Facts</span> database — no personal data is sent in those requests.</p>
-                  <p>You can export or delete all your data at any time from this screen. Deletion removes your data within 30 days.</p>
+                  <p className="pt-3">Skaren is intended for users aged 16 and older (or 13 where local law permits). By creating an account you confirm you meet this requirement.</p>
+                  <p>We store your email address and scan history so the app works across devices. We collect only what is necessary — nothing more.</p>
+                  <p>Your data is stored securely on Supabase servers in the EU. We do not sell your data, share it with advertisers, or use it for any purpose outside of running Skaren.</p>
+                  <p>Skaren may use privacy-conscious analytics to understand which parts of the app are used most. This data is aggregated and never linked to your identity.</p>
+                  <p>Product information comes from Kassalapp and Open Food Facts. No personal information is sent in those lookups.</p>
+                  <p>You can delete your account and all your data from this screen at any time. For privacy requests, contact <span style={{ color: "var(--sk-text-green)" }}>hello@skaren.app</span>.</p>
                   <p style={{ color: "var(--sk-text-muted)", fontSize: 11 }}>Last updated June 2026 · Skaren AS, Oslo, Norway</p>
                 </div>
               )}
@@ -963,22 +965,10 @@ export default function AccountPage() {
               </button>
               {termsOpen && (
                 <div className="px-5 pb-4 space-y-3 text-[13px] leading-relaxed" style={{ borderTop: "0.5px solid var(--sk-border-muted)", color: "var(--sk-text-secondary)" }}>
-                  <p className="pt-3">By using Skaren you agree to the following:</p>
-                  <ul className="space-y-1.5">
-                    {[
-                      "You are at least 16 years old (or 13 where permitted).",
-                      "You will not reverse-engineer, scrape, or abuse the app or its APIs.",
-                      "Skaren is provided \"as is\" without warranty of any kind.",
-                      "Skaren is not liable for damages arising from use of or reliance on the app.",
-                      "We may suspend accounts that violate these terms.",
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "var(--sk-text-green)" }} />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p>Governed by Norwegian law. Disputes resolved by the courts of Oslo, Norway.</p>
+                  <p className="pt-3">By using Skaren you agree to use it for personal, non-commercial purposes only. You will not attempt to scrape, copy, or reverse-engineer any part of the app or its data.</p>
+                  <p>Skaren is provided as-is. Product data comes from third-party databases and may not always match the product in your hand — always check the label.</p>
+                  <p>Skaren Premium costs 49 kr/month and includes a 7-day free trial. Your subscription renews automatically each month unless cancelled. You can cancel at any time through your App Store subscription settings — cancellation takes effect at the end of the current billing period.</p>
+                  <p>You can delete your account at any time from this screen. Skaren is governed by Norwegian law.</p>
                   <p style={{ color: "var(--sk-text-muted)", fontSize: 11 }}>Last updated June 2026</p>
                 </div>
               )}
@@ -1000,21 +990,9 @@ export default function AccountPage() {
               </button>
               {disclaimerOpen && (
                 <div className="px-5 pb-4 space-y-3 text-[13px] leading-relaxed" style={{ borderTop: "0.5px solid var(--sk-border-muted)", color: "var(--sk-text-secondary)" }}>
-                  <p className="pt-3">Skaren is an informational tool only. Grades, additive ratings, NOVA scores, and daily intake estimates are:</p>
-                  <ul className="space-y-1.5">
-                    {[
-                      "Based on Open Food Facts — an open community database. Accuracy depends on user-submitted data.",
-                      "Not reviewed by dietitians, physicians, or any health authority.",
-                      "Not a substitute for professional medical or dietary advice.",
-                      "Not tailored to your individual health conditions, allergies, or medications.",
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "var(--sk-status-warning)" }} />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p>Always consult a qualified healthcare professional before making significant dietary changes.</p>
+                  <p className="pt-3">Skaren is not a medical tool. The grades, additive flags, NOVA scores, and nutrition breakdowns are simplified guides to help you compare products — not clinical assessments.</p>
+                  <p>If you have allergies, a medical condition, or specific dietary needs, always rely on the physical product label and consult a healthcare professional.</p>
+                  <p>Product data may be incomplete. Treat Skaren scores as helpful signals, not definitive answers.</p>
                 </div>
               )}
             </div>
