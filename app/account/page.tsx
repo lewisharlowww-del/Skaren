@@ -927,8 +927,8 @@ export default function AccountPage() {
                 <Lock className="h-4 w-4" style={{ color: "var(--sk-text-green)" }} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>Privacy Policy</p>
-                <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>How we collect and use your data</p>
+                <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{lang === 'no' ? 'Personvernerklæring' : 'Privacy Policy'}</p>
+                <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{lang === 'no' ? 'Hvordan vi samler inn og bruker dataene dine' : 'How we collect and use your data'}</p>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-faint)" }} />
             </Link>
@@ -941,8 +941,8 @@ export default function AccountPage() {
                 <FileText className="h-4 w-4" style={{ color: "var(--sk-text-green)" }} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>Terms of Use</p>
-                <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>Rules for using Skaren</p>
+                <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{lang === 'no' ? 'Brukervilkår' : 'Terms of Use'}</p>
+                <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{lang === 'no' ? 'Regler for bruk av Skaren' : 'Rules for using Skaren'}</p>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-faint)" }} />
             </Link>
@@ -955,8 +955,8 @@ export default function AccountPage() {
                 <TriangleAlert className="h-4 w-4 text-orange-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>Nutrition Disclaimer</p>
-                <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>Not medical advice — read before use</p>
+                <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{lang === 'no' ? 'Ansvarsfraskrivelse' : 'Nutrition Disclaimer'}</p>
+                <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{lang === 'no' ? 'Ikke medisinsk råd — les før bruk' : 'Not medical advice — read before use'}</p>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-faint)" }} />
             </Link>
@@ -970,7 +970,7 @@ export default function AccountPage() {
                   <Mail className="h-4 w-4" style={{ color: "var(--sk-text-green)" }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>Contact & support</p>
+                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{lang === 'no' ? 'Kontakt og støtte' : 'Contact & support'}</p>
                   <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>hello@skaren.app</p>
                 </div>
                 <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: contactOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
