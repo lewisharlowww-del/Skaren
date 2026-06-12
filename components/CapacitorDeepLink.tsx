@@ -6,14 +6,12 @@ import { supabase } from "@/lib/supabase";
 /**
  * Handles OAuth deep links on iOS (no.skaren.app://).
  *
- * Supports both flows:
- *  - Implicit: tokens in hash fragment (#access_token=...&refresh_token=...)
- *  - PKCE:     code in query params (?code=...)
- *
- * appUrlOpen fires before the SFSafariViewController closes, so it
- * always handles the callback first. We deliberately do NOT listen to
- * browserFinished — it fires on the new page after navigation and was
- * causing a redundant second navigation to /account.
+ * After the OAuth redirect fires appUrlOpen, we:
+ *  1. Set the Supabase session from the tokens in the URL
+ *  2. Close the SFSafariViewController (Browser.close) — without this
+ *     it stays open showing a blank page because it can't render a
+ *     custom URL scheme
+ *  3. Navigate the underlying WebView to /account
  */
 export function CapacitorDeepLink() {
   useEffect(() => {
@@ -24,6 +22,7 @@ export function CapacitorDeepLink() {
       if (!Capacitor.isNativePlatform()) return;
 
       const { App } = await import("@capacitor/app");
+      const { Browser } = await import("@capacitor/browser");
 
       async function handleCallback(url: string) {
         if (!supabase) return;
@@ -42,8 +41,9 @@ export function CapacitorDeepLink() {
             });
             if (error) { console.error("[DeepLink] setSession error:", error.message); return; }
             if (data.session) {
-              console.log("[DeepLink] session OK → /account");
+              console.log("[DeepLink] session OK — closing browser → /account");
               document.cookie = "sb-skaren-auth-token=true; path=/; max-age=604800; SameSite=Lax";
+              await Browser.close(); // dismiss the SFSafariViewController overlay
               window.location.replace("/account");
             }
             return;
@@ -60,8 +60,9 @@ export function CapacitorDeepLink() {
             const { data, error } = await supabase.auth.exchangeCodeForSession(code);
             if (error) { console.error("[DeepLink] exchange error:", error.message); return; }
             if (data.session) {
-              console.log("[DeepLink] session OK → /account");
+              console.log("[DeepLink] session OK — closing browser → /account");
               document.cookie = "sb-skaren-auth-token=true; path=/; max-age=604800; SameSite=Lax";
+              await Browser.close();
               window.location.replace("/account");
             }
           }
