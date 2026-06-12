@@ -133,7 +133,41 @@ function normalizeInsightType(value: unknown): ProductInsight["type"] {
   return value === "positive" || value === "warning" || value === "info" ? value : "info";
 }
 
+// Sugar lookup — Kassalapp sometimes stores sugar as a sub-field of carbohydrates
+// using Norwegian terms like "hvorav sukker" or "sukkerarter". Try multiple variants.
+function getSugarValue(product: ProductResult): string {
+  const value = getNutritionValue(
+    product,
+    ["sugars", "sugar", "sukker", "sukkerarter", "hvorav sukker", "herav sukker"],
+    []
+  );
+  return value;
+}
+
+// Returns true if the ingredients text contains common added-sugar words.
+// Used to guard against the AI claiming "no added sugar" when ingredients
+// clearly list sugar under a different form.
+function ingredientsContainSugar(ingredients: string | null | undefined): boolean {
+  if (!ingredients) return false;
+  const lower = ingredients.toLowerCase();
+  const sugarWords = [
+    "sukker", "glukose", "fruktose", "fructose", "glucose", "sirup", "syrup",
+    "dextrose", "dekstrose", "maltose", "laktose", "saccharose", "honning",
+    "honey", "agave", "molasses", "melasse", "invertsugar", "invertsukker",
+  ];
+  return sugarWords.some((word) => lower.includes(word));
+}
+
 export async function generateAiSummary(product: ProductResult) {
+  const sugarValue = getSugarValue(product);
+  const sugarInIngredients = ingredientsContainSugar(product.ingredients);
+  // Build a sugar context line the AI can rely on unambiguously
+  const sugarContext = sugarValue !== "unknown"
+    ? `${sugarValue}g per 100g`
+    : sugarInIngredients
+      ? "exact value unavailable, but ingredients contain added sugars (sukker/glucose/sirup)"
+      : "not listed";
+
   const systemPrompt = `You write short food insights for Skaren, a Norwegian food scanning app.
 
 Your job is to help everyday Norwegian shoppers quickly understand if a product is good for them.
@@ -150,13 +184,14 @@ Rules:
 - Never repeat what the grade already says — add new information or meaning
 - Do not mention Skaren, Skåren, Nutri-Score, Eco-Score, or numeric app scores in the insights
 - Write in English
+- CRITICAL: Never say "no added sugar", "sugar-free", or "low sugar" if the sugar field is ≥ 5g/100g OR if the ingredients contain sukker, glukose, fruktose, sirup, or similar sweeteners. Doing so is factually wrong and misleads users.
 
 Insight types to cover (pick the 3 most relevant for this product):
 - Processing level (NOVA) — what it means in plain terms
 - Additives — reassuring if clean, specific if concerning
 - Fat / saturated fat — only if notably high or low
 - Protein — only if notably high (e.g. sports/fitness relevant)
-- Sugar — only if notably high
+- Sugar — flag if ≥ 10g/100g or if ingredients contain added sugars
 - Eco / origin — only if data is available; if missing, one sentence explaining why
 - Allergens — only if present
 
@@ -176,7 +211,7 @@ Additives: ${product.additives.map((additive) => additive.code).join(", ") || "n
 Fat: ${getFatValue(product)}g per 100g
 Saturated fat: ${getNutritionValue(product, ["saturated", "mettede", "mettet"])}g per 100g
 Protein: ${getNutritionValue(product, ["protein", "proteins"])}g per 100g
-Sugar: ${getNutritionValue(product, ["sugars", "sugar", "sukker", "sukkerarter"])}g per 100g
+Sugar: ${sugarContext}
 Ecoscore grade: ${product.ecoGrade ?? "not available"}
 Origin: ${product.origins ?? "not listed"}
 Allergens: ${product.allergens.join(", ") || "none listed"}
