@@ -117,8 +117,8 @@ export default function PricingPage() {
 
   return (
     <main
-      className="relative mx-auto w-full max-w-[430px] px-4 pb-36 pt-5 sm:max-w-2xl sm:pt-10"
-      style={{ background: "#f5f0e8", minHeight: "100dvh" }}
+      className="relative mx-auto w-full max-w-[430px] px-4 pb-36 sm:max-w-2xl"
+      style={{ background: "#f5f0e8", minHeight: "100dvh", paddingTop: "calc(env(safe-area-inset-top) + 20px)" }}
     >
       {/* Back */}
       <Link
