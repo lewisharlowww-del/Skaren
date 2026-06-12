@@ -16,6 +16,13 @@ const config: CapacitorConfig = {
     scrollEnabled: true,
     limitsNavigationsToAppBoundDomains: true,
   },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 3000,
+      launchAutoHide: true,
+      backgroundColor: '#ede9e2',
+    },
+  },
 };
 
 export default config;
