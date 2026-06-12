@@ -15,7 +15,17 @@ export async function getUserPremiumStatus(supabase: SupabaseClient): Promise<bo
       if (!user) return false;
 
       await initRevenueCat(user.id);
-      return checkPremiumStatus();
+      const rcPremium = await checkPremiumStatus();
+      if (rcPremium) return true;
+
+      // Fall back to Supabase is_premium flag — used for testing/manual overrides
+      // before a real sandbox purchase has been made.
+      const { data } = await supabase
+        .from("profiles")
+        .select("is_premium")
+        .eq("id", user.id)
+        .single();
+      return Boolean((data as { is_premium?: boolean } | null)?.is_premium);
     } catch {
       return false;
     }
