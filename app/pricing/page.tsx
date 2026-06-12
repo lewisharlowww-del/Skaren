@@ -234,11 +234,11 @@ export default function PricingPage() {
           {isNo ? "Gjenopprett kjøp" : "Restore purchase"}
         </button>
 
-        <p className="mt-4 text-center text-[11px] text-[#79a879]">
+        <p className="mt-4 text-center text-[11px] text-white/70">
           {isNo ? "Ved å abonnere godtar du våre" : "By subscribing you agree to our"}{" "}
-          <Link href="/terms" className="underline underline-offset-2">{isNo ? "Brukervilkår" : "Terms of Use"}</Link>
+          <Link href="/terms" className="underline underline-offset-2 text-white font-semibold">{isNo ? "Brukervilkår" : "Terms of Use"}</Link>
           {" "}{isNo ? "og" : "and"}{" "}
-          <Link href="/privacy" className="underline underline-offset-2">{isNo ? "Personvernerklæring" : "Privacy Policy"}</Link>.
+          <Link href="/privacy" className="underline underline-offset-2 text-white font-semibold">{isNo ? "Personvernerklæring" : "Privacy Policy"}</Link>.
         </p>
       </div>
 
