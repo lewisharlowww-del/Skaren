@@ -50,7 +50,9 @@ export function CapacitorDeepLink() {
             if (data.session) {
               console.log("[DeepLink] session OK → /account");
               document.cookie = "sb-skaren-auth-token=true; path=/; max-age=604800; SameSite=Lax";
-              router.replace("/account");
+              // Hard navigation: React hydration error (#419) breaks the router,
+              // so we force a full page reload to get a clean React tree.
+              window.location.replace("/account");
             }
             return;
           }
@@ -93,7 +95,7 @@ export function CapacitorDeepLink() {
             console.log("[DeepLink] session exists after browser close");
             document.cookie =
               "sb-skaren-auth-token=true; path=/; max-age=604800; SameSite=Lax";
-            router.replace("/account");
+            window.location.replace("/account");
           }
         }
       );
