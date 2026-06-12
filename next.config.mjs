@@ -1,8 +1,17 @@
 import { PHASE_DEVELOPMENT_SERVER } from "next/constants.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {(phase: string) => import('next').NextConfig} */
 const createNextConfig = (phase) => ({
   distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next",
+  webpack(config) {
+    config.resolve.alias["@revenuecat/purchases-capacitor"] =
+      path.resolve(__dirname, "lib/revenuecat-capacitor-stub.js");
+    return config;
+  },
   async headers() {
     return [
       {
