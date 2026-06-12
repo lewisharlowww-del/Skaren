@@ -226,8 +226,8 @@ export default function ScanPage() {
         <div
           className="relative overflow-hidden"
           style={{
-            height: "min(40vh, 25rem)",
-            minHeight: 270,
+            height: "min(56vh, 34rem)",
+            minHeight: 300,
             background: "var(--sk-brand-forest)",
           }}
         >
@@ -247,7 +247,7 @@ export default function ScanPage() {
             <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, rgba(82,115,75,0.08) 18%, rgba(25,38,23,0.82) 100%)" }} />
 
             {/* Corner brackets */}
-            <div className="relative z-10" style={{ width: 200, height: 150 }}>
+            <div className="relative z-10" style={{ width: 240, height: 180 }}>
               <div className="absolute left-0 top-0 h-9 w-9 rounded-tl-xl" style={{ borderTop: "3px solid rgba(255,255,255,.9)", borderLeft: "3px solid rgba(255,255,255,.9)" }} />
               <div className="absolute right-0 top-0 h-9 w-9 rounded-tr-xl" style={{ borderTop: "3px solid rgba(255,255,255,.9)", borderRight: "3px solid rgba(255,255,255,.9)" }} />
               <div className="absolute bottom-0 left-0 h-9 w-9 rounded-bl-xl" style={{ borderBottom: "3px solid rgba(255,255,255,.9)", borderLeft: "3px solid rgba(255,255,255,.9)" }} />
