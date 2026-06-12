@@ -1,10 +1,26 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { Capacitor } from "@capacitor/core";
+import { checkPremiumStatus, initRevenueCat } from "@/lib/revenuecat";
 
 /**
  * Checks the current user's premium status from the Supabase `profiles` table.
  * Returns false if the user is not signed in, has no profile row, or on any error.
  */
 export async function getUserPremiumStatus(supabase: SupabaseClient): Promise<boolean> {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      await initRevenueCat(user.id);
+      return checkPremiumStatus();
+    } catch {
+      return false;
+    }
+  }
+
   try {
     const {
       data: { user },

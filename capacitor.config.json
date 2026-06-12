@@ -2,6 +2,9 @@
   "appId": "no.skaren.app",
   "appName": "Skaren",
   "webDir": "out",
+  "ios": {
+    "swipeBackEnabled": true
+  },
   "server": {
     "url": "https://skaren.app",
     "cleartext": false

@@ -2,12 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CAPACITOR_DEBUG</key>
+	<key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>Skaren</string>
+	<string>Skaren</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -24,15 +24,12 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<!-- Camera — required for barcode scanning -->
 	<key>NSCameraUsageDescription</key>
 	<string>Skaren uses your camera to scan product barcodes.</string>
-	<!-- Photo Library — optional, not used but required by WKWebView on some iOS versions -->
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Skaren may save product images to your photo library.</string>
-	<!-- Face ID — not used, but prevents App Store rejection on devices with Face ID -->
 	<key>NSFaceIDUsageDescription</key>
 	<string>Skaren uses Face ID for secure sign-in.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Skaren may save product images to your photo library.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -41,22 +38,26 @@
 	<array>
 		<string>armv7</string>
 	</array>
-	<!-- Portrait only — this is a mobile scanning app -->
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleDefault</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-	</array>
-	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<true/>
-	<!-- Safe area / notch support -->
-	<key>UIStatusBarStyle</key>
-	<string>UIStatusBarStyleDefault</string>
 	<key>UIUserInterfaceStyle</key>
 	<string>Automatic</string>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>no.skaren.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>no.skaren.app</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

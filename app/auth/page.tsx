@@ -35,35 +35,53 @@ export default function AuthPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleGoogleSignIn() {
+  async function handleOAuthSignIn(provider: "google" | "apple") {
     setLoading(true);
     setMessage("");
 
-    const { error } = (await supabase?.auth.signInWithOAuth({
-      provider: "google",
+    if (!supabase) {
+      setMessage("Supabase is not configured yet.");
+      setLoading(false);
+      return;
+    }
+
+    const { Capacitor } = await import("@capacitor/core");
+    const isNative = Capacitor.isNativePlatform();
+    const next = "/account";
+
+    const redirectTo = isNative
+      ? `no.skaren.app://auth/callback?next=${encodeURIComponent(next)}`
+      : `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/account")}`,
-        queryParams: { prompt: "select_account" },
-      }
-    })) ?? { error: new Error("Supabase is not configured yet.") };
+        redirectTo,
+        ...(provider === "google" ? { queryParams: { prompt: "select_account" } } : {}),
+        skipBrowserRedirect: isNative,
+      },
+    });
+
+    if (error) {
+      setMessage(error.message);
+      setLoading(false);
+      return;
+    }
+
+    if (isNative && data?.url) {
+      const { Browser } = await import("@capacitor/browser");
+      await Browser.open({ url: data.url });
+    }
 
     setLoading(false);
-    if (error) setMessage(error.message);
   }
 
-  async function handleAppleSignIn() {
-    setLoading(true);
-    setMessage("");
+  function handleGoogleSignIn() {
+    return handleOAuthSignIn("google");
+  }
 
-    const { error } = (await supabase?.auth.signInWithOAuth({
-      provider: "apple",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/account")}`,
-      }
-    })) ?? { error: new Error("Supabase is not configured yet.") };
-
-    setLoading(false);
-    if (error) setMessage(error.message);
+  function handleAppleSignIn() {
+    return handleOAuthSignIn("apple");
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {

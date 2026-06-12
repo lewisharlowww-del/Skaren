@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import { CapacitorDeepLink } from "@/components/CapacitorDeepLink";
 import { PwaShell } from "@/components/PwaShell";
+import { RevenueCatInitializer } from "@/components/RevenueCatInitializer";
 import { ThemeScript } from "@/components/ThemeScript";
 import { LanguageProvider } from "@/lib/language-context";
 import { ThemeProvider } from "@/lib/theme-context";
@@ -60,6 +62,8 @@ export default function RootLayout({
       <body className="min-h-screen antialiased bg-[#f7f2ea] dark:bg-[#1a1714]" suppressHydrationWarning>
         <ThemeProvider>
           <LanguageProvider>
+            <CapacitorDeepLink />
+            <RevenueCatInitializer />
             <PwaShell />
             {children}
           </LanguageProvider>
