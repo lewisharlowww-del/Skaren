@@ -268,7 +268,7 @@ export default function ScanPage() {
           </div>
         </div>
         {/* Bottom section */}
-        <div className="flex-1 overflow-hidden px-5 pb-24 pt-4">
+        <div className="flex-1 overflow-y-auto px-5 pb-24 pt-4">
           {/* Divider */}
           <div className="mb-3 flex items-center gap-3">
             <div className="h-px flex-1 bg-[#e0d8cc]" />
