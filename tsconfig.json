@@ -25,9 +25,6 @@
     "paths": {
       "@/*": [
         "./*"
-      ],
-      "@revenuecat/purchases-capacitor": [
-        "./lib/revenuecat-capacitor-stub"
       ]
     }
   },
