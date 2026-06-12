@@ -50,7 +50,7 @@ export default function AuthPage() {
     const next = "/account";
 
     const redirectTo = isNative
-      ? `no.skaren.app://auth/callback?next=${encodeURIComponent(next)}`
+      ? "no.skaren.app://auth/callback"
       : `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
 
     const { data, error } = await supabase.auth.signInWithOAuth({
