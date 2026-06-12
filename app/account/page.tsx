@@ -445,11 +445,15 @@ export default function AccountPage() {
 
         if (!active) return;
 
+        console.log("[Account] getSession:", data.session ? `user=${data.session.user?.email ?? "no-email"}` : "NO SESSION");
+
         if (!sessionUser) {
+          console.log("[Account] no session → redirecting to login");
           router.replace("/login?next=%2Faccount");
           return;
         }
 
+        console.log("[Account] user found, rendering account page");
         setUser({
           id: sessionUser.id,
           email: sessionUser.email ?? undefined,
