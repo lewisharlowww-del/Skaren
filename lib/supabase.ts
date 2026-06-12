@@ -25,6 +25,12 @@ type InsightRow = {
 type Database = {
   public: {
     Tables: {
+      profiles: {
+        Row: { id: string; is_premium: boolean };
+        Insert: { id: string; is_premium?: boolean };
+        Update: { is_premium?: boolean };
+        Relationships: [];
+      };
       scans: {
         Row: ScanRecord;
         Insert: Omit<ScanRecord, "id" | "created_at">;
