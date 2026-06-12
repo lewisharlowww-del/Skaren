@@ -31,29 +31,54 @@ export function CapacitorDeepLink() {
       const { App } = await import("@capacitor/app");
       const { Browser } = await import("@capacitor/browser");
 
-      async function handleCode(code: string) {
+      async function handleCallback(url: string) {
         if (!supabase) return;
-        console.log("[DeepLink] exchanging code…");
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          console.error("[DeepLink] exchange error:", error.message);
-          return;
+
+        // Implicit flow: tokens are in the hash fragment (#access_token=...&refresh_token=...)
+        const hashStart = url.indexOf("#");
+        if (hashStart >= 0) {
+          const hash = new URLSearchParams(url.slice(hashStart + 1));
+          const accessToken = hash.get("access_token");
+          const refreshToken = hash.get("refresh_token");
+          if (accessToken && refreshToken) {
+            console.log("[DeepLink] implicit flow — setting session");
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            if (error) { console.error("[DeepLink] setSession error:", error.message); return; }
+            if (data.session) {
+              console.log("[DeepLink] session OK → /account");
+              document.cookie = "sb-skaren-auth-token=true; path=/; max-age=604800; SameSite=Lax";
+              router.replace("/account");
+            }
+            return;
+          }
         }
-        if (data.session) {
-          console.log("[DeepLink] session OK, navigating to /account");
-          document.cookie =
-            "sb-skaren-auth-token=true; path=/; max-age=604800; SameSite=Lax";
-          router.replace("/account");
+
+        // PKCE flow: code is in query params (?code=...)
+        const qStart = url.indexOf("?");
+        if (qStart >= 0) {
+          const query = new URLSearchParams(url.slice(qStart + 1));
+          const code = query.get("code");
+          if (code) {
+            console.log("[DeepLink] PKCE flow — exchanging code");
+            const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+            if (error) { console.error("[DeepLink] exchange error:", error.message); return; }
+            if (data.session) {
+              console.log("[DeepLink] session OK → /account");
+              document.cookie = "sb-skaren-auth-token=true; path=/; max-age=604800; SameSite=Lax";
+              router.replace("/account");
+            }
+          }
         }
       }
 
-      // Primary: custom URL scheme deep link carries the PKCE code
+      // Primary: custom URL scheme deep link
       const urlHandle = await App.addListener("appUrlOpen", ({ url }) => {
-        console.log("[DeepLink] appUrlOpen:", url);
+        console.log("[DeepLink] appUrlOpen:", url.slice(0, 80));
         if (!url.startsWith("no.skaren.app://")) return;
-        const params = new URLSearchParams(url.slice(url.indexOf("?") + 1));
-        const code = params.get("code");
-        if (code) void handleCode(code);
+        void handleCallback(url);
       });
       cleanups.push(() => urlHandle.remove());
 
