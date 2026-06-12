@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -432,6 +432,10 @@ export default function AccountPage() {
   const [streakNotif, setStreakNotif] = useState(true);
   const [weeklyNotif, setWeeklyNotif] = useState(true);
   const [notifSaving, setNotifSaving] = useState(false);
+  // Stable ref to router — prevents the effect from re-running when router
+  // identity changes (which was causing double loadUser calls).
+  const routerRef = useRef(router);
+  useEffect(() => { routerRef.current = router; });
 
   useEffect(() => {
     let active = true;
@@ -445,15 +449,11 @@ export default function AccountPage() {
 
         if (!active) return;
 
-        console.log("[Account] getSession:", data.session ? `user=${data.session.user?.email ?? "no-email"}` : "NO SESSION");
-
         if (!sessionUser) {
-          console.log("[Account] no session → redirecting to login");
-          router.replace("/login?next=%2Faccount");
+          routerRef.current.replace("/login?next=%2Faccount");
           return;
         }
 
-        console.log("[Account] user found, rendering account page");
         setUser({
           id: sessionUser.id,
           email: sessionUser.email ?? undefined,
@@ -496,7 +496,7 @@ export default function AccountPage() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function signOut() {
     await supabase?.auth.signOut();

@@ -1,25 +1,22 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
 /**
- * Handles OAuth deep links on iOS (no.skaren.app://) and exchanges
- * the PKCE code for a session directly — no page navigation needed.
+ * Handles OAuth deep links on iOS (no.skaren.app://).
  *
- * Flow:
- *  1. Browser.open() → Safari View Controller
- *  2. OAuth completes → redirects to no.skaren.app://auth/callback?code=XXXX
- *  3. iOS closes SVC, fires appUrlOpen
- *  4. We call exchangeCodeForSession(code) — PKCE verifier is in localStorage
- *  5. On success, navigate to /account
+ * Supports both flows:
+ *  - Implicit: tokens in hash fragment (#access_token=...&refresh_token=...)
+ *  - PKCE:     code in query params (?code=...)
  *
- * browserFinished fires as a safety net in case the redirect fires
- * before this listener is ready, or if the user signs in on a second attempt.
+ * browserFinished is kept as a fallback ONLY — if appUrlOpen already
+ * navigated, we skip it to prevent the double-load bug.
  */
 export function CapacitorDeepLink() {
-  const router = useRouter();
+  // Tracks whether appUrlOpen already handled this OAuth session.
+  // Prevents browserFinished from triggering a second navigation.
+  const navigatedRef = useRef(false);
 
   useEffect(() => {
     const cleanups: Array<() => void> = [];
@@ -34,7 +31,7 @@ export function CapacitorDeepLink() {
       async function handleCallback(url: string) {
         if (!supabase) return;
 
-        // Implicit flow: tokens are in the hash fragment (#access_token=...&refresh_token=...)
+        // Implicit flow: tokens in hash fragment
         const hashStart = url.indexOf("#");
         if (hashStart >= 0) {
           const hash = new URLSearchParams(url.slice(hashStart + 1));
@@ -50,15 +47,14 @@ export function CapacitorDeepLink() {
             if (data.session) {
               console.log("[DeepLink] session OK → /account");
               document.cookie = "sb-skaren-auth-token=true; path=/; max-age=604800; SameSite=Lax";
-              // Hard navigation: React hydration error (#419) breaks the router,
-              // so we force a full page reload to get a clean React tree.
+              navigatedRef.current = true;
               window.location.replace("/account");
             }
             return;
           }
         }
 
-        // PKCE flow: code is in query params (?code=...)
+        // PKCE flow: code in query params
         const qStart = url.indexOf("?");
         if (qStart >= 0) {
           const query = new URLSearchParams(url.slice(qStart + 1));
@@ -70,7 +66,8 @@ export function CapacitorDeepLink() {
             if (data.session) {
               console.log("[DeepLink] session OK → /account");
               document.cookie = "sb-skaren-auth-token=true; path=/; max-age=604800; SameSite=Lax";
-              router.replace("/account");
+              navigatedRef.current = true;
+              window.location.replace("/account");
             }
           }
         }
@@ -84,15 +81,20 @@ export function CapacitorDeepLink() {
       });
       cleanups.push(() => urlHandle.remove());
 
-      // Fallback: if browser closes and a session already exists, navigate
+      // Fallback: only if appUrlOpen did NOT already handle this session.
+      // Handles edge cases where the deep link fires after the browser closes.
       const browserHandle = await Browser.addListener(
         "browserFinished",
         async () => {
-          console.log("[DeepLink] browserFinished");
+          console.log("[DeepLink] browserFinished (navigated already:", navigatedRef.current, ")");
+          if (navigatedRef.current) {
+            navigatedRef.current = false; // reset for next sign-in
+            return;
+          }
           if (!supabase) return;
           const { data } = await supabase.auth.getSession();
           if (data.session) {
-            console.log("[DeepLink] session exists after browser close");
+            console.log("[DeepLink] fallback — session found → /account");
             document.cookie =
               "sb-skaren-auth-token=true; path=/; max-age=604800; SameSite=Lax";
             window.location.replace("/account");
@@ -104,7 +106,7 @@ export function CapacitorDeepLink() {
 
     void setup();
     return () => cleanups.forEach((fn) => fn());
-  }, [router]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return null;
 }
