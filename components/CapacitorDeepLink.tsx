@@ -3,15 +3,39 @@
 import { useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
+// sessionStorage keys used to deduplicate appUrlOpen events.
+// Capacitor re-delivers the deep link URL to newly registered listeners
+// after window.location.replace() — we skip it if we already processed
+// the same URL within the last 10 seconds.
+const SS_URL = "cap-dl-url";
+const SS_TIME = "cap-dl-time";
+const DEDUP_MS = 10_000;
+
+function markHandled(url: string) {
+  try {
+    sessionStorage.setItem(SS_URL, url);
+    sessionStorage.setItem(SS_TIME, Date.now().toString());
+  } catch {}
+}
+
+function alreadyHandled(url: string): boolean {
+  try {
+    const last = sessionStorage.getItem(SS_URL);
+    const t = parseInt(sessionStorage.getItem(SS_TIME) ?? "0", 10);
+    return last === url && Date.now() - t < DEDUP_MS;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Handles OAuth deep links on iOS (no.skaren.app://).
  *
- * After the OAuth redirect fires appUrlOpen, we:
- *  1. Set the Supabase session from the tokens in the URL
- *  2. Close the SFSafariViewController (Browser.close) — without this
- *     it stays open showing a blank page because it can't render a
- *     custom URL scheme
- *  3. Navigate the underlying WebView to /account
+ * After the OAuth redirect fires appUrlOpen:
+ *  1. Deduplicate (Capacitor re-fires the same URL on newly registered listeners)
+ *  2. Set the Supabase session from the tokens in the URL
+ *  3. Close the SFSafariViewController overlay (Browser.close)
+ *  4. Navigate the underlying WebView to /account
  */
 export function CapacitorDeepLink() {
   useEffect(() => {
@@ -21,11 +45,23 @@ export function CapacitorDeepLink() {
       const { Capacitor } = await import("@capacitor/core");
       if (!Capacitor.isNativePlatform()) return;
 
+      // Hide the splash screen now that the WebView has rendered its first frame.
+      // Without this explicit call, Capacitor falls back to the auto-hide timeout
+      // and logs a warning on every launch.
+      const { SplashScreen } = await import("@capacitor/splash-screen");
+      SplashScreen.hide().catch(() => {});
+
       const { App } = await import("@capacitor/app");
       const { Browser } = await import("@capacitor/browser");
 
       async function handleCallback(url: string) {
         if (!supabase) return;
+
+        if (alreadyHandled(url)) {
+          console.log("[DeepLink] duplicate URL — skipping");
+          return;
+        }
+        markHandled(url);
 
         // Implicit flow: tokens in hash fragment
         const hashStart = url.indexOf("#");
@@ -43,7 +79,7 @@ export function CapacitorDeepLink() {
             if (data.session) {
               console.log("[DeepLink] session OK — closing browser → /account");
               document.cookie = "sb-skaren-auth-token=true; path=/; max-age=604800; SameSite=Lax";
-              await Browser.close(); // dismiss the SFSafariViewController overlay
+              await Browser.close();
               window.location.replace("/account");
             }
             return;
