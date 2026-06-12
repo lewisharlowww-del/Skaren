@@ -27,6 +27,14 @@ function GoogleIcon() {
   );
 }
 
+function AppleIcon() {
+  return (
+    <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="white">
+      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.4c1.4.07 2.38.74 3.2.8 1.22-.24 2.38-.93 3.68-.84 1.56.12 2.74.7 3.51 1.77-3.22 1.94-2.46 5.9.61 7.06-.65 1.62-1.5 3.24-3 4.09ZM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25Z" />
+    </svg>
+  );
+}
+
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -91,17 +99,28 @@ function LoginContent() {
       provider: "google",
       options: {
         redirectTo,
-        queryParams: {
-          prompt: "select_account",
-        },
+        queryParams: { prompt: "select_account" },
       }
     })) ?? { error: new Error("Supabase is not configured yet.") };
 
     setLoading(false);
+    if (error) setMessage(error.message);
+  }
 
-    if (error) {
-      setMessage(error.message);
-    }
+  async function handleAppleSignIn() {
+    setLoading(true);
+    setMessage("");
+    setEmailError("");
+    setPasswordError("");
+
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+    const { error } = (await supabase?.auth.signInWithOAuth({
+      provider: "apple",
+      options: { redirectTo },
+    })) ?? { error: new Error("Supabase is not configured yet.") };
+
+    setLoading(false);
+    if (error) setMessage(error.message);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -225,6 +244,16 @@ function LoginContent() {
             </div>
           ) : (
             <div className="mt-6 space-y-4">
+              <button
+                type="button"
+                onClick={() => void handleAppleSignIn()}
+                disabled={loading || !isSupabaseConfigured}
+                className="focus-ring tap-feedback type-button inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-full bg-black px-5 py-4 text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <AppleIcon />
+                {loading ? "Connecting..." : "Continue with Apple"}
+              </button>
+
               <button
                 type="button"
                 onClick={() => void handleGoogleSignIn()}
