@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
 /**
@@ -10,14 +10,12 @@ import { supabase } from "@/lib/supabase";
  *  - Implicit: tokens in hash fragment (#access_token=...&refresh_token=...)
  *  - PKCE:     code in query params (?code=...)
  *
- * browserFinished is kept as a fallback ONLY — if appUrlOpen already
- * navigated, we skip it to prevent the double-load bug.
+ * appUrlOpen fires before the SFSafariViewController closes, so it
+ * always handles the callback first. We deliberately do NOT listen to
+ * browserFinished — it fires on the new page after navigation and was
+ * causing a redundant second navigation to /account.
  */
 export function CapacitorDeepLink() {
-  // Tracks whether appUrlOpen already handled this OAuth session.
-  // Prevents browserFinished from triggering a second navigation.
-  const navigatedRef = useRef(false);
-
   useEffect(() => {
     const cleanups: Array<() => void> = [];
 
@@ -26,7 +24,6 @@ export function CapacitorDeepLink() {
       if (!Capacitor.isNativePlatform()) return;
 
       const { App } = await import("@capacitor/app");
-      const { Browser } = await import("@capacitor/browser");
 
       async function handleCallback(url: string) {
         if (!supabase) return;
@@ -47,7 +44,6 @@ export function CapacitorDeepLink() {
             if (data.session) {
               console.log("[DeepLink] session OK → /account");
               document.cookie = "sb-skaren-auth-token=true; path=/; max-age=604800; SameSite=Lax";
-              navigatedRef.current = true;
               window.location.replace("/account");
             }
             return;
@@ -66,42 +62,18 @@ export function CapacitorDeepLink() {
             if (data.session) {
               console.log("[DeepLink] session OK → /account");
               document.cookie = "sb-skaren-auth-token=true; path=/; max-age=604800; SameSite=Lax";
-              navigatedRef.current = true;
               window.location.replace("/account");
             }
           }
         }
       }
 
-      // Primary: custom URL scheme deep link
       const urlHandle = await App.addListener("appUrlOpen", ({ url }) => {
         console.log("[DeepLink] appUrlOpen:", url.slice(0, 80));
         if (!url.startsWith("no.skaren.app://")) return;
         void handleCallback(url);
       });
       cleanups.push(() => urlHandle.remove());
-
-      // Fallback: only if appUrlOpen did NOT already handle this session.
-      // Handles edge cases where the deep link fires after the browser closes.
-      const browserHandle = await Browser.addListener(
-        "browserFinished",
-        async () => {
-          console.log("[DeepLink] browserFinished (navigated already:", navigatedRef.current, ")");
-          if (navigatedRef.current) {
-            navigatedRef.current = false; // reset for next sign-in
-            return;
-          }
-          if (!supabase) return;
-          const { data } = await supabase.auth.getSession();
-          if (data.session) {
-            console.log("[DeepLink] fallback — session found → /account");
-            document.cookie =
-              "sb-skaren-auth-token=true; path=/; max-age=604800; SameSite=Lax";
-            window.location.replace("/account");
-          }
-        }
-      );
-      cleanups.push(() => browserHandle.remove());
     }
 
     void setup();
