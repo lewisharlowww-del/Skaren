@@ -6,6 +6,15 @@ export const RC_API_KEY = "test_aiRnMyGbycoHevKXUIrmvXOCbjT";
 let configured = false;
 let activeUserId: string | null = null;
 
+/** Call once on app mount (no userId needed). */
+export async function configurePurchases() {
+  if (!Capacitor.isNativePlatform()) return;
+  if (configured) return;
+  await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
+  await Purchases.configure({ apiKey: RC_API_KEY });
+  configured = true;
+}
+
 export async function initRevenueCat(userId: string) {
   if (!Capacitor.isNativePlatform()) return;
 
