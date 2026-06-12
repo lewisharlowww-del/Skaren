@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { SkarenWordmark } from "@/components/SkarenLogo";
 import { useLang } from "@/lib/language-context";
 
@@ -28,6 +30,7 @@ export function LegalPage({
   intro, introNo,
   sections, sectionsNo,
 }: LegalPageProps) {
+  const router = useRouter();
   const { lang } = useLang();
   const no = lang === "no";
 
@@ -49,12 +52,28 @@ export function LegalPage({
           position: "sticky",
           top: 0,
           zIndex: 50,
+          paddingTop: "env(safe-area-inset-top)",
         }}
       >
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-          <Link href="/">
-            <SkarenWordmark className="h-6 w-auto" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              aria-label={no ? "Gå tilbake" : "Go back"}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors active:bg-black/5"
+              style={{
+                backgroundColor: "rgba(255,255,255,0.72)",
+                border: "1px solid rgba(0,0,0,0.08)",
+                color: "var(--sk-text-green, #3a6b2a)",
+              }}
+            >
+              <ChevronLeft aria-hidden="true" className="h-5 w-5" />
+            </button>
+            <Link href="/" aria-label="Skaren home">
+              <SkarenWordmark className="h-6 w-auto" />
+            </Link>
+          </div>
           <span
             className="text-[11px] font-semibold uppercase tracking-widest"
             style={{ color: "var(--sk-text-muted, #999)" }}
