@@ -54,9 +54,8 @@ export async function purchaseYearly() {
   if (!Capacitor.isNativePlatform()) throw new Error("Not on native platform");
   if (!configured) await configurePurchases();
   const offerings = await Purchases.getOfferings();
-  const keys = JSON.stringify(Object.keys(offerings.current || {}));
   const annual = offerings.current?.annual;
-  if (!annual) throw new Error("No yearly package found. Keys: " + keys);
+  if (!annual) throw new Error("No yearly package found");
   return Purchases.purchasePackage({ aPackage: annual });
 }
 
