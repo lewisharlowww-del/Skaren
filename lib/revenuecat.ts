@@ -1,7 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { LOG_LEVEL, Purchases } from "@revenuecat/purchases-capacitor";
 
-export const RC_API_KEY = "test_aiRnMyGbycoHevKXUIrmvX0CbjT";
+export const RC_API_KEY = "appl_mNwJQsfrHPNWcVlkdEuJKIqjORJ";
 
 let configured = false;
 let activeUserId: string | null = null;
