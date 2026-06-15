@@ -4,11 +4,7 @@ const config: CapacitorConfig = {
   appId: 'no.skaren.app',
   appName: 'Skaren',
   webDir: 'out',
-  server: {
-    // Point to the live Vercel deployment so all API routes work natively
-    url: 'https://skaren.app',
-    cleartext: false,
-  },
+
   ios: {
     contentInset: 'never',
     backgroundColor: '#faf7f2',
