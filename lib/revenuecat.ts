@@ -1,7 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { LOG_LEVEL, Purchases } from "@revenuecat/purchases-capacitor";
 
-export const RC_API_KEY = "appl_mNwJQsfrHPNWcVlkdEuJKIqjORJ";
+export const RC_API_KEY = "test_aiRnMyGbycoHevKXUIrmvX0CbjT";
 
 let configured = false;
 let activeUserId: string | null = null;
@@ -42,6 +42,8 @@ export async function checkPremiumStatus(): Promise<boolean> {
 }
 
 export async function purchaseMonthly() {
+  if (!Capacitor.isNativePlatform()) throw new Error("Not on native platform");
+  if (!configured) await configurePurchases();
   const offerings = await Purchases.getOfferings();
   const monthly = offerings.current?.monthly;
   if (!monthly) throw new Error("No monthly package found");
@@ -49,12 +51,16 @@ export async function purchaseMonthly() {
 }
 
 export async function purchaseYearly() {
+  if (!Capacitor.isNativePlatform()) throw new Error("Not on native platform");
+  if (!configured) await configurePurchases();
   const offerings = await Purchases.getOfferings();
+  const keys = JSON.stringify(Object.keys(offerings.current || {}));
   const annual = offerings.current?.annual;
-  if (!annual) throw new Error("No yearly package found");
+  if (!annual) throw new Error("No yearly package found. Keys: " + keys);
   return Purchases.purchasePackage({ aPackage: annual });
 }
 
 export async function restorePurchases() {
+  if (!configured) await configurePurchases();
   return Purchases.restorePurchases();
 }
