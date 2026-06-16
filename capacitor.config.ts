@@ -4,6 +4,10 @@ const config: CapacitorConfig = {
   appId: 'no.skaren.app',
   appName: 'Skaren',
   webDir: 'out',
+  server: {
+    url: 'https://skaren.app',
+    cleartext: false,
+  },
 
   ios: {
     contentInset: 'never',
