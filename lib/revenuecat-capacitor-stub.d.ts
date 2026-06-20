@@ -61,6 +61,7 @@ export declare const Purchases: {
   logIn: (options: { appUserID: string }) => Promise<{ customerInfo: CustomerInfo }>;
   logOut: () => Promise<void>;
   getCustomerInfo: () => Promise<{ customerInfo: CustomerInfo }>;
+  getAppUserID: () => Promise<{ appUserID: string }>;
   getOfferings: () => Promise<Offerings>;
   purchasePackage: (options: { aPackage: RCPackage }) => Promise<PurchaseResult>;
   restorePurchases: () => Promise<{ customerInfo: CustomerInfo }>;
