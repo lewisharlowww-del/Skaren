@@ -125,3 +125,38 @@ unavailable" on purchase, `getOfferings()` returned nothing. Check in order:
 4. RevenueCat **Offering** not marked **current**, or packages not attached to it.
 5. Entitlement name in RevenueCat ≠ `Skaren Pro`.
 6. Tested on Simulator instead of a real device with a Sandbox account.
+
+### Reading the device log
+
+The `getOfferings()` result is logged on every purchase attempt. Match the
+symptom:
+
+| Log on device                                              | Meaning                                                  | Fix |
+| ---------------------------------------------------------- | -------------------------------------------------------- | --- |
+| `{"current":null,"allKeys":[]}`                            | RevenueCat returned **no Offerings at all**              | Dashboard config (see below) |
+| `current` set but `availablePackages` empty / no `productIdentifier` | Offering exists but products not attached / not approved | §2 + attach packages to the Offering |
+| `current` populated with `productIdentifier` values        | Offerings OK; failure is StoreKit/sandbox                | Use a real device + Sandbox Apple ID (§Sandbox) |
+
+> The `Purchase failed {}` that follows an empty offering is **expected**: it's
+> our own `SUBSCRIPTION_UNAVAILABLE_ERROR` throw (the bridge serializes the
+> `Error` as `{}`), not a native crash.
+
+### Observed: `{"current":null,"allKeys":[]}` (empty offerings on device)
+
+A completely empty `all: {}` means the **RevenueCat backend has no current
+Offering** for this app — it is *not* the "products pending review" case. This is
+purely a RevenueCat dashboard fix, no app code or new build required:
+
+- [ ] **Products** tab → create both product IDs
+      (`no.skaren.app.premium.monthly`, `...yearly`), importing from App Store
+      Connect.
+- [ ] **Entitlements** → create/confirm **`Skaren Pro`** and attach both products.
+- [ ] **Offerings** → create an Offering and **mark it Current (default)**.
+      Add a **Monthly** package → monthly product and an **Annual** package →
+      yearly product.
+- [ ] Confirm this build's API key `appl_mNwJQsfrHPNWcVlkdEuJKIqjORJ` belongs to
+      the RC project whose App Store app is `no.skaren.app` (key/app mismatch also
+      yields empty offerings).
+- [ ] Relaunch the app, open `/pricing`, trigger a purchase, and verify the log
+      now shows `current` populated with the `productIdentifier`s before testing a
+      real Sandbox purchase.
