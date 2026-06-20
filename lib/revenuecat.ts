@@ -36,6 +36,31 @@ export async function initRevenueCat(userId: string) {
   }
 }
 
+/**
+ * Resets RevenueCat back to a fresh anonymous app_user_id. Call this on sign-out
+ * so the previous Supabase user's entitlements are no longer reported on a shared
+ * device, and so the next sign-in re-aliases cleanly.
+ *
+ * Safe to call unconditionally: it no-ops on web and when RC was never configured,
+ * and swallows the "called logOut but the current user is anonymous" error that
+ * the SDK throws when there is nothing to reset.
+ */
+export async function logoutRevenueCat() {
+  if (!Capacitor.isNativePlatform()) return;
+  if (!configured) {
+    activeUserId = null;
+    return;
+  }
+
+  try {
+    await Purchases.logOut();
+  } catch (error) {
+    logRevenueCatDiagnostic("logOut failed (likely already anonymous)", error);
+  } finally {
+    activeUserId = null;
+  }
+}
+
 export async function checkPremiumStatus(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) return false;
 

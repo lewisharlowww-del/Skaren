@@ -35,6 +35,7 @@ import { useLang } from "@/lib/language-context";
 import { useTheme } from "@/lib/theme-context";
 import { getUserPremiumStatus } from "@/lib/premium";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { signOutEverywhere } from "@/lib/auth";
 
 // ── Push notification helpers ─────────────────────────────────────────────────
 
@@ -499,8 +500,7 @@ export default function AccountPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function signOut() {
-    await supabase?.auth.signOut();
-    document.cookie = "sb-skaren-auth-token=; path=/; max-age=0; SameSite=Lax";
+    await signOutEverywhere();
     router.push("/");
   }
 
@@ -540,8 +540,7 @@ export default function AccountPage() {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
-      await supabase?.auth.signOut();
-      document.cookie = "sb-skaren-auth-token=; path=/; max-age=0; SameSite=Lax";
+      await signOutEverywhere();
       router.push("/");
     } finally {
       setDeleteLoading(false);

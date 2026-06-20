@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { BarChart3, History, LogOut, ScanBarcode, ShoppingCart, UserRound } from "lucide-react";
 import { SkarenMark, SkarenWordmark } from "@/components/SkarenLogo";
 import { supabase } from "@/lib/supabase";
+import { signOutEverywhere } from "@/lib/auth";
 
 export function AppHeader({ showMobileScan = true }: { showMobileScan?: boolean }) {
   const pathname = usePathname();
@@ -41,8 +42,7 @@ export function AppHeader({ showMobileScan = true }: { showMobileScan?: boolean 
   }, []);
 
   async function signOut() {
-    await supabase?.auth.signOut();
-    document.cookie = "sb-skaren-auth-token=; path=/; max-age=0; SameSite=Lax";
+    await signOutEverywhere();
     router.push("/scan");
   }
 

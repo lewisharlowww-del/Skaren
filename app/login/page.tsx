@@ -15,6 +15,7 @@ import {
 import { SkarenMark, SkarenWordmark } from "@/components/SkarenLogo";
 import { SupabaseNotice } from "@/components/SupabaseNotice";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { signOutEverywhere } from "@/lib/auth";
 
 function GoogleIcon() {
   return (
@@ -82,8 +83,7 @@ function LoginContent() {
   }, []);
 
   async function signOut() {
-    await supabase?.auth.signOut();
-    document.cookie = "sb-skaren-auth-token=; path=/; max-age=0; SameSite=Lax";
+    await signOutEverywhere();
     setSignedInEmail(null);
     router.refresh();
   }
