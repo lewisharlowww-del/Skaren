@@ -17,18 +17,41 @@ declare module "@revenuecat/purchases-capacitor" {
     };
   }
 
+  export interface RCIntroPrice {
+    price?: number;
+    priceString?: string;
+    cycles?: number;
+    period?: string;
+    periodUnit?: string;
+    periodNumberOfUnits?: number;
+  }
+
+  export interface RCStoreProduct {
+    identifier?: string;
+    priceString?: string;
+    pricePerMonthString?: string | null;
+    introPrice?: RCIntroPrice | null;
+  }
+
   export interface RCPackage {
     identifier: string;
     packageType: string;
+    product?: RCStoreProduct;
+  }
+
+  export interface RCOffering {
+    monthly: RCPackage | null;
+    annual: RCPackage | null;
+    availablePackages: RCPackage[];
   }
 
   export interface Offerings {
-    current: {
-      monthly: RCPackage | null;
-      annual: RCPackage | null;
-    } | null;
+    current: RCOffering | null;
     all: Record<string, unknown>;
   }
+
+  export type PurchasesPackage = RCPackage;
+  export type PurchasesOffering = RCOffering;
 
   export interface PurchaseResult {
     customerInfo: CustomerInfo;

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Check, Crown, LoaderCircle, RotateCcw } from "lucide-react";
 import { useLang } from "@/lib/language-context";
-import { configurePurchases, purchaseMonthly, purchaseYearly, restorePurchases } from "@/lib/revenuecat";
+import { configurePurchases, getSubscriptionPlans, purchaseMonthly, purchaseYearly, restorePurchases } from "@/lib/revenuecat";
+import type { SubscriptionPlanInfo, SubscriptionPlans, SubscriptionTrial } from "@/lib/revenuecat";
 import { supabase } from "@/lib/supabase";
 
 const freeFeatures = {
@@ -56,6 +57,71 @@ async function setSupabasePremium() {
 
 type Toast = { type: "success" | "error"; msg: string } | null;
 
+function getPurchaseErrorMessage(isNo: boolean) {
+  return isNo
+    ? "Abonnementet er midlertidig utilgjengelig. Prøv igjen om litt."
+    : "Subscriptions are temporarily unavailable. Please try again in a moment.";
+}
+
+function getRestoreErrorMessage(isNo: boolean) {
+  return isNo
+    ? "Kjøp kunne ikke gjenopprettes akkurat nå. Prøv igjen om litt."
+    : "Purchases could not be restored right now. Please try again in a moment.";
+}
+
+// Marketing fallbacks used on web (no StoreKit) and before live prices load.
+// On a real device these are replaced by the values StoreKit reports, so the
+// displayed terms always match what App Store Connect will actually charge.
+const FALLBACK_PRICES = {
+  monthly: { price: "49 kr", perMonth: null as string | null },
+  yearly: { price: "490 kr", perMonth: "~41 kr" },
+} as const;
+
+function pluralizeUnit(unit: string, count: number, isNo: boolean): string {
+  const u = unit.toUpperCase();
+  const plural = count !== 1;
+  if (isNo) {
+    if (u === "DAY") return plural ? "dager" : "dag";
+    if (u === "WEEK") return plural ? "uker" : "uke";
+    if (u === "MONTH") return plural ? "måneder" : "måned";
+    if (u === "YEAR") return plural ? "år" : "år";
+    return "";
+  }
+  if (u === "DAY") return plural ? "days" : "day";
+  if (u === "WEEK") return plural ? "weeks" : "week";
+  if (u === "MONTH") return plural ? "months" : "month";
+  if (u === "YEAR") return plural ? "years" : "year";
+  return "";
+}
+
+/** "7 days free" / "7 dager gratis" derived from the real StoreKit intro offer. */
+function formatTrialBadge(trial: SubscriptionTrial | null, isNo: boolean): string | null {
+  if (!trial || !trial.isFree || trial.periodNumberOfUnits <= 0) return null;
+  const unit = pluralizeUnit(trial.periodUnit, trial.periodNumberOfUnits, isNo);
+  if (!unit) return null;
+  return isNo
+    ? `${trial.periodNumberOfUnits} ${unit} gratis`
+    : `${trial.periodNumberOfUnits} ${unit} free`;
+}
+
+function formatTrialSubtitle(trial: SubscriptionTrial | null, isNo: boolean): string | null {
+  if (!trial || !trial.isFree || trial.periodNumberOfUnits <= 0) return null;
+  return isNo ? "Ingen betaling før prøveperioden er over" : "No charge until trial ends";
+}
+
+/** CTA label: trial-aware, falls back to a plain subscribe label when no trial exists. */
+function formatCtaLabel(trial: SubscriptionTrial | null, isNo: boolean): string {
+  if (trial && trial.isFree && trial.periodNumberOfUnits > 0) {
+    const unit = pluralizeUnit(trial.periodUnit, trial.periodNumberOfUnits, isNo);
+    if (unit) {
+      return isNo
+        ? `Prøv gratis i ${trial.periodNumberOfUnits} ${unit}`
+        : `Try free for ${trial.periodNumberOfUnits} ${unit}`;
+    }
+  }
+  return isNo ? "Abonner" : "Subscribe";
+}
+
 export default function PricingPage() {
   const { lang } = useLang();
   const isNo = lang === "no";
@@ -63,10 +129,31 @@ export default function PricingPage() {
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("yearly");
   const [pendingAction, setPendingAction] = useState<"purchase" | "restore" | null>(null);
   const [toast, setToast] = useState<Toast>(null);
+  const [plans, setPlans] = useState<SubscriptionPlans | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     void configurePurchases();
+    void getSubscriptionPlans()
+      .then((loaded) => {
+        if (!cancelled && loaded) setPlans(loaded);
+      })
+      .catch((error) => {
+        console.warn("[RevenueCat][Skaren] Failed to load live pricing", error);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  const activePlan: SubscriptionPlanInfo | null =
+    selectedPlan === "yearly" ? plans?.yearly ?? null : plans?.monthly ?? null;
+  const fallback = FALLBACK_PRICES[selectedPlan];
+  const priceLabel = activePlan?.priceString || fallback.price;
+  const perMonthLabel = activePlan?.pricePerMonthString ?? fallback.perMonth;
+  const trialBadge = formatTrialBadge(activePlan?.trial ?? null, isNo);
+  const trialSubtitle = formatTrialSubtitle(activePlan?.trial ?? null, isNo);
+  const ctaLabel = formatCtaLabel(activePlan?.trial ?? null, isNo);
 
   function showToast(type: "success" | "error", msg: string) {
     setToast({ type, msg });
@@ -87,9 +174,9 @@ export default function PricingPage() {
       } else {
         showToast("success", isNo ? "Kjøp fullført. Tilgang oppdateres snart." : "Purchase completed. Access is being updated.");
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : (isNo ? "Kjøpet kunne ikke fullføres." : "Purchase could not be completed.");
-      showToast("error", msg);
+    } catch (error) {
+      console.error("[RevenueCat][Skaren] Purchase failed", error);
+      showToast("error", getPurchaseErrorMessage(isNo));
     } finally {
       setPendingAction(null);
     }
@@ -107,9 +194,9 @@ export default function PricingPage() {
       } else {
         showToast("error", isNo ? "Ingen aktivt kjøp funnet." : "No active purchase found.");
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : (isNo ? "Kjøp kunne ikke gjenopprettes." : "Purchases could not be restored.");
-      showToast("error", msg);
+    } catch (error) {
+      console.error("[RevenueCat][Skaren] Restore failed", error);
+      showToast("error", getRestoreErrorMessage(isNo));
     } finally {
       setPendingAction(null);
     }
@@ -184,20 +271,26 @@ export default function PricingPage() {
 
         <div className="mb-1 flex items-end gap-3">
           <p className="text-[2.2rem] font-black leading-none text-white">
-            {selectedPlan === "yearly" ? "490 kr" : "49 kr"}
+            {priceLabel}
           </p>
-          <span className="mb-1 rounded-full bg-[#4a8c5c] px-2.5 py-0.5 text-xs font-bold text-[#c8f0c8]">
-            {isNo ? "7 dager gratis" : "7 days free"}
-          </span>
+          {trialBadge && (
+            <span className="mb-1 rounded-full bg-[#4a8c5c] px-2.5 py-0.5 text-xs font-bold text-[#c8f0c8]">
+              {trialBadge}
+            </span>
+          )}
         </div>
         <p className="mb-1 text-sm text-[#a0c8a0]">
           {selectedPlan === "yearly"
-            ? (isNo ? "per år · ~41 kr/mnd" : "per year · ~41 kr/mo")
+            ? perMonthLabel
+              ? (isNo ? `per år · ${perMonthLabel}/mnd` : `per year · ${perMonthLabel}/mo`)
+              : (isNo ? "per år" : "per year")
             : (isNo ? "per måned" : "per month")}
         </p>
-        <p className="mb-5 text-xs text-[#79a879]">
-          {isNo ? "Ingen betaling før prøveperioden er over" : "No charge until trial ends"}
-        </p>
+        {trialSubtitle && (
+          <p className="mb-5 text-xs text-[#79a879]">
+            {trialSubtitle}
+          </p>
+        )}
 
         <ul className="mb-6 space-y-2.5">
           {(isNo ? proFeatures.no : proFeatures.en).map((f) => (
@@ -219,7 +312,7 @@ export default function PricingPage() {
           {pendingAction === "purchase"
             ? <LoaderCircle className="h-4 w-4 animate-spin" />
             : <Crown className="h-4 w-4" />}
-          {isNo ? "Prøv gratis i 7 dager" : "Try free for 7 days"}
+          {ctaLabel}
         </button>
 
         <button
