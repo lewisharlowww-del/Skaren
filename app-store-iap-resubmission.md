@@ -3,6 +3,30 @@
 Reference for clearing the **"Developer Action Needed"** status on the premium
 subscriptions and resubmitting for review.
 
+> ## ✅ ROOT CAUSE FOUND & FIXED (2026-06-20)
+>
+> The broken IAP flow was **not** an App Store Connect / RevenueCat dashboard
+> problem. `next.config.mjs` aliased `@revenuecat/purchases-capacitor` to a no-op
+> web stub for **every** build, and because the iOS app loads the same remote web
+> bundle, the native app ran the stub too. `getOfferings()` returned the stub's
+> hardcoded `{current:null, all:{}}` and `getAppUserID()` returned the literal
+> `"web-stub"`, so StoreKit was never reached despite the native plugin being
+> installed.
+>
+> **Fix:** commit `676218d` removed the alias and the stub files so the real SDK
+> runs on device (web stays inert via the existing `Capacitor.isNativePlatform()`
+> guards).
+>
+> **Verified on device (sandbox):** real SDK v5.78.0 / StoreKit 2, offerings load
+> with both products, `logIn` aliases to the Supabase UID, `logOut` resets to an
+> anonymous `$RCAnonymousID`, and a sandbox purchase of
+> `no.skaren.app.premium.monthly` activated the `Skaren Pro` entitlement with the
+> 7-day `FREE_TRIAL`.
+>
+> The RevenueCat dashboard (products, `Skaren Pro` entitlement, `default` offering,
+> 7-day trial) was already configured correctly. The sections below are retained as
+> a generic pre-submit reference; the dashboard-config items are confirmed done.
+
 ## Products
 
 | Plan    | Product ID                         | Marketing price | Trial         |
