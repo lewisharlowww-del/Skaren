@@ -12,25 +12,6 @@ const PRODUCT_IDS = {
 let configured = false;
 let activeUserId: string | null = null;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TEMPORARY DEBUG — REMOVE AFTER ON-DEVICE SIGN-IN/SIGN-OUT VERIFICATION
-// Logs RevenueCat's current app_user_id so we can visually confirm it switches
-// to the Supabase UID on login and back to an anonymous $RCAnonymousID on logout.
-// Delete this helper and its two call sites (initRevenueCat, logoutRevenueCat)
-// once verified. Search marker: RC_DEBUG_APP_USER_ID
-async function debugLogRevenueCatAppUserId(context: string) {
-  if (!Capacitor.isNativePlatform()) return;
-  try {
-    const { appUserID } = await Purchases.getAppUserID();
-    // eslint-disable-next-line no-console
-    console.log(`[RC_DEBUG_APP_USER_ID] ${context}: appUserID=${appUserID}`);
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.log(`[RC_DEBUG_APP_USER_ID] ${context}: getAppUserID failed`, error);
-  }
-}
-// ─────────────────────────────────────────────────────────────────────────────
-
 /** Call once on app mount (no userId needed). */
 export async function configurePurchases() {
   if (!Capacitor.isNativePlatform()) return;
@@ -52,7 +33,6 @@ export async function initRevenueCat(userId: string) {
   if (activeUserId !== userId) {
     await Purchases.logIn({ appUserID: userId });
     activeUserId = userId;
-    await debugLogRevenueCatAppUserId("after logIn"); // RC_DEBUG_APP_USER_ID — remove after verification
   }
 }
 
@@ -78,7 +58,6 @@ export async function logoutRevenueCat() {
     logRevenueCatDiagnostic("logOut failed (likely already anonymous)", error);
   } finally {
     activeUserId = null;
-    await debugLogRevenueCatAppUserId("after logOut"); // RC_DEBUG_APP_USER_ID — remove after verification
   }
 }
 
