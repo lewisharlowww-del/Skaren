@@ -122,6 +122,38 @@ function formatCtaLabel(trial: SubscriptionTrial | null, isNo: boolean): string 
   return isNo ? "Abonner" : "Subscribe";
 }
 
+/**
+ * App Store Guideline 3.1.2 disclosure shown directly under the CTA: the exact
+ * price charged, the billing period, that it auto-renews, and how to cancel —
+ * plus the trial length when an intro offer exists. Built from the live StoreKit
+ * price (with a marketing fallback) so it always matches what Apple charges.
+ */
+function formatRenewalTerms(
+  plan: "monthly" | "yearly",
+  priceLabel: string,
+  trial: SubscriptionTrial | null,
+  isNo: boolean,
+): string {
+  const period = plan === "yearly" ? (isNo ? "år" : "year") : isNo ? "måned" : "month";
+  const priceClause = `${priceLabel} per ${period}`;
+
+  const hasTrial = !!trial && trial.isFree && trial.periodNumberOfUnits > 0;
+  const trialClause =
+    hasTrial && trial
+      ? (() => {
+          const unit = pluralizeUnit(trial.periodUnit, trial.periodNumberOfUnits, isNo);
+          return isNo
+            ? `${trial.periodNumberOfUnits} ${unit} gratis, deretter `
+            : `${trial.periodNumberOfUnits} ${unit} free, then `;
+        })()
+      : "";
+
+  if (isNo) {
+    return `${trialClause}${priceClause}. Fornyes automatisk til samme pris til du sier opp. Si opp når som helst i App Store-innstillingene minst 24 timer før perioden er over.`;
+  }
+  return `${trialClause}${priceClause}. Auto-renews at the same price until you cancel. Cancel anytime in App Store settings at least 24 hours before the period ends.`;
+}
+
 export default function PricingPage() {
   const { lang } = useLang();
   const isNo = lang === "no";
@@ -154,6 +186,7 @@ export default function PricingPage() {
   const trialBadge = formatTrialBadge(activePlan?.trial ?? null, isNo);
   const trialSubtitle = formatTrialSubtitle(activePlan?.trial ?? null, isNo);
   const ctaLabel = formatCtaLabel(activePlan?.trial ?? null, isNo);
+  const renewalTerms = formatRenewalTerms(selectedPlan, priceLabel, activePlan?.trial ?? null, isNo);
 
   function showToast(type: "success" | "error", msg: string) {
     setToast({ type, msg });
@@ -315,6 +348,11 @@ export default function PricingPage() {
           {ctaLabel}
         </button>
 
+        {/* Guideline 3.1.2: exact charge, billing period, auto-renew + cancel, shown with the CTA. */}
+        <p className="mt-3 text-center text-[12px] leading-snug text-white/90">
+          {renewalTerms}
+        </p>
+
         <button
           type="button"
           onClick={() => void handleRestore()}
@@ -327,11 +365,11 @@ export default function PricingPage() {
           {isNo ? "Gjenopprett kjøp" : "Restore purchase"}
         </button>
 
-        <p className="mt-4 text-center text-[11px] text-white/70">
+        <p className="mt-4 text-center text-[12px] text-white/90">
           {isNo ? "Ved å abonnere godtar du våre" : "By subscribing you agree to our"}{" "}
-          <Link href="/terms" className="underline underline-offset-2 text-white font-semibold">{isNo ? "Brukervilkår" : "Terms of Use"}</Link>
+          <Link href="/terms" className="underline underline-offset-2 text-white font-bold">{isNo ? "Brukervilkår" : "Terms of Use"}</Link>
           {" "}{isNo ? "og" : "and"}{" "}
-          <Link href="/privacy" className="underline underline-offset-2 text-white font-semibold">{isNo ? "Personvernerklæring" : "Privacy Policy"}</Link>.
+          <Link href="/privacy" className="underline underline-offset-2 text-white font-bold">{isNo ? "Personvernerklæring" : "Privacy Policy"}</Link>.
         </p>
       </div>
 
@@ -365,7 +403,7 @@ export default function PricingPage() {
         </Link>
       </div>
 
-      <p className="mt-6 text-center text-xs text-[#b0a090]">
+      <p className="mt-6 text-center text-xs text-[#7a6e5e]">
         {isNo
           ? "Abonnementer fornyes automatisk. Avbestill når som helst i App Store."
           : "Subscriptions renew automatically. Cancel anytime in App Store settings."}
