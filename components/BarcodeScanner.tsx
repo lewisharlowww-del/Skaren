@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Camera, ScanLine, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Camera, RotateCcw, ScanLine, Settings, X } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
+import { App } from "@capacitor/app";
 import { Spinner } from "@/components/Spinner";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { vibrate } from "@/lib/haptics";
+import { t } from "@/lib/i18n";
+import { useLang } from "@/lib/language-context";
+
+type CameraErrorKind = "none" | "blocked" | "https" | "generic";
 
 type BarcodeScannerProps = {
   disabled?: boolean;
@@ -26,13 +32,35 @@ const supportedFormats: Html5QrcodeSupportedFormats[] = [
   Html5QrcodeSupportedFormats.ITF
 ];
 
+/**
+ * Classifies a getUserMedia / html5-qrcode failure. A denied permission is the
+ * important case: on iOS the OS will NOT prompt again once denied, so the app
+ * must show its own "enable in Settings" recovery instead of silently failing.
+ */
+function classifyCameraError(caught: unknown): CameraErrorKind {
+  const name = (caught as { name?: string })?.name ?? "";
+  const message = (caught instanceof Error ? caught.message : String(caught ?? "")).toLowerCase();
+
+  // Insecure-context failures are about HTTPS, not permission — check first.
+  if (message.includes("https") || message.includes("secure context")) {
+    return "https";
+  }
+  if (name === "NotAllowedError" || name === "SecurityError" || message.includes("permission") || message.includes("notallowed") || message.includes("denied")) {
+    return "blocked";
+  }
+  return "generic";
+}
+
 export function BarcodeScanner({ disabled = false, autoStart = false, hideControls = false, onDetected }: BarcodeScannerProps) {
+  const { lang } = useLang();
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const detectedRef = useRef(false);
   const autoStartedRef = useRef(false);
   const [isStarting, setIsStarting] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const [cameraError, setCameraError] = useState("");
+  const [errorKind, setErrorKind] = useState<CameraErrorKind>("none");
+
+  const isNative = Capacitor.isNativePlatform();
 
   async function stopScanner() {
     const scanner = scannerRef.current;
@@ -47,10 +75,10 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     setIsStarting(false);
   }
 
-  async function startScanner() {
+  const startScanner = useCallback(async () => {
     if (disabled || isStarting || isScanning) return;
 
-    setCameraError("");
+    setErrorKind("none");
     setIsStarting(true);
     detectedRef.current = false;
     vibrate(18);
@@ -60,11 +88,13 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
       const isSecureCameraContext = window.isSecureContext || isLocalhost;
 
       if (!isSecureCameraContext) {
-        throw new Error("Camera scanning needs HTTPS on phones. Use manual barcode entry here, or test camera scanning from a secure preview link.");
+        const err = new Error("Camera scanning needs HTTPS on phones.");
+        err.name = "SecurityError";
+        throw err;
       }
 
       if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error("Camera scanning is not available in this browser. You can still enter the barcode manually.");
+        throw new Error("Camera scanning is not available in this browser.");
       }
 
       const scanner = new Html5Qrcode(scannerElementId, {
@@ -113,21 +143,20 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
       scannerRef.current?.clear();
       scannerRef.current = null;
       setIsScanning(false);
-
-      const message = caught instanceof Error ? caught.message : "";
-      const permissionDenied = message.toLowerCase().includes("permission") || message.toLowerCase().includes("notallowed");
-      const needsHttps = message.toLowerCase().includes("https") || message.toLowerCase().includes("secure");
-
-      setCameraError(
-        needsHttps
-          ? "Camera scanning needs HTTPS on phones. Manual barcode entry works here, or use a secure preview link for camera testing."
-          : permissionDenied
-          ? "Camera permission was blocked. Allow camera access in your browser settings or enter the barcode manually."
-          : "We could not open the camera. Try better lighting, switch browsers, or enter the barcode manually."
-      );
+      setErrorKind(classifyCameraError(caught));
     } finally {
       setIsStarting(false);
     }
+  }, [disabled, hideControls, isScanning, isStarting, onDetected]);
+
+  function openAppSettings() {
+    if (isNative) {
+      // Deep-link straight to this app's settings page (iOS & Android).
+      window.open("app-settings:", "_self");
+      return;
+    }
+    // On web there is no settings deep link; retry is the best we can offer.
+    void startScanner();
   }
 
   useEffect(() => {
@@ -145,9 +174,35 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     }, 350);
 
     return () => window.clearTimeout(timer);
-    // startScanner reads the latest component state; this effect should only run once for auto-start.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoStart, disabled]);
+  }, [autoStart, disabled, startScanner]);
+
+  // When the user leaves to grant permission in Settings and returns, retry
+  // automatically so they don't have to hunt for a button. Native: Capacitor
+  // appStateChange; web: visibilitychange.
+  useEffect(() => {
+    if (errorKind !== "blocked") return;
+
+    let cleanup = () => {};
+
+    if (isNative) {
+      const handlePromise = App.addListener("appStateChange", ({ isActive }) => {
+        if (isActive && !isScanning && !isStarting) void startScanner();
+      });
+      cleanup = () => {
+        void handlePromise.then((handle) => handle.remove());
+      };
+    } else {
+      const onVisible = () => {
+        if (document.visibilityState === "visible" && !isScanning && !isStarting) void startScanner();
+      };
+      document.addEventListener("visibilitychange", onVisible);
+      cleanup = () => document.removeEventListener("visibilitychange", onVisible);
+    }
+
+    return cleanup;
+  }, [errorKind, isNative, isScanning, isStarting, startScanner]);
+
+  const showBlockedOverlay = errorKind === "blocked";
 
   return (
     <div className={hideControls ? "h-full w-full" : "space-y-3"}>
@@ -158,7 +213,49 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
       <div className={`relative bg-black ${hideControls ? "h-full w-full" : "overflow-hidden rounded-[2rem] bg-lime-50"}`}>
         <div id={scannerElementId} className={`${hideControls ? "h-full w-full" : "min-h-56 w-full"} ${isScanning ? "bg-black" : ""}`} />
 
-        {!hideControls && !isScanning ? (
+        {/* Permission-blocked recovery overlay — shown in BOTH modes so the
+            embedded scan screen no longer dead-ends after a denial. */}
+        {showBlockedOverlay ? (
+          <div className="absolute inset-0 z-20 grid place-items-center bg-[#1a2617]/92 px-6 text-center backdrop-blur-sm">
+            <div className="max-w-xs">
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-white/12 text-white">
+                <Camera className="h-8 w-8" />
+              </div>
+              <p className="mt-4 text-[17px] font-black text-white">{t("camera_blocked_title", lang)}</p>
+              <p className="mt-2 text-[13px] leading-relaxed text-white/80">
+                {isNative ? t("camera_blocked_body", lang) : t("camera_blocked_body_web", lang)}
+              </p>
+              {isNative ? (
+                <p className="mt-3 inline-block rounded-lg bg-white/12 px-3 py-1.5 text-[12px] font-semibold text-white/90">
+                  {t("camera_settings_path", lang)}
+                </p>
+              ) : null}
+              <div className="mt-5 flex flex-col gap-2">
+                {isNative ? (
+                  <button
+                    type="button"
+                    onClick={openAppSettings}
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-[14px] font-bold text-[#1a2617]"
+                  >
+                    <Settings className="h-4 w-4" />
+                    {t("camera_open_settings", lang)}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => void startScanner()}
+                  disabled={isStarting}
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/30 px-5 py-3 text-[14px] font-bold text-white disabled:opacity-60"
+                >
+                  {isStarting ? <Spinner size={18} /> : <RotateCcw className="h-4 w-4" />}
+                  {t("camera_try_again", lang)}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {!hideControls && !isScanning && !showBlockedOverlay ? (
           <div className="absolute inset-0 grid place-items-center p-5 text-center">
             <div>
               <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-white text-ink shadow-soft">
@@ -180,7 +277,7 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={startScanner}
+            onClick={() => void startScanner()}
             disabled={disabled || isStarting || isScanning}
             className="focus-ring inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 font-bold text-white shadow-phone disabled:bg-soil-600"
           >
@@ -201,7 +298,11 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
         </div>
       )}
 
-      {!hideControls && cameraError ? <p className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-800">{cameraError}</p> : null}
+      {!hideControls && (errorKind === "https" || errorKind === "generic") ? (
+        <p className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-800">
+          {errorKind === "https" ? t("camera_error_https", lang) : t("camera_error_generic", lang)}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -26,6 +26,15 @@ export const translations = {
     scan_or_explore: 'eller utforsk',
     scan_search_products: 'Søk etter produkter',
     scan_find_without_scanning: 'Finn uten å skanne',
+    // Camera permission / errors
+    camera_blocked_title: 'Kameratilgang er av',
+    camera_blocked_body: 'Skaren bruker kameraet til å skanne strekkoder. Slå på kameratilgang for Skaren i Innstillinger, og prøv igjen.',
+    camera_blocked_body_web: 'Tillat kameratilgang for dette nettstedet i nettleserinnstillingene, og prøv igjen.',
+    camera_settings_path: 'Innstillinger → Skaren → Kamera',
+    camera_try_again: 'Prøv igjen',
+    camera_open_settings: 'Åpne Innstillinger',
+    camera_error_https: 'Kamera-skanning krever HTTPS på telefoner. Du kan skrive inn strekkoden manuelt nedenfor.',
+    camera_error_generic: 'Vi fikk ikke åpnet kameraet. Prøv igjen, eller skriv inn strekkoden manuelt nedenfor.',
     // Product page
     product_grades: 'Karakterer',
     product_health: 'Helse',
@@ -260,6 +269,15 @@ export const translations = {
     scan_or_explore: 'or explore',
     scan_search_products: 'Search products',
     scan_find_without_scanning: 'Find without scanning',
+    // Camera permission / errors
+    camera_blocked_title: 'Camera access is off',
+    camera_blocked_body: 'Skaren uses the camera to scan barcodes. Turn on camera access for Skaren in Settings, then try again.',
+    camera_blocked_body_web: 'Allow camera access for this site in your browser settings, then try again.',
+    camera_settings_path: 'Settings → Skaren → Camera',
+    camera_try_again: 'Try again',
+    camera_open_settings: 'Open Settings',
+    camera_error_https: 'Camera scanning needs HTTPS on phones. You can type the barcode manually below.',
+    camera_error_generic: 'We could not open the camera. Try again, or type the barcode manually below.',
     // Product page
     product_grades: 'Grades',
     product_health: 'Health',
