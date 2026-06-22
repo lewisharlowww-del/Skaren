@@ -12,7 +12,7 @@ Skaren is a mobile-first Next.js MVP that lets users enter a product barcode, fe
 - Open Food Facts barcode lookup for eco, nutrition, packaging, origin, and ingredient signals
 - OpenAI for AI product summaries and alternatives
 - Mobile camera barcode scanning with `html5-qrcode`
-- Stripe placeholder structure for future payments
+- RevenueCat for in-app subscriptions (iOS/Android)
 
 ## Local Setup
 
@@ -39,8 +39,6 @@ SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 OPENAI_API_KEY=your-openai-key
 OPENAI_MODEL=gpt-5.4-nano
 KASSALAPP_API_KEY=your-kassalapp-key
-STRIPE_SECRET_KEY=your-stripe-secret-key
-STRIPE_WEBHOOK_SECRET=whsec_your-stripe-webhook-secret
 ```
 
 5. Create the `scans` table in Supabase SQL editor:
@@ -107,48 +105,7 @@ using (true)
 with check (true);
 ```
 
-8. Create the supporter status table in Supabase SQL editor:
-
-```sql
-create table if not exists public.supporters (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  stripe_customer_id text,
-  subscription_id text,
-  supporter_status text not null default 'inactive',
-  current_period_end timestamptz,
-  amount_nok integer,
-  customer_email text,
-  checkout_session_id text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create unique index if not exists supporters_stripe_customer_id_idx
-on public.supporters (stripe_customer_id)
-where stripe_customer_id is not null;
-
-create unique index if not exists supporters_subscription_id_idx
-on public.supporters (subscription_id)
-where subscription_id is not null;
-
-alter table public.supporters enable row level security;
-
-create policy "Users can read their own supporter status"
-on public.supporters for select
-to authenticated
-using (auth.uid() = user_id);
-```
-
-The same SQL is also saved in `supabase/supporters.sql`.
-
-9. Configure Stripe webhooks:
-
-- Add a webhook endpoint in Stripe pointing to `https://your-domain.com/api/stripe/webhook`.
-- Listen for `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_succeeded`, and `invoice.payment_failed`.
-- Copy the webhook signing secret into `STRIPE_WEBHOOK_SECRET`.
-- Keep `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` server-only.
-
-10. Run the app:
+8. Run the app:
 
 ```bash
 npm run dev
@@ -209,12 +166,12 @@ Skaren shows separate Health and Eco grades instead of one combined score.
 - `app/dashboard/page.tsx` - monthly stats, streak, badges, and history
 - `app/scan/page.tsx` - manual barcode input and Open Food Facts lookup
 - `app/product/[barcode]/page.tsx` - product result, grades, nutrition, allergens, and ingredients
-- `app/pricing/page.tsx` - Stripe-powered Support Skaren page
+- `app/pricing/page.tsx` - Skaren Pro subscription page (RevenueCat in-app purchases)
 - `lib/kassalapp.ts` - Norwegian product lookup, official image handling, and store prices
 - `lib/openfoodfacts.ts` - Open Food Facts eco data mapping
 - `lib/ecoscore.ts` - Eco grade and nutrition grade mapping
 - `lib/supabase.ts` - Supabase browser client
 
-## Stripe Support Payments
+## Subscriptions
 
-Skaren supports one-time NOK support payments through Stripe Checkout. Keep secret Stripe keys on the server and do not expose them through `NEXT_PUBLIC` variables.
+Skaren Pro is sold through RevenueCat in-app purchases on iOS and Android (App Store / Google Play billing). There is no external payment processor.
