@@ -8,39 +8,18 @@ import { useLang } from "@/lib/language-context";
 import { configurePurchases, getSubscriptionPlans, purchaseMonthly, purchaseYearly, restorePurchases } from "@/lib/revenuecat";
 import type { SubscriptionPlanInfo, SubscriptionPlans, SubscriptionTrial } from "@/lib/revenuecat";
 
-const freeFeatures = {
-  en: [
-    "Scan any product barcode",
-    "Health and Eco grades",
-    "Ingredients list",
-    "Basic nutrition table (per 100g)",
-    "30 days of scan history",
-  ],
-  no: [
-    "Skann alle produktstrekkoder",
-    "Helse- og miljøkarakterer",
-    "Ingrediensliste",
-    "Grunnleggende næringstabel (per 100g)",
-    "30 dagers skannehistorikk",
-  ],
-};
-
 const proFeatures = {
   en: [
-    "NOVA processing level, additives & allergens",
-    "Daily intake progress bars for every nutrient",
-    "AI-powered key health insights per product",
-    "Shopping list with health grade tracking",
-    "Complete scan history — no 30-day limit",
-    "Product search without scanning",
+    "Processing level, additives & allergens",
+    "Daily intake progress per nutrient",
+    "AI health insights per product",
+    "Unlimited history + product search",
   ],
   no: [
-    "NOVA-prosesseringsnivå, tilsetningsstoffer og allergener",
-    "Daglige inntaksindikatorer for alle næringsstoffer",
-    "AI-drevne helseinnsikter per produkt",
-    "Handleliste med helsekarakter-sporing",
-    "Komplett skannehistorikk — ingen 30-dagersgrense",
-    "Produktsøk uten skanning",
+    "Prosesseringsnivå, tilsetningsstoffer og allergener",
+    "Daglig inntaksprogresjon per næringsstoff",
+    "AI-helseinnsikter per produkt",
+    "Ubegrenset historikk + produktsøk",
   ],
 };
 
@@ -81,21 +60,6 @@ function pluralizeUnit(unit: string, count: number, isNo: boolean): string {
   if (u === "MONTH") return plural ? "months" : "month";
   if (u === "YEAR") return plural ? "years" : "year";
   return "";
-}
-
-/** "7 days free" / "7 dager gratis" derived from the real StoreKit intro offer. */
-function formatTrialBadge(trial: SubscriptionTrial | null, isNo: boolean): string | null {
-  if (!trial || !trial.isFree || trial.periodNumberOfUnits <= 0) return null;
-  const unit = pluralizeUnit(trial.periodUnit, trial.periodNumberOfUnits, isNo);
-  if (!unit) return null;
-  return isNo
-    ? `${trial.periodNumberOfUnits} ${unit} gratis`
-    : `${trial.periodNumberOfUnits} ${unit} free`;
-}
-
-function formatTrialSubtitle(trial: SubscriptionTrial | null, isNo: boolean): string | null {
-  if (!trial || !trial.isFree || trial.periodNumberOfUnits <= 0) return null;
-  return isNo ? "Ingen betaling før prøveperioden er over" : "No charge until trial ends";
 }
 
 /** CTA label: trial-aware, falls back to a plain subscribe label when no trial exists. */
@@ -148,7 +112,7 @@ export default function PricingPage() {
   const isNo = lang === "no";
   const router = useRouter();
 
-  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("yearly");
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("monthly");
   const [pendingAction, setPendingAction] = useState<"purchase" | "restore" | null>(null);
   const [toast, setToast] = useState<Toast>(null);
   const [plans, setPlans] = useState<SubscriptionPlans | null>(null);
@@ -169,13 +133,15 @@ export default function PricingPage() {
     };
   }, []);
 
+  // Per-plan prices for BOTH cards (so monthly and yearly are always visible
+  // and never misleading about which one is being charged).
+  const monthlyPrice = plans?.monthly?.priceString || FALLBACK_PRICES.monthly.price;
+  const yearlyPrice = plans?.yearly?.priceString || FALLBACK_PRICES.yearly.price;
+  const yearlyPerMonth = plans?.yearly?.pricePerMonthString ?? FALLBACK_PRICES.yearly.perMonth;
+
   const activePlan: SubscriptionPlanInfo | null =
     selectedPlan === "yearly" ? plans?.yearly ?? null : plans?.monthly ?? null;
-  const fallback = FALLBACK_PRICES[selectedPlan];
-  const priceLabel = activePlan?.priceString || fallback.price;
-  const perMonthLabel = activePlan?.pricePerMonthString ?? fallback.perMonth;
-  const trialBadge = formatTrialBadge(activePlan?.trial ?? null, isNo);
-  const trialSubtitle = formatTrialSubtitle(activePlan?.trial ?? null, isNo);
+  const priceLabel = selectedPlan === "yearly" ? yearlyPrice : monthlyPrice;
   const ctaLabel = formatCtaLabel(activePlan?.trial ?? null, isNo);
   const renewalTerms = formatRenewalTerms(selectedPlan, priceLabel, activePlan?.trial ?? null, isNo);
 
@@ -268,179 +234,199 @@ export default function PricingPage() {
     );
   }
 
+  const planLabel = (plan: "monthly" | "yearly") =>
+    plan === "yearly" ? (isNo ? "Årlig" : "Yearly") : isNo ? "Månedlig" : "Monthly";
+
   return (
     <main
-      className="relative mx-auto w-full max-w-[430px] px-4 pb-36 sm:max-w-2xl"
-      style={{ background: "#f5f0e8", minHeight: "100dvh", paddingTop: "calc(env(safe-area-inset-top) + 20px)" }}
+      className="relative mx-auto flex w-full max-w-[430px] flex-col px-5 sm:max-w-md"
+      style={{
+        background: "#f5f0e8",
+        minHeight: "100dvh",
+        paddingTop: "calc(env(safe-area-inset-top) + 16px)",
+        paddingBottom: "calc(env(safe-area-inset-bottom) + 20px)",
+      }}
     >
-      {/* Back */}
-      <Link
-        href="/scan"
-        className="mb-6 inline-flex items-center gap-2 text-sm font-bold text-[#1A5C3A]"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        {isNo ? "Tilbake" : "Back"}
-      </Link>
-
-      {/* Header */}
-      <div className="mb-8 text-center">
-        <span className="mb-3 inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-1.5 text-sm font-bold text-amber-800">
-          <Crown className="h-4 w-4" />
-          {isNo ? "Oppgrader til Pro" : "Upgrade to Pro"}
-        </span>
-        <h1 className="text-[1.9rem] font-black leading-tight tracking-tight text-[#1A2410]">
-          {isNo ? "Skaren Premium" : "Skaren Premium"}
-        </h1>
-        <p className="mt-2 text-sm font-medium text-[#7a6e5e]">
-          {isNo ? "Forstå hva som er i maten din." : "Understand what's in your food."}
-        </p>
-      </div>
-
-      {/* Plan toggle */}
-      <div className="mb-5 grid grid-cols-2 gap-2 rounded-2xl bg-white/60 p-1.5">
-        <button
-          type="button"
-          onClick={() => setSelectedPlan("monthly")}
-          className={`rounded-xl px-3 py-2.5 text-sm font-bold transition ${
-            selectedPlan === "monthly"
-              ? "bg-white text-[#1A5C3A] shadow-sm"
-              : "text-[#7a6e5e]"
-          }`}
-        >
-          {isNo ? "Månedlig" : "Monthly"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setSelectedPlan("yearly")}
-          className={`relative rounded-xl px-3 py-2.5 text-sm font-bold transition ${
-            selectedPlan === "yearly"
-              ? "bg-white text-[#1A5C3A] shadow-sm"
-              : "text-[#7a6e5e]"
-          }`}
-        >
-          {isNo ? "Årlig" : "Yearly"}
-          {selectedPlan !== "yearly" && (
-            <span className="absolute -right-1 -top-2 rounded-full bg-[#4a8c5c] px-1.5 py-0.5 text-[10px] font-bold text-white">
-              -17%
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* Pro card */}
-      <div className="relative mb-4 overflow-hidden rounded-[1.8rem] border-2 border-[#2d4a26] bg-[#2d4a26] p-5 sm:p-6">
-        {selectedPlan === "yearly" && (
-          <div className="absolute right-5 top-5 rounded-full bg-[#4a8c5c] px-3 py-1 text-xs font-bold text-[#c8f0c8]">
-            {isNo ? "ANBEFALT" : "RECOMMENDED"}
-          </div>
-        )}
-
-        <div className="mb-1 flex items-end gap-3">
-          <p className="text-[2.2rem] font-black leading-none text-white">
-            {priceLabel}
-          </p>
-          {trialBadge && (
-            <span className="mb-1 rounded-full bg-[#4a8c5c] px-2.5 py-0.5 text-xs font-bold text-[#c8f0c8]">
-              {trialBadge}
-            </span>
-          )}
-        </div>
-        <p className="mb-1 text-sm text-[#a0c8a0]">
-          {selectedPlan === "yearly"
-            ? perMonthLabel
-              ? (isNo ? `per år · ${perMonthLabel}/mnd` : `per year · ${perMonthLabel}/mo`)
-              : (isNo ? "per år" : "per year")
-            : (isNo ? "per måned" : "per month")}
-        </p>
-        {trialSubtitle && (
-          <p className="mb-5 text-xs text-[#79a879]">
-            {trialSubtitle}
-          </p>
-        )}
-
-        <ul className="mb-6 space-y-2.5">
-          {(isNo ? proFeatures.no : proFeatures.en).map((f) => (
-            <li key={f} className="flex items-start gap-2.5 text-sm text-[#c8f0c8]">
-              <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#4a8c5c]">
-                <Check className="h-3 w-3" strokeWidth={3} />
-              </span>
-              {f}
-            </li>
-          ))}
-        </ul>
-
-        <button
-          type="button"
-          onClick={() => void handlePurchase()}
-          disabled={pendingAction !== null}
-          className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-sm font-bold text-[#1A5C3A] disabled:opacity-60"
-        >
-          {pendingAction === "purchase"
-            ? <LoaderCircle className="h-4 w-4 animate-spin" />
-            : <Crown className="h-4 w-4" />}
-          {ctaLabel}
-        </button>
-
-        {/* Guideline 3.1.2: exact charge, billing period, auto-renew + cancel, shown with the CTA. */}
-        <p className="mt-3 text-center text-[12px] leading-snug text-white/90">
-          {renewalTerms}
-        </p>
-
+      {/* Top bar: Back + Restore */}
+      <div className="mb-4 flex items-center justify-between">
+        <Link href="/scan" className="inline-flex items-center gap-1.5 text-[15px] font-bold text-[#2d4a26]">
+          <ArrowLeft className="h-[18px] w-[18px]" />
+          {isNo ? "Tilbake" : "Back"}
+        </Link>
         <button
           type="button"
           onClick={() => void handleRestore()}
           disabled={pendingAction !== null}
-          className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-2xl text-sm font-bold text-[#a0c8a0] disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#4a8c5c] disabled:opacity-60"
         >
-          {pendingAction === "restore"
-            ? <LoaderCircle className="h-4 w-4 animate-spin" />
-            : <RotateCcw className="h-3.5 w-3.5" />}
-          {isNo ? "Gjenopprett kjøp" : "Restore purchase"}
+          {pendingAction === "restore" ? (
+            <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RotateCcw className="h-3.5 w-3.5" />
+          )}
+          {isNo ? "Gjenopprett" : "Restore"}
+        </button>
+      </div>
+
+      {/* Hero */}
+      <div className="mb-4 text-center">
+        <span className="mb-2.5 inline-flex items-center gap-1.5 rounded-full bg-[#f6ecd2] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.13em] text-[#b8923e]">
+          {isNo ? "Oppgrader til Pro" : "Upgrade to Pro"}
+        </span>
+        <h1 className="text-[26px] font-black leading-[1.08] tracking-tight text-[#1e1e18]">
+          {isNo ? (
+            <>Vit <span className="text-[#2d4a26]">nøyaktig</span> hva<br />som er i maten din</>
+          ) : (
+            <>Know <span className="text-[#2d4a26]">exactly</span> what&apos;s<br />in your food</>
+          )}
+        </h1>
+        <p className="mx-auto mt-2 max-w-[280px] text-[13.5px] font-medium leading-snug text-[#786858]">
+          {isNo
+            ? "Dypere analyse på hver skanning. Si opp når som helst."
+            : "Deeper analysis on every scan. Cancel anytime."}
+        </p>
+      </div>
+
+      {/* Pro features */}
+      <div className="mb-4 rounded-[20px] border border-black/[0.08] bg-white px-4 py-1 shadow-[0_8px_24px_rgba(40,33,22,0.05)]">
+        {(isNo ? proFeatures.no : proFeatures.en).map((f, i, arr) => (
+          <div
+            key={f}
+            className={`flex items-center gap-3 py-2.5 text-[13.5px] font-semibold leading-tight text-[#1e1e18] ${
+              i < arr.length - 1 ? "border-b border-black/[0.08]" : ""
+            }`}
+          >
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-[#eaf3de] text-[#2d4a26]">
+              <Check className="h-3.5 w-3.5" strokeWidth={3} />
+            </span>
+            <span className="min-w-0 flex-1">{f}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Plan picker label */}
+      <div className="mb-2.5 flex items-center justify-between">
+        <p className="text-[12.5px] font-extrabold text-[#1e1e18]">
+          {isNo ? "Velg plan" : "Choose your plan"}
+        </p>
+        <span className="rounded-full bg-[#eaf3de] px-2.5 py-1 text-[11px] font-bold text-[#4a8c5c]">
+          {isNo ? "7 dager gratis" : "7 days free"}
+        </span>
+      </div>
+
+      {/* Both plans, always visible */}
+      <div className="mb-3 flex flex-col gap-2.5">
+        {/* Monthly */}
+        <button
+          type="button"
+          onClick={() => setSelectedPlan("monthly")}
+          className={`relative flex items-center gap-3 rounded-2xl border-[1.5px] bg-white p-3.5 text-left transition ${
+            selectedPlan === "monthly"
+              ? "border-[#2d4a26] bg-[#fbfdfa] shadow-[0_10px_26px_rgba(45,74,38,0.12)]"
+              : "border-black/[0.13]"
+          }`}
+        >
+          <span
+            className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${
+              selectedPlan === "monthly" ? "border-[#2d4a26] bg-[#2d4a26]" : "border-[#cdc6b8]"
+            }`}
+          >
+            {selectedPlan === "monthly" && <span className="h-[7px] w-[7px] rounded-full bg-white" />}
+          </span>
+          <span className="flex-1">
+            <span className="block text-[15px] font-extrabold text-[#1e1e18]">{planLabel("monthly")}</span>
+            <span className="mt-0.5 block text-[12px] font-medium text-[#786858]">
+              {isNo ? `Belastes ${monthlyPrice} hver måned` : `Billed ${monthlyPrice} every month`}
+            </span>
+          </span>
+          <span className="text-right">
+            <span className="block text-[17px] font-black tracking-tight text-[#1e1e18]">{monthlyPrice}</span>
+            <span className="mt-0.5 block text-[11px] font-semibold text-[#8a7a68]">
+              {isNo ? "per måned" : "per month"}
+            </span>
+          </span>
         </button>
 
-        <p className="mt-4 text-center text-[12px] text-white/90">
-          {isNo ? "Ved å abonnere godtar du våre" : "By subscribing you agree to our"}{" "}
-          <Link href="/terms" className="underline underline-offset-2 text-white font-bold">{isNo ? "Brukervilkår" : "Terms of Use"}</Link>
-          {" "}{isNo ? "og" : "and"}{" "}
-          <Link href="/privacy" className="underline underline-offset-2 text-white font-bold">{isNo ? "Personvernerklæring" : "Privacy Policy"}</Link>.
-        </p>
+        {/* Yearly */}
+        <button
+          type="button"
+          onClick={() => setSelectedPlan("yearly")}
+          className={`relative flex items-center gap-3 rounded-2xl border-[1.5px] bg-white p-3.5 text-left transition ${
+            selectedPlan === "yearly"
+              ? "border-[#2d4a26] bg-[#fbfdfa] shadow-[0_10px_26px_rgba(45,74,38,0.12)]"
+              : "border-black/[0.13]"
+          }`}
+        >
+          <span className="absolute -top-[9px] right-3.5 rounded-md bg-[#2d4a26] px-2.5 py-1 text-[9px] font-extrabold tracking-[0.06em] text-[#d8f0d2]">
+            {isNo ? "SPAR 17%" : "SAVE 17%"}
+          </span>
+          <span
+            className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${
+              selectedPlan === "yearly" ? "border-[#2d4a26] bg-[#2d4a26]" : "border-[#cdc6b8]"
+            }`}
+          >
+            {selectedPlan === "yearly" && <span className="h-[7px] w-[7px] rounded-full bg-white" />}
+          </span>
+          <span className="flex-1">
+            <span className="block text-[15px] font-extrabold text-[#1e1e18]">{planLabel("yearly")}</span>
+            <span className="mt-0.5 block text-[12px] font-medium text-[#786858]">
+              {isNo ? `Belastes ${yearlyPrice} én gang i året` : `Billed ${yearlyPrice} once a year`}
+            </span>
+          </span>
+          <span className="text-right">
+            <span className="block text-[17px] font-black tracking-tight text-[#1e1e18]">{yearlyPrice}</span>
+            {yearlyPerMonth && (
+              <span className="mt-0.5 block text-[11px] font-semibold text-[#8a7a68]">
+                {isNo ? `≈ ${yearlyPerMonth}/mnd` : `≈ ${yearlyPerMonth}/mo`}
+              </span>
+            )}
+          </span>
+        </button>
       </div>
 
-      {/* Free card */}
-      <div className="rounded-[1.8rem] border border-black/8 bg-white p-5 sm:p-6">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-base font-black text-[#2d3028]">Free</h2>
-          <span className="rounded-full bg-[#f0ebe0] px-3 py-1 text-xs font-bold text-[#7a6e5e]">
-            {isNo ? "Nåværende plan" : "Current plan"}
-          </span>
-        </div>
-        <p className="mb-1 text-2xl font-black text-[#2d3028]">0 kr</p>
-        <p className="mb-4 text-sm text-[#9a8e7e]">
-          {isNo ? "Alltid gratis, ingen konto nødvendig" : "Always free, no account needed"}
+      {/* Trial reassurance */}
+      <div className="mb-auto flex items-center justify-center gap-1.5 text-[12px] font-bold text-[#4a8c5c]">
+        <Check className="h-3.5 w-3.5" strokeWidth={3} />
+        {isNo ? "Gratis i 7 dager · ingenting belastes i dag" : "Free for 7 days · nothing charged today"}
+      </div>
+
+      {/* CTA */}
+      <div className="mt-3.5">
+        <button
+          type="button"
+          onClick={() => void handlePurchase()}
+          disabled={pendingAction !== null}
+          className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#2d4a26] text-[16px] font-extrabold text-white shadow-[0_12px_28px_rgba(45,74,38,0.30)] transition active:scale-[0.985] disabled:opacity-60"
+        >
+          {pendingAction === "purchase" ? (
+            <LoaderCircle className="h-[18px] w-[18px] animate-spin" />
+          ) : (
+            <Crown className="h-[18px] w-[18px]" />
+          )}
+          {ctaLabel}
+        </button>
+
+        {/* Guideline 3.1.2 disclosure: exact plan, charge, auto-renew + cancel */}
+        <p className="mt-2.5 px-1.5 text-center text-[10.5px] leading-relaxed text-[#9a8e7e]">
+          {isNo ? "Du valgte " : "You selected "}
+          <b className="text-[#2d4a26]">{planLabel(selectedPlan)}</b>
+          {": "}
+          {renewalTerms}{" "}
+          <Link href="/terms" className="font-bold text-[#2d4a26]">{isNo ? "Vilkår" : "Terms"}</Link>
+          {" · "}
+          <Link href="/privacy" className="font-bold text-[#2d4a26]">{isNo ? "Personvern" : "Privacy"}</Link>
         </p>
-        <ul className="space-y-2">
-          {(isNo ? freeFeatures.no : freeFeatures.en).map((f) => (
-            <li key={f} className="flex items-start gap-2.5 text-sm text-[#7a6e5e]">
-              <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#eaf3de] text-[#2d4a26]">
-                <Check className="h-3 w-3" strokeWidth={3} />
-              </span>
-              {f}
-            </li>
-          ))}
-        </ul>
+
         <Link
           href="/scan"
-          className="mt-5 flex h-11 w-full items-center justify-center rounded-2xl border border-[#e0d8cc] bg-[#f7f2ea] text-sm font-bold text-[#2d3028]"
+          className="mt-2.5 block text-center text-[12.5px] font-bold text-[#786858]"
         >
-          {isNo ? "Fortsett gratis" : "Keep scanning free"}
+          {isNo ? "Kanskje senere — " : "Maybe later — "}
+          <span className="underline underline-offset-[3px]">
+            {isNo ? "fortsett gratis" : "keep the free plan"}
+          </span>
         </Link>
       </div>
-
-      <p className="mt-6 text-center text-xs text-[#7a6e5e]">
-        {isNo
-          ? "Abonnementer fornyes automatisk. Avbestill når som helst i App Store."
-          : "Subscriptions renew automatically. Cancel anytime in App Store settings."}
-      </p>
 
       {/* Toast */}
       {toast && (

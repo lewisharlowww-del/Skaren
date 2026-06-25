@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Skaren Paywall — v4 (no scroll)</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  :root{
+    --bg:#f5f0e8; --forest:#2d4a26; --leaf:#4a8c5c; --leaf-soft:#eaf3de;
+    --ink:#1e1e18; --muted:#786858; --faint:#8a7a68;
+    --line:rgba(33,28,20,.08); --line2:rgba(33,28,20,.13);
+    --gold:#b8923e; --gold-bg:#f6ecd2; --white:#fff;
+  }
+  body{font-family:"Satoshi",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:#cfc8bb;display:flex;gap:44px;justify-content:center;align-items:flex-start;padding:48px 24px;flex-wrap:wrap}
+  .stage{display:flex;flex-direction:column;align-items:center;gap:14px}
+  .tag{font:700 13px/1 sans-serif;color:#4b4536}
+  .phone{width:393px;height:852px;background:var(--bg);border-radius:46px;overflow:hidden;position:relative;
+    box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 34px 90px rgba(40,33,22,.30);display:flex;flex-direction:column}
+  .phone::before{content:"";position:absolute;top:11px;left:50%;transform:translateX(-50%);width:122px;height:32px;background:#0c0c0c;border-radius:20px;z-index:50}
+
+  /* full screen, NO scroll: flex column that fills the height */
+  .page{flex:1;display:flex;flex-direction:column;padding:58px 22px 26px}
+
+  /* top */
+  .nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .back{display:inline-flex;align-items:center;gap:7px;color:var(--forest);font-size:15px;font-weight:700}
+  .back svg{width:18px;height:18px}
+  .restore-top{font-size:13px;font-weight:700;color:var(--leaf);background:none;border:none;cursor:pointer}
+
+  /* hero (compact) */
+  .hero{text-align:center;margin-bottom:18px}
+  .kicker{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--gold);background:var(--gold-bg);padding:5px 12px;border-radius:999px;margin-bottom:11px}
+  h1{font-size:26px;line-height:1.08;font-weight:850;letter-spacing:-.025em;color:var(--ink)}
+  h1 em{font-style:normal;color:var(--forest)}
+  .lede{font-size:13.5px;line-height:1.4;color:var(--muted);font-weight:500;margin:9px auto 0;max-width:280px}
+
+  /* features (compact card) */
+  .feat-card{background:var(--white);border:1px solid var(--line);border-radius:20px;padding:5px 16px;margin-bottom:18px;box-shadow:0 8px 24px rgba(40,33,22,.05)}
+  .feat{display:flex;align-items:center;gap:12px;padding:9.5px 2px;font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.25;border-bottom:1px solid var(--line)}
+  .feat:last-child{border-bottom:none}
+  .tick{width:24px;height:24px;border-radius:7px;background:var(--leaf-soft);color:var(--forest);display:grid;place-items:center;flex-shrink:0}
+  .tick svg{width:14px;height:14px}
+
+  .pick-label{font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+  .pick-label span{font-size:11px;font-weight:700;color:var(--leaf);background:var(--leaf-soft);padding:4px 9px;border-radius:999px}
+
+  /* both plans visible, no scroll */
+  .plans{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+  .plan{position:relative;background:var(--white);border:1.5px solid var(--line2);border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:.15s}
+  .plan.sel{border-color:var(--forest);background:#fbfdfa;box-shadow:0 10px 26px rgba(45,74,38,.12)}
+  .radio{width:20px;height:20px;border-radius:50%;border:2px solid #cdc6b8;flex-shrink:0;display:grid;place-items:center;transition:.15s}
+  .plan.sel .radio{border-color:var(--forest);background:var(--forest)}
+  .plan.sel .radio::after{content:"";width:7px;height:7px;border-radius:50%;background:#fff}
+  .pinfo{flex:1;min-width:0}
+  .pname{font-size:15px;font-weight:800;color:var(--ink)}
+  .pdesc{font-size:12px;color:var(--muted);margin-top:2px;font-weight:500}
+  .pprice{text-align:right;flex-shrink:0}
+  .pprice b{font-size:17px;font-weight:850;color:var(--ink);letter-spacing:-.01em}
+  .pprice .per{display:block;font-size:11px;color:var(--faint);margin-top:2px;font-weight:600}
+  .ribbon{position:absolute;top:-9px;right:14px;background:var(--forest);color:#d8f0d2;font-size:9px;font-weight:800;letter-spacing:.06em;padding:4px 9px;border-radius:7px}
+
+  .reassure{display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;font-weight:700;color:var(--leaf);margin-bottom:auto;padding-top:2px}
+  .reassure svg{width:14px;height:14px}
+
+  /* CTA pinned at the bottom of the same screen (no separate dock, no scroll) */
+  .cta-wrap{margin-top:14px}
+  .cta{width:100%;height:54px;border:none;border-radius:16px;background:var(--forest);color:#fff;
+    font-size:16px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;
+    box-shadow:0 12px 28px rgba(45,74,38,.30);transition:transform .1s}
+  .cta:active{transform:scale(.985)}
+  .cta svg{width:18px;height:18px}
+  .legal{text-align:center;font-size:10.5px;line-height:1.5;color:#9a8e7e;margin-top:9px;padding:0 6px}
+  .legal b{color:var(--forest)}
+  .legal a{color:var(--forest);font-weight:700;text-decoration:none}
+  .freelink{display:block;text-align:center;font-size:12.5px;font-weight:700;color:var(--muted);text-decoration:none;margin-top:9px}
+  .freelink u{text-underline-offset:3px}
+
+  /* success */
+  .center{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 34px}
+  .burst{width:104px;height:104px;border-radius:50%;background:var(--forest);display:grid;place-items:center;position:relative;margin-bottom:26px;box-shadow:0 18px 40px rgba(45,74,38,.32)}
+  .burst svg{width:52px;height:52px;color:#fff}
+  .burst .s{position:absolute;font-size:22px}
+  .burst .s1{top:-4px;right:-2px}.burst .s2{bottom:2px;left:-6px;font-size:15px;opacity:.85}
+  .ring{position:absolute;inset:-12px;border-radius:50%;border:2px dashed rgba(74,140,92,.3)}
+</style>
+</head>
+<body>
+
+<!-- ░ PAYWALL — single screen, no scroll ░ -->
+<div class="stage">
+  <div class="tag">Paywall — one screen, no scroll, Monthly preselected</div>
+  <div class="phone">
+    <div class="page">
+      <div class="nav">
+        <div class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> Back</div>
+        <button class="restore-top">Restore</button>
+      </div>
+
+      <div class="hero">
+        <span class="kicker">Upgrade to Pro</span>
+        <h1>Know <em>exactly</em> what's<br>in your food</h1>
+        <p class="lede">Deeper analysis on every scan. Cancel anytime.</p>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat"><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg></span> Processing level, additives &amp; allergens</div>
+        <div class="feat"><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg></span> Daily intake progress per nutrient</div>
+        <div class="feat"><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg></span> AI health insights per product</div>
+        <div class="feat"><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg></span> Unlimited history + product search</div>
+      </div>
+
+      <div class="pick-label">Choose your plan <span>7 days free</span></div>
+
+      <div class="plans">
+        <!-- Monthly preselected -->
+        <div class="plan sel">
+          <div class="radio"></div>
+          <div class="pinfo">
+            <div class="pname">Monthly</div>
+            <div class="pdesc">Billed 49 kr every month</div>
+          </div>
+          <div class="pprice"><b>49 kr</b><span class="per">per month</span></div>
+        </div>
+        <div class="plan">
+          <div class="ribbon">SAVE 17%</div>
+          <div class="radio"></div>
+          <div class="pinfo">
+            <div class="pname">Yearly</div>
+            <div class="pdesc">Billed 490 kr once a year</div>
+          </div>
+          <div class="pprice"><b>490 kr</b><span class="per">≈ 41 kr / mo</span></div>
+        </div>
+      </div>
+
+      <div class="reassure">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        Free for 7 days · nothing charged today
+      </div>
+
+      <div class="cta-wrap">
+        <button class="cta">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 7l5.5 4L12 4l3.5 7L21 7l-2 9H5Z"/></svg>
+          Try free for 7 days
+        </button>
+        <p class="legal">You selected <b>Monthly</b>: 7 days free, then <b>49 kr/month</b>. Auto-renews until cancelled. <a href="#">Terms</a> · <a href="#">Privacy</a></p>
+        <a class="freelink" href="#">Maybe later — <u>keep the free plan</u></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ░ SUCCESS ░ -->
+<div class="stage">
+  <div class="tag">Success screen</div>
+  <div class="phone">
+    <div class="center">
+      <div class="burst">
+        <div class="ring"></div>
+        <span class="s s1">✨</span><span class="s s2">✦</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <span class="kicker">Skaren Pro is active</span>
+      <h1 style="margin-top:8px">You're all set!</h1>
+      <p class="lede" style="margin-bottom:34px">Thanks for upgrading. Every Pro feature is unlocked, starting now.</p>
+      <button class="cta" style="max-width:300px">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 7l5.5 4L12 4l3.5 7L21 7l-2 9H5Z"/></svg>
+        Start scanning
+      </button>
+      <a class="freelink" style="margin-top:14px;color:var(--forest)" href="#"><u>Go to my account</u></a>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
