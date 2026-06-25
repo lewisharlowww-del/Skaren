@@ -62,6 +62,10 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
   const isStartingRef = useRef(false);
   // Mirror errorKind too so the retry loop can read the latest value.
   const errorKindRef = useRef<CameraErrorKind>("none");
+  // Tracks whether the app is currently foreground-active. Starting camera
+  // capture while inactive (e.g. while the native permission dialog is up)
+  // throws CoreMedia err -12710, so every start attempt is gated on this.
+  const appActiveRef = useRef(true);
   const [isStarting, setIsStarting] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [errorKind, setErrorKindState] = useState<CameraErrorKind>("none");
@@ -100,7 +104,14 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
   }, [setScanning, setStarting]);
 
   const startScanner = useCallback(async (fromGesture = false) => {
-    if (disabled || isStartingRef.current || isScanningRef.current) return;
+    // Already running is "success" for the retry loop; already starting is a
+    // no-op so we report not-yet-running.
+    if (isScanningRef.current) return true;
+    if (disabled || isStartingRef.current) return false;
+    // Don't even try while the app is backgrounded/inactive: iOS rejects camera
+    // capture with CoreMedia err -12710 and can wedge the WebContent process.
+    // A real tap always implies the app is active, so it bypasses this gate.
+    if (!fromGesture && !appActiveRef.current) return false;
 
     setErrorKind("none");
     setStarting(true);
@@ -259,34 +270,42 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     };
   }, [autoStart, disabled, isNative, startWithRetry]);
 
-  // Keep the camera live whenever the app/tab returns to the foreground.
-  // - Normal case: iOS suspends the camera while backgrounded, so we restart it
-  //   so the viewfinder is always running when the user reopens the app.
-  // - Denied case: if the user previously denied and then granted in Settings,
-  //   coming back re-triggers the prompt/stream automatically (no button hunt).
+  // Track foreground/background and keep the camera in sync.
+  // - Going inactive (app backgrounded): mark inactive and stop the camera so
+  //   iOS releases the capture device cleanly. Restarting a stream that iOS
+  //   suspended underneath us is what produced CoreMedia err -12710.
+  // - Becoming active (app foregrounded / cold launch finishes): mark active
+  //   and (re)start with the retry loop. This is the moment iOS will actually
+  //   allow capture, so it is the right trigger rather than a blind mount timer.
   useEffect(() => {
     if (!autoStart || disabled) return;
 
-    const resume = () => {
-      if (isStartingRef.current) return;
-      // Tear down any stale/suspended stream first, then restart with retry.
-      void stopScanner().finally(() => {
-        void startWithRetry();
-      });
+    const onActive = () => {
+      appActiveRef.current = true;
+      if (isScanningRef.current || isStartingRef.current) return;
+      void startWithRetry();
+    };
+
+    const onInactive = () => {
+      appActiveRef.current = false;
+      if (retryStartRef.current) retryStartRef.current.cancelled = true;
+      void stopScanner();
     };
 
     let cleanup = () => {};
 
     if (isNative) {
       const handlePromise = App.addListener("appStateChange", ({ isActive }) => {
-        if (isActive) resume();
+        if (isActive) onActive();
+        else onInactive();
       });
       cleanup = () => {
         void handlePromise.then((handle) => handle.remove());
       };
     } else {
       const onVisible = () => {
-        if (document.visibilityState === "visible") resume();
+        if (document.visibilityState === "visible") onActive();
+        else onInactive();
       };
       document.addEventListener("visibilitychange", onVisible);
       cleanup = () => document.removeEventListener("visibilitychange", onVisible);
