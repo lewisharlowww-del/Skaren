@@ -56,13 +56,27 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const detectedRef = useRef(false);
   const autoStartedRef = useRef(false);
+  // Mirror scanning/starting state in refs so the start/stop/restart logic can
+  // read the *current* value without being trapped by React's stale closures.
+  const isScanningRef = useRef(false);
+  const isStartingRef = useRef(false);
   const [isStarting, setIsStarting] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [errorKind, setErrorKind] = useState<CameraErrorKind>("none");
 
   const isNative = Capacitor.isNativePlatform();
 
-  async function stopScanner() {
+  const setStarting = useCallback((value: boolean) => {
+    isStartingRef.current = value;
+    setIsStarting(value);
+  }, []);
+
+  const setScanning = useCallback((value: boolean) => {
+    isScanningRef.current = value;
+    setIsScanning(value);
+  }, []);
+
+  const stopScanner = useCallback(async () => {
     const scanner = scannerRef.current;
 
     if (scanner?.isScanning) {
@@ -71,15 +85,15 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
 
     scanner?.clear();
     scannerRef.current = null;
-    setIsScanning(false);
-    setIsStarting(false);
-  }
+    setScanning(false);
+    setStarting(false);
+  }, [setScanning, setStarting]);
 
   const startScanner = useCallback(async () => {
-    if (disabled || isStarting || isScanning) return;
+    if (disabled || isStartingRef.current || isScanningRef.current) return;
 
     setErrorKind("none");
-    setIsStarting(true);
+    setStarting(true);
     detectedRef.current = false;
     vibrate(18);
 
@@ -138,16 +152,16 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
         }
       );
 
-      setIsScanning(true);
+      setScanning(true);
     } catch (caught) {
       scannerRef.current?.clear();
       scannerRef.current = null;
-      setIsScanning(false);
+      setScanning(false);
       setErrorKind(classifyCameraError(caught));
     } finally {
-      setIsStarting(false);
+      setStarting(false);
     }
-  }, [disabled, hideControls, isScanning, isStarting, onDetected]);
+  }, [disabled, hideControls, onDetected, setScanning, setStarting, stopScanner]);
 
   function openAppSettings() {
     if (isNative) {
@@ -163,44 +177,58 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     return () => {
       void stopScanner();
     };
-  }, []);
+  }, [stopScanner]);
 
+  // Auto-start on mount (web + native). Calling getUserMedia from here triggers
+  // the OS permission prompt the first time. On native, Capacitor's WebView
+  // delegate auto-grants the WebKit layer, so this surfaces the real iOS/Android
+  // system prompt without needing a manual button.
   useEffect(() => {
     if (!autoStart || disabled || autoStartedRef.current) return;
 
     autoStartedRef.current = true;
     const timer = window.setTimeout(() => {
       void startScanner();
-    }, 350);
+    }, isNative ? 250 : 350);
 
     return () => window.clearTimeout(timer);
-  }, [autoStart, disabled, startScanner]);
+  }, [autoStart, disabled, isNative, startScanner]);
 
-  // When the user leaves to grant permission in Settings and returns, retry
-  // automatically so they don't have to hunt for a button. Native: Capacitor
-  // appStateChange; web: visibilitychange.
+  // Keep the camera live whenever the app/tab returns to the foreground.
+  // - Normal case: iOS suspends the camera while backgrounded, so we restart it
+  //   so the viewfinder is always running when the user reopens the app.
+  // - Denied case: if the user previously denied and then granted in Settings,
+  //   coming back re-triggers the prompt/stream automatically (no button hunt).
   useEffect(() => {
-    if (errorKind !== "blocked") return;
+    if (!autoStart || disabled) return;
+
+    const resume = () => {
+      if (isStartingRef.current) return;
+      // Tear down any stale/suspended stream first, then restart fresh.
+      void stopScanner().finally(() => {
+        void startScanner();
+      });
+    };
 
     let cleanup = () => {};
 
     if (isNative) {
       const handlePromise = App.addListener("appStateChange", ({ isActive }) => {
-        if (isActive && !isScanning && !isStarting) void startScanner();
+        if (isActive) resume();
       });
       cleanup = () => {
         void handlePromise.then((handle) => handle.remove());
       };
     } else {
       const onVisible = () => {
-        if (document.visibilityState === "visible" && !isScanning && !isStarting) void startScanner();
+        if (document.visibilityState === "visible") resume();
       };
       document.addEventListener("visibilitychange", onVisible);
       cleanup = () => document.removeEventListener("visibilitychange", onVisible);
     }
 
     return cleanup;
-  }, [errorKind, isNative, isScanning, isStarting, startScanner]);
+  }, [autoStart, disabled, isNative, startScanner, stopScanner]);
 
   const showBlockedOverlay = errorKind === "blocked";
 
