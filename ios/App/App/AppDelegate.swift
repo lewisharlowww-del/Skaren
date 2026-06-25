@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import AVFoundation
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -16,7 +17,36 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             // Enable iOS swipe-back gesture
             rootVC.webView?.allowsBackForwardNavigationGestures = true
         }
+
+        // Pre-authorize the camera at launch.
+        //
+        // The scan screen runs inside a WKWebView and uses getUserMedia. On a
+        // fresh install the AVFoundation camera permission is `.notDetermined`,
+        // and WKWebView frequently fails to surface the iOS permission prompt on
+        // a cold launch (the prompt only appeared after the user backgrounded and
+        // foregrounded the app). That also meant no "Camera" row ever showed up
+        // in Settings, because iOS never recorded a request.
+        //
+        // Requesting access natively here forces the system prompt at startup,
+        // registers the Camera row in Settings, and — once granted — sets the
+        // authorization status to `.authorized` so the WebView's getUserMedia
+        // succeeds immediately on every later cold launch with no app-switch.
+        requestCameraAccess()
+
         return true
+    }
+
+    private func requestCameraAccess() {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .notDetermined:
+            // Surface the system prompt once. Subsequent launches short-circuit
+            // because the status is no longer `.notDetermined`.
+            AVCaptureDevice.requestAccess(for: .video) { _ in }
+        default:
+            // Already authorized or denied — nothing to do; the WebView will use
+            // the existing decision and our JS layer handles the denied case.
+            break
+        }
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
