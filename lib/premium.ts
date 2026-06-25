@@ -18,8 +18,10 @@ export async function getUserPremiumStatus(supabase: SupabaseClient): Promise<bo
       const rcPremium = await checkPremiumStatus();
       if (rcPremium) return true;
 
-      // Fall back to Supabase is_premium flag — used for testing/manual overrides
-      // before a real sandbox purchase has been made.
+      // Fall back to the Supabase is_premium flag only as a manual admin
+      // override (e.g. comps/support grants set directly in the DB). The purchase
+      // flow no longer writes this flag, so RevenueCat is the single source of
+      // truth and premium correctly expires/transfers when a subscription ends.
       const { data } = await supabase
         .from("profiles")
         .select("is_premium")

@@ -7,7 +7,6 @@ import { ArrowLeft, Check, Crown, LoaderCircle, RotateCcw, Sparkles } from "luci
 import { useLang } from "@/lib/language-context";
 import { configurePurchases, getSubscriptionPlans, purchaseMonthly, purchaseYearly, restorePurchases } from "@/lib/revenuecat";
 import type { SubscriptionPlanInfo, SubscriptionPlans, SubscriptionTrial } from "@/lib/revenuecat";
-import { supabase } from "@/lib/supabase";
 
 const freeFeatures = {
   en: [
@@ -44,17 +43,6 @@ const proFeatures = {
     "Produktsøk uten skanning",
   ],
 };
-
-async function setSupabasePremium() {
-  try {
-    if (!supabase) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from("profiles").update({ is_premium: true }).eq("id", user.id);
-  } catch {
-    // non-fatal — RC is the source of truth
-  }
-}
 
 type Toast = { type: "success" | "error"; msg: string } | null;
 
@@ -205,7 +193,6 @@ export default function PricingPage() {
         : await purchaseMonthly();
       const isPremium = result.customerInfo.entitlements.active["Skaren Pro"] !== undefined;
       if (isPremium) {
-        await setSupabasePremium();
         setPurchaseSuccess(true);
       } else {
         showToast("success", isNo ? "Kjøp fullført. Tilgang oppdateres snart." : "Purchase completed. Access is being updated.");
@@ -225,7 +212,6 @@ export default function PricingPage() {
       const { customerInfo } = await restorePurchases();
       const isPremium = customerInfo.entitlements.active["Skaren Pro"] !== undefined;
       if (isPremium) {
-        await setSupabasePremium();
         setPurchaseSuccess(true);
       } else {
         showToast("error", isNo ? "Ingen aktivt kjøp funnet." : "No active purchase found.");
