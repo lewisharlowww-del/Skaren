@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Check, Crown, LoaderCircle, RotateCcw } from "lucide-react";
+import { ArrowLeft, Check, Crown, LoaderCircle, RotateCcw, Sparkles } from "lucide-react";
 import { useLang } from "@/lib/language-context";
 import { configurePurchases, getSubscriptionPlans, purchaseMonthly, purchaseYearly, restorePurchases } from "@/lib/revenuecat";
 import type { SubscriptionPlanInfo, SubscriptionPlans, SubscriptionTrial } from "@/lib/revenuecat";
@@ -157,11 +158,13 @@ function formatRenewalTerms(
 export default function PricingPage() {
   const { lang } = useLang();
   const isNo = lang === "no";
+  const router = useRouter();
 
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("yearly");
   const [pendingAction, setPendingAction] = useState<"purchase" | "restore" | null>(null);
   const [toast, setToast] = useState<Toast>(null);
   const [plans, setPlans] = useState<SubscriptionPlans | null>(null);
+  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -203,7 +206,7 @@ export default function PricingPage() {
       const isPremium = result.customerInfo.entitlements.active["Skaren Pro"] !== undefined;
       if (isPremium) {
         await setSupabasePremium();
-        showToast("success", isNo ? "Skaren Pro er nå aktivt!" : "Skaren Pro is now active!");
+        setPurchaseSuccess(true);
       } else {
         showToast("success", isNo ? "Kjøp fullført. Tilgang oppdateres snart." : "Purchase completed. Access is being updated.");
       }
@@ -223,7 +226,7 @@ export default function PricingPage() {
       const isPremium = customerInfo.entitlements.active["Skaren Pro"] !== undefined;
       if (isPremium) {
         await setSupabasePremium();
-        showToast("success", isNo ? "Skaren Pro-kjøpet ditt er gjenopprettet!" : "Your Skaren Pro purchase was restored!");
+        setPurchaseSuccess(true);
       } else {
         showToast("error", isNo ? "Ingen aktivt kjøp funnet." : "No active purchase found.");
       }
@@ -233,6 +236,50 @@ export default function PricingPage() {
     } finally {
       setPendingAction(null);
     }
+  }
+
+  if (purchaseSuccess) {
+    return (
+      <main
+        className="relative mx-auto flex w-full max-w-[430px] flex-col items-center justify-center px-6 text-center sm:max-w-2xl"
+        style={{ background: "#f5f0e8", minHeight: "100dvh", paddingTop: "calc(env(safe-area-inset-top) + 20px)" }}
+      >
+        <div className="relative mb-6 grid h-24 w-24 place-items-center rounded-full bg-[#2d4a26]">
+          <Sparkles className="absolute -right-1 -top-1 h-6 w-6 text-amber-300" />
+          <Check className="h-12 w-12 text-white" strokeWidth={3} />
+        </div>
+
+        <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-1.5 text-sm font-bold text-amber-800">
+          <Crown className="h-4 w-4" />
+          {isNo ? "Skaren Pro er aktivt" : "Skaren Pro is active"}
+        </span>
+
+        <h1 className="text-[1.9rem] font-black leading-tight tracking-tight text-[#1A2410]">
+          {isNo ? "Du er klar!" : "You're all set!"}
+        </h1>
+        <p className="mt-3 max-w-sm text-sm font-medium text-[#7a6e5e]">
+          {isNo
+            ? "Takk for at du oppgraderte. Alle Pro-funksjonene er nå låst opp."
+            : "Thanks for upgrading. All Pro features are now unlocked."}
+        </p>
+
+        <button
+          type="button"
+          onClick={() => router.replace("/scan")}
+          className="mt-9 flex h-13 w-full max-w-sm items-center justify-center gap-2 rounded-2xl bg-[#2d4a26] py-3.5 text-sm font-bold text-white"
+        >
+          <Crown className="h-4 w-4" />
+          {isNo ? "Begynn å skanne" : "Start scanning"}
+        </button>
+
+        <Link
+          href="/account"
+          className="mt-3 flex h-11 w-full max-w-sm items-center justify-center text-sm font-bold text-[#1A5C3A]"
+        >
+          {isNo ? "Gå til kontoen min" : "Go to my account"}
+        </Link>
+      </main>
+    );
   }
 
   return (
