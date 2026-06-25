@@ -63,6 +63,9 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
   const [isStarting, setIsStarting] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [errorKind, setErrorKind] = useState<CameraErrorKind>("none");
+  // True once the automatic start has been attempted. Until then we don't show
+  // the "tap to start" fallback, so a successful auto-start never flashes it.
+  const [autoStartAttempted, setAutoStartAttempted] = useState(false);
 
   const isNative = Capacitor.isNativePlatform();
 
@@ -89,7 +92,7 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     setStarting(false);
   }, [setScanning, setStarting]);
 
-  const startScanner = useCallback(async () => {
+  const startScanner = useCallback(async (fromGesture = false) => {
     if (disabled || isStartingRef.current || isScanningRef.current) return;
 
     setErrorKind("none");
@@ -157,7 +160,17 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
       scannerRef.current?.clear();
       scannerRef.current = null;
       setScanning(false);
-      setErrorKind(classifyCameraError(caught));
+      const kind = classifyCameraError(caught);
+      // On iOS the first (gesture-less) getUserMedia attempt is rejected with a
+      // NotAllowedError even though the user never denied anything. Treat a
+      // "blocked" result from a non-gesture attempt as "needs a tap" rather than
+      // a hard denial, so we show the tap target instead of the Settings
+      // dead-end. A failure from an actual tap is a genuine denial.
+      if (kind === "blocked" && !fromGesture) {
+        setErrorKind("none");
+      } else {
+        setErrorKind(kind);
+      }
     } finally {
       setStarting(false);
     }
@@ -170,7 +183,7 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
       return;
     }
     // On web there is no settings deep link; retry is the best we can offer.
-    void startScanner();
+    void startScanner(true);
   }
 
   useEffect(() => {
@@ -179,16 +192,19 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     };
   }, [stopScanner]);
 
-  // Auto-start on mount (web + native). Calling getUserMedia from here triggers
-  // the OS permission prompt the first time. On native, Capacitor's WebView
-  // delegate auto-grants the WebKit layer, so this surfaces the real iOS/Android
-  // system prompt without needing a manual button.
+  // Auto-start on mount (web + native). We always *try* to open the camera
+  // automatically. This succeeds silently once permission has been granted, so
+  // returning users never see a button. The catch: iOS WKWebView requires the
+  // FIRST getUserMedia call to come from a user gesture, so on a brand-new
+  // install the auto attempt is rejected without an OS prompt. We detect that
+  // and fall back to a one-time tap target (see showTapToStartOverlay) whose
+  // tap is a valid gesture that finally surfaces the iOS permission dialog.
   useEffect(() => {
     if (!autoStart || disabled || autoStartedRef.current) return;
 
     autoStartedRef.current = true;
     const timer = window.setTimeout(() => {
-      void startScanner();
+      void startScanner().finally(() => setAutoStartAttempted(true));
     }, isNative ? 250 : 350);
 
     return () => window.clearTimeout(timer);
@@ -231,6 +247,16 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
   }, [autoStart, disabled, isNative, startScanner, stopScanner]);
 
   const showBlockedOverlay = errorKind === "blocked";
+  // Fallback tap target for the iOS first-launch gesture requirement. Only
+  // appears after the automatic attempt has failed to get the camera running,
+  // and disappears for good once scanning starts (i.e. after permission is
+  // granted), so returning users never see it.
+  const showTapToStartOverlay =
+    hideControls &&
+    autoStartAttempted &&
+    !isStarting &&
+    !isScanning &&
+    errorKind !== "blocked";
 
   return (
     <div className={hideControls ? "h-full w-full" : "space-y-3"}>
@@ -271,7 +297,7 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
                 ) : null}
                 <button
                   type="button"
-                  onClick={() => void startScanner()}
+                  onClick={() => void startScanner(true)}
                   disabled={isStarting}
                   className="inline-flex items-center justify-center gap-2 rounded-full border border-white/30 px-5 py-3 text-[14px] font-bold text-white disabled:opacity-60"
                 >
@@ -281,6 +307,26 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
               </div>
             </div>
           </div>
+        ) : null}
+
+        {/* First-launch tap target — satisfies the iOS WKWebView rule that the
+            very first camera request must come from a user gesture. Shown only
+            after an automatic attempt failed to start the stream, and never
+            again once permission has been granted. */}
+        {showTapToStartOverlay ? (
+          <button
+            type="button"
+            onClick={() => void startScanner(true)}
+            className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[#1a2617]/35 text-white backdrop-blur-[2px]"
+            aria-label={t("scan_tap_camera", lang)}
+          >
+            <span className="grid h-16 w-16 place-items-center rounded-full bg-white/16 shadow-[0_8px_26px_rgba(0,0,0,0.22)] ring-1 ring-white/25">
+              {isStarting ? <Spinner size={22} /> : <Camera className="h-8 w-8" />}
+            </span>
+            <span className="rounded-full bg-white/14 px-5 py-2.5 text-[14px] font-black tracking-wide shadow-[0_8px_26px_rgba(0,0,0,0.18)] backdrop-blur-md">
+              {t("scan_tap_camera", lang)}
+            </span>
+          </button>
         ) : null}
 
         {!hideControls && !isScanning && !showBlockedOverlay ? (
@@ -305,7 +351,7 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => void startScanner()}
+            onClick={() => void startScanner(true)}
             disabled={disabled || isStarting || isScanning}
             className="focus-ring inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 font-bold text-white shadow-phone disabled:bg-soil-600"
           >
