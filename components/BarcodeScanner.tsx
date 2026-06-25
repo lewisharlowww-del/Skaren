@@ -60,14 +60,21 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
   // read the *current* value without being trapped by React's stale closures.
   const isScanningRef = useRef(false);
   const isStartingRef = useRef(false);
+  // Mirror errorKind too so the retry loop can read the latest value.
+  const errorKindRef = useRef<CameraErrorKind>("none");
   const [isStarting, setIsStarting] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const [errorKind, setErrorKind] = useState<CameraErrorKind>("none");
+  const [errorKind, setErrorKindState] = useState<CameraErrorKind>("none");
   // True once the automatic start has been attempted. Until then we don't show
   // the "tap to start" fallback, so a successful auto-start never flashes it.
   const [autoStartAttempted, setAutoStartAttempted] = useState(false);
 
   const isNative = Capacitor.isNativePlatform();
+
+  const setErrorKind = useCallback((value: CameraErrorKind) => {
+    errorKindRef.current = value;
+    setErrorKindState(value);
+  }, []);
 
   const setStarting = useCallback((value: boolean) => {
     isStartingRef.current = value;
@@ -98,7 +105,8 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     setErrorKind("none");
     setStarting(true);
     detectedRef.current = false;
-    vibrate(18);
+    // Only buzz for an explicit tap; the cold-launch retry loop must stay silent.
+    if (fromGesture) vibrate(18);
 
     try {
       const isLocalhost = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
@@ -156,6 +164,7 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
       );
 
       setScanning(true);
+      return true;
     } catch (caught) {
       scannerRef.current?.clear();
       scannerRef.current = null;
@@ -171,10 +180,45 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
       } else {
         setErrorKind(kind);
       }
+      return false;
     } finally {
       setStarting(false);
     }
-  }, [disabled, hideControls, onDetected, setScanning, setStarting, stopScanner]);
+  }, [disabled, hideControls, onDetected, setErrorKind, setScanning, setStarting, stopScanner]);
+
+  // Cold-launch retry loop. On a fresh app open the iOS camera subsystem often
+  // isn't ready yet (the splash screen is still up / the WebView isn't the
+  // active responder), so the first getUserMedia is rejected WITHOUT a prompt.
+  // The user discovered that backgrounding + foregrounding fixes it — that just
+  // makes the app fully active. We reproduce that automatically: retry a few
+  // times with backoff until the camera actually starts, so neither a prompt
+  // nor a tap is needed on subsequent launches. Each attempt is gesture-less,
+  // so a real denial still falls through to the tap/Settings recovery.
+  const retryStartRef = useRef<{ cancelled: boolean } | null>(null);
+  const startWithRetry = useCallback(async () => {
+    // Cancel any in-flight retry loop before starting a new one.
+    if (retryStartRef.current) retryStartRef.current.cancelled = true;
+    const token = { cancelled: false };
+    retryStartRef.current = token;
+
+    // Backoff schedule (ms) — fast at first, then give iOS time to wake the
+    // camera. Total ~6s covers the 3s splash plus settling time.
+    const delays = [0, 350, 700, 1200, 1800, 2500];
+
+    for (const delay of delays) {
+      if (token.cancelled) return;
+      if (delay > 0) {
+        await new Promise((resolve) => window.setTimeout(resolve, delay));
+        if (token.cancelled) return;
+      }
+      if (isScanningRef.current) return;
+      const ok = await startScanner();
+      if (ok || token.cancelled) return;
+      // If the failure was a genuine block/https/etc. that surfaced an overlay,
+      // stop hammering — the recovery UI (tap / Settings) now owns the flow.
+      if (errorKindRef.current === "blocked" || errorKindRef.current === "https") return;
+    }
+  }, [startScanner]);
 
   function openAppSettings() {
     if (isNative) {
@@ -192,23 +236,28 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     };
   }, [stopScanner]);
 
-  // Auto-start on mount (web + native). We always *try* to open the camera
-  // automatically. This succeeds silently once permission has been granted, so
-  // returning users never see a button. The catch: iOS WKWebView requires the
-  // FIRST getUserMedia call to come from a user gesture, so on a brand-new
-  // install the auto attempt is rejected without an OS prompt. We detect that
-  // and fall back to a one-time tap target (see showTapToStartOverlay) whose
-  // tap is a valid gesture that finally surfaces the iOS permission dialog.
+  // Auto-start on mount (web + native). We try to open the camera automatically
+  // with a retry loop, because on iOS cold launch the camera subsystem often
+  // isn't ready on the first attempt (splash still up / WebView not yet the
+  // active responder) and getUserMedia is rejected without a prompt. The retry
+  // loop reproduces the user's "switch apps and come back" workaround
+  // automatically. Once permission is granted this all happens silently, so
+  // returning users just see the live camera with no prompt and no button. If
+  // every attempt is blocked (real denial), the tap target / Settings recovery
+  // takes over.
   useEffect(() => {
     if (!autoStart || disabled || autoStartedRef.current) return;
 
     autoStartedRef.current = true;
     const timer = window.setTimeout(() => {
-      void startScanner().finally(() => setAutoStartAttempted(true));
-    }, isNative ? 250 : 350);
+      void startWithRetry().finally(() => setAutoStartAttempted(true));
+    }, isNative ? 150 : 350);
 
-    return () => window.clearTimeout(timer);
-  }, [autoStart, disabled, isNative, startScanner]);
+    return () => {
+      window.clearTimeout(timer);
+      if (retryStartRef.current) retryStartRef.current.cancelled = true;
+    };
+  }, [autoStart, disabled, isNative, startWithRetry]);
 
   // Keep the camera live whenever the app/tab returns to the foreground.
   // - Normal case: iOS suspends the camera while backgrounded, so we restart it
@@ -220,9 +269,9 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
 
     const resume = () => {
       if (isStartingRef.current) return;
-      // Tear down any stale/suspended stream first, then restart fresh.
+      // Tear down any stale/suspended stream first, then restart with retry.
       void stopScanner().finally(() => {
-        void startScanner();
+        void startWithRetry();
       });
     };
 
@@ -244,7 +293,7 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     }
 
     return cleanup;
-  }, [autoStart, disabled, isNative, startScanner, stopScanner]);
+  }, [autoStart, disabled, isNative, startWithRetry, stopScanner]);
 
   const showBlockedOverlay = errorKind === "blocked";
   // Fallback tap target for the iOS first-launch gesture requirement. Only
