@@ -267,17 +267,19 @@ export default function ScanPage() {
             </div>
           </div>
         </div>
-        {/* Bottom section */}
-        <div className="flex-1 overflow-y-auto px-5 pb-24 pt-4">
+        {/* Bottom sheet — lifts over the camera for depth and breathing room */}
+        <div className="relative z-10 -mt-6 flex-1 overflow-y-auto rounded-t-[1.75rem] bg-[#f7f2ea] px-5 pb-28 pt-3 shadow-[0_-12px_32px_rgba(25,38,23,0.14)]">
+          {/* Panel handle */}
+          <div className="mx-auto mb-5 h-1.5 w-11 rounded-full bg-[#e2d9cb]" />
           {/* Divider */}
-          <div className="mb-3 flex items-center gap-3">
-            <div className="h-px flex-1 bg-[#e0d8cc]" />
+          <div className="mb-4 flex items-center gap-3">
+            <div className="h-px flex-1 bg-[#e7ddcf]" />
             <span className="type-section-label text-[#9a8e7e]">{t('scan_enter_manually', lang)}</span>
-            <div className="h-px flex-1 bg-[#e0d8cc]" />
+            <div className="h-px flex-1 bg-[#e7ddcf]" />
           </div>
-          <form onSubmit={handleAnalyze} className="space-y-2">
+          <form onSubmit={handleAnalyze} className="space-y-3">
             <input
-              className="w-full rounded-2xl border border-[#e0d8cc] bg-white px-4 py-3 text-center text-lg font-bold text-[#2d4a26] placeholder:font-normal placeholder:text-[#ccc] focus:outline-none focus:ring-2 focus:ring-[#2d4a26]/20"
+              className="w-full rounded-2xl border border-[#e0d8cc] bg-white px-4 py-3.5 text-center text-lg font-bold tracking-wide text-[#2d4a26] shadow-[0_1px_2px_rgba(25,38,23,0.05)] placeholder:font-normal placeholder:tracking-normal placeholder:text-[#c7bdac] focus:border-[#2d4a26]/40 focus:outline-none focus:ring-4 focus:ring-[#2d4a26]/10"
               inputMode="numeric"
               placeholder="3017620422003"
               value={barcode}
@@ -287,7 +289,7 @@ export default function ScanPage() {
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2d4a26] py-3 text-[15px] font-black text-[#dceedd] disabled:opacity-60"
+              className="tap-feedback inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2d4a26] py-3.5 text-[15px] font-black text-[#dceedd] shadow-[0_10px_24px_rgba(45,74,38,0.22)] transition disabled:opacity-60"
             >
               <AnimatePresence mode="wait" initial={false}>
                 {scanSuccess ? (
@@ -311,16 +313,16 @@ export default function ScanPage() {
             ) : null}
           </form>
           {/* Search products row — premium feature */}
-          <div className="mt-3 flex items-center gap-3">
-            <div className="h-px flex-1 bg-[#e0d8cc]" />
+          <div className="mt-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-[#e7ddcf]" />
             <span className="type-section-label text-[#9a8e7e]">{t('scan_or_explore', lang)}</span>
-            <div className="h-px flex-1 bg-[#e0d8cc]" />
+            <div className="h-px flex-1 bg-[#e7ddcf]" />
           </div>
           <Link
             href={isPremium ? "/search" : "/pricing"}
-            className="mt-2 flex items-center gap-4 rounded-2xl bg-white border border-[#e0d8cc] px-5 py-3"
+            className="tap-feedback mt-4 flex items-center gap-4 rounded-2xl border border-[#e0d8cc] bg-white px-5 py-3.5 shadow-[0_1px_2px_rgba(25,38,23,0.04)]"
           >
-            <div className="w-10 h-10 rounded-xl bg-[#eaf3de] flex items-center justify-center flex-shrink-0">
+            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[#eaf3de]">
               <Search className="h-5 w-5 text-[#2d4a26]" />
             </div>
             <div className="flex-1">
@@ -334,14 +336,14 @@ export default function ScanPage() {
                   />
                 ) : null}
               </p>
-              <p className="text-[12px] text-[#9a8e7e]">{isPremium ? t('scan_find_without_scanning', lang) : t('pro_feature', lang)}</p>
+              <p className="mt-0.5 text-[12px] text-[#9a8e7e]">{isPremium ? t('scan_find_without_scanning', lang) : t('pro_feature', lang)}</p>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b0a090" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 18l6-6-6-6"/>
             </svg>
           </Link>
           {/* Status */}
-          <div className="mt-3 flex justify-center">
+          <div className="mt-5 flex justify-center">
             {userLoading ? (
               <span className="h-8 w-36 animate-pulse rounded-full bg-[#eaf3de]" aria-label="Checking account" />
             ) : user ? (
