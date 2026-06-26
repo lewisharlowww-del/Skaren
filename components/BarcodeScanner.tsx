@@ -311,18 +311,49 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
 
     document.addEventListener("visibilitychange", onVisibilityChange);
 
-    // Native belt-and-suspenders: when iOS reports the app became active again
-    // and the page is visible but the camera isn't running (it can get
-    // suspended on background without a visibilitychange firing), restart it.
+    // Native lifecycle handling for the iOS capture-suspend race.
+    //
+    // Observed on device: the camera starts successfully on cold launch, then
+    // iOS immediately fires appStateChange isActive:false WHILE THE PAGE IS
+    // STILL VISIBLE, with no recovering isActive:true. That event corresponds to
+    // iOS suspending the WKWebView's AVCaptureSession during launch settling,
+    // which leaves the <video> frozen/black even though our JS still thinks it
+    // is "scanning". The manual app-switch fixed it precisely because
+    // background->foreground performs a full stop+start.
+    //
+    // So: any appStateChange while the page is visible is treated as "the
+    // current stream may be dead — rebuild it" via a debounced restart. When the
+    // page is actually hidden (real background) we just stop. The debounce
+    // prevents a restart storm if several lifecycle events arrive together.
     let removeNative = () => {};
+    let restartTimer = 0;
+    const scheduleRestart = () => {
+      window.clearTimeout(restartTimer);
+      restartTimer = window.setTimeout(() => {
+        if (document.visibilityState !== "visible") return;
+        if (retryStartRef.current) retryStartRef.current.cancelled = true;
+        console.log("[scanner] scheduled restart firing");
+        void stopScanner().finally(() => {
+          void startWithRetry();
+        });
+      }, 500);
+    };
+
     if (isNative) {
       const handlePromise = App.addListener("appStateChange", ({ isActive }) => {
         console.log(`[scanner] appStateChange isActive=${isActive} visibility=${document.visibilityState}`);
-        if (isActive && document.visibilityState === "visible" && !isScanningRef.current && !isStartingRef.current) {
-          void startWithRetry();
+        if (document.visibilityState === "visible") {
+          // Visible: a lifecycle blip likely suspended capture — rebuild it.
+          scheduleRestart();
+        } else if (!isActive) {
+          // Genuine background — release the device cleanly.
+          window.clearTimeout(restartTimer);
+          if (retryStartRef.current) retryStartRef.current.cancelled = true;
+          void stopScanner();
         }
       });
       removeNative = () => {
+        window.clearTimeout(restartTimer);
         void handlePromise.then((handle) => handle.remove());
       };
     }
