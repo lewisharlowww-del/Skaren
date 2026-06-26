@@ -141,15 +141,17 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
   // the "tap to start" fallback, so a successful auto-start never flashes it.
   const [autoStartAttempted, setAutoStartAttempted] = useState(false);
   // On-screen debug log (temporary): mirrors the [scanner] console output so we
-  // can read camera lifecycle state directly on the device. Enabled via the
-  // ?camdebug=1 query param.
+  // can read camera lifecycle state directly on the device. Shown on native by
+  // default while we diagnose; also forceable with ?camdebug.
   const [debugLines, setDebugLines] = useState<string[]>([]);
+  const [videoStat, setVideoStat] = useState("(no video yet)");
   const debugEnabled =
-    typeof window !== "undefined" && new URLSearchParams(window.location.search).has("camdebug");
+    Capacitor.isNativePlatform() ||
+    (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("camdebug"));
 
   const isNative = Capacitor.isNativePlatform();
 
-  // Mirror [scanner] console output onto the screen when ?camdebug is present.
+  // Mirror [scanner] console output onto the screen while debugging.
   useEffect(() => {
     if (!debugEnabled) return;
     const orig = console.log;
@@ -157,12 +159,31 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
       orig(...args);
       const text = args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ");
       if (text.includes("[scanner]")) {
-        setDebugLines((prev) => [...prev.slice(-40), `${new Date().toISOString().slice(11, 19)} ${text}`]);
+        setDebugLines((prev) => [...prev.slice(-40), `${new Date().toISOString().slice(11, 19)} ${text.replace("[scanner]", "")}`]);
       }
     };
     return () => {
       console.log = orig;
     };
+  }, [debugEnabled]);
+
+  // Poll the live <video>/track state so we can SEE on-device whether the
+  // pixels should be visible (playing + unmuted + has dimensions) vs black.
+  useEffect(() => {
+    if (!debugEnabled) return;
+    const id = window.setInterval(() => {
+      const v = document.querySelector<HTMLVideoElement>(`#${scannerElementId} video`);
+      if (!v) {
+        setVideoStat("no <video> element");
+        return;
+      }
+      const track = (v.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
+      setVideoStat(
+        `paused=${v.paused} ready=${v.readyState} size=${v.videoWidth}x${v.videoHeight} ` +
+        `disp=${v.clientWidth}x${v.clientHeight} muted=${track?.muted} state=${track?.readyState ?? "-"}`
+      );
+    }, 500);
+    return () => window.clearInterval(id);
   }, [debugEnabled]);
 
 
@@ -539,9 +560,54 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
         <div id={scannerElementId} className={`${hideControls ? "h-full w-full" : "min-h-56 w-full"} ${isScanning ? "bg-black" : ""}`} />
 
         {debugEnabled ? (
-          <div className="absolute inset-x-0 top-0 z-[60] max-h-[55%] overflow-y-auto bg-black/80 p-2 text-left font-mono text-[9px] leading-tight text-lime-300">
+          <div className="absolute inset-x-0 top-0 z-[60] max-h-[62%] overflow-y-auto bg-black/85 p-2 text-left font-mono text-[9px] leading-tight text-lime-300">
             <div className="mb-1 font-bold text-white">
-              cam debug · native={String(isNative)} scanning={String(isScanning)} starting={String(isStarting)} err={errorKind}
+              cam · native={String(isNative)} scan={String(isScanning)} start={String(isStarting)} err={errorKind}
+            </div>
+            <div className="mb-1 break-all text-cyan-300">video: {videoStat}</div>
+            <div className="mb-1 flex flex-wrap gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const v = document.querySelector<HTMLVideoElement>(`#${scannerElementId} video`);
+                  if (v) void ensureVideoPlaying(v);
+                }}
+                className="rounded bg-lime-600 px-2 py-1 text-[10px] font-bold text-white"
+              >
+                A: play+repaint
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const v = document.querySelector<HTMLVideoElement>(`#${scannerElementId} video`);
+                  const s = v?.srcObject as MediaStream | null;
+                  if (v && s) {
+                    v.srcObject = null;
+                    requestAnimationFrame(() => {
+                      v.srcObject = s;
+                      void v.play().catch(() => {});
+                      console.log("[scanner] B: srcObject reattached");
+                    });
+                  }
+                }}
+                className="rounded bg-amber-600 px-2 py-1 text-[10px] font-bold text-white"
+              >
+                B: reattach
+              </button>
+              <button
+                type="button"
+                onClick={() => requestRestartRef.current("manual button")}
+                className="rounded bg-rose-600 px-2 py-1 text-[10px] font-bold text-white"
+              >
+                C: restart
+              </button>
+              <button
+                type="button"
+                onClick={() => setDebugLines([])}
+                className="rounded bg-white/20 px-2 py-1 text-[10px] font-bold text-white"
+              >
+                clear
+              </button>
             </div>
             {debugLines.map((line, i) => (
               <div key={i}>{line}</div>
