@@ -108,8 +108,31 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
   // True once the automatic start has been attempted. Until then we don't show
   // the "tap to start" fallback, so a successful auto-start never flashes it.
   const [autoStartAttempted, setAutoStartAttempted] = useState(false);
+  // On-screen debug log (temporary): mirrors the [scanner] console output so we
+  // can read camera lifecycle state directly on the device. Enabled via the
+  // ?camdebug=1 query param.
+  const [debugLines, setDebugLines] = useState<string[]>([]);
+  const debugEnabled =
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).has("camdebug");
 
   const isNative = Capacitor.isNativePlatform();
+
+  // Mirror [scanner] console output onto the screen when ?camdebug is present.
+  useEffect(() => {
+    if (!debugEnabled) return;
+    const orig = console.log;
+    console.log = (...args: unknown[]) => {
+      orig(...args);
+      const text = args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ");
+      if (text.includes("[scanner]")) {
+        setDebugLines((prev) => [...prev.slice(-40), `${new Date().toISOString().slice(11, 19)} ${text}`]);
+      }
+    };
+    return () => {
+      console.log = orig;
+    };
+  }, [debugEnabled]);
+
 
   const setErrorKind = useCallback((value: CameraErrorKind) => {
     errorKindRef.current = value;
@@ -482,6 +505,17 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
       )}
       <div className={`relative bg-black ${hideControls ? "h-full w-full" : "overflow-hidden rounded-[2rem] bg-lime-50"}`}>
         <div id={scannerElementId} className={`${hideControls ? "h-full w-full" : "min-h-56 w-full"} ${isScanning ? "bg-black" : ""}`} />
+
+        {debugEnabled ? (
+          <div className="absolute inset-x-0 top-0 z-[60] max-h-[55%] overflow-y-auto bg-black/80 p-2 text-left font-mono text-[9px] leading-tight text-lime-300">
+            <div className="mb-1 font-bold text-white">
+              cam debug · native={String(isNative)} scanning={String(isScanning)} starting={String(isStarting)} err={errorKind}
+            </div>
+            {debugLines.map((line, i) => (
+              <div key={i}>{line}</div>
+            ))}
+          </div>
+        ) : null}
 
         {/* Permission-blocked recovery overlay — shown in BOTH modes so the
             embedded scan screen no longer dead-ends after a denial. */}
