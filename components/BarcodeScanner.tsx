@@ -62,10 +62,6 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
   const isStartingRef = useRef(false);
   // Mirror errorKind too so the retry loop can read the latest value.
   const errorKindRef = useRef<CameraErrorKind>("none");
-  // Tracks whether the app is currently foreground-active. Starting camera
-  // capture while inactive (e.g. while the native permission dialog is up)
-  // throws CoreMedia err -12710, so every start attempt is gated on this.
-  const appActiveRef = useRef(true);
   const [isStarting, setIsStarting] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [errorKind, setErrorKindState] = useState<CameraErrorKind>("none");
@@ -108,11 +104,16 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     // no-op so we report not-yet-running.
     if (isScanningRef.current) return true;
     if (disabled || isStartingRef.current) return false;
-    // Don't even try while the app is backgrounded/inactive: iOS rejects camera
-    // capture with CoreMedia err -12710 and can wedge the WebContent process.
-    // A real tap always implies the app is active, so it bypasses this gate.
-    if (!fromGesture && !appActiveRef.current) return false;
+    // Don't try while the page/app is hidden: iOS rejects camera capture with
+    // CoreMedia err -12710 when not foreground. document.visibilityState is the
+    // reliable foreground signal (the native isActive events are noisy and emit
+    // spurious false right after launch). A real tap always means visible.
+    if (!fromGesture && typeof document !== "undefined" && document.visibilityState === "hidden") {
+      console.log("[scanner] start skipped: document hidden");
+      return false;
+    }
 
+    console.log(`[scanner] start attempt (fromGesture=${fromGesture})`);
     setErrorKind("none");
     setStarting(true);
     detectedRef.current = false;
@@ -175,12 +176,14 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
       );
 
       setScanning(true);
+      console.log("[scanner] start SUCCESS — camera live");
       return true;
     } catch (caught) {
       scannerRef.current?.clear();
       scannerRef.current = null;
       setScanning(false);
       const kind = classifyCameraError(caught);
+      console.log(`[scanner] start FAILED kind=${kind} name=${(caught as { name?: string })?.name ?? ""} msg=${caught instanceof Error ? caught.message : String(caught)}`);
       // On iOS the first (gesture-less) getUserMedia attempt is rejected with a
       // NotAllowedError even though the user never denied anything. Treat a
       // "blocked" result from a non-gesture attempt as "needs a tap" rather than
@@ -223,12 +226,17 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
         if (token.cancelled) return;
       }
       if (isScanningRef.current) return;
+      console.log(`[scanner] retry loop attempt after ${delay}ms`);
       const ok = await startScanner();
       if (ok || token.cancelled) return;
       // If the failure was a genuine block/https/etc. that surfaced an overlay,
       // stop hammering — the recovery UI (tap / Settings) now owns the flow.
-      if (errorKindRef.current === "blocked" || errorKindRef.current === "https") return;
+      if (errorKindRef.current === "blocked" || errorKindRef.current === "https") {
+        console.log(`[scanner] retry loop stop: errorKind=${errorKindRef.current}`);
+        return;
+      }
     }
+    console.log("[scanner] retry loop exhausted without starting camera");
   }, [startScanner]);
 
   function openAppSettings() {
@@ -270,48 +278,59 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     };
   }, [autoStart, disabled, isNative, startWithRetry]);
 
-  // Track foreground/background and keep the camera in sync.
-  // - Going inactive (app backgrounded): mark inactive and stop the camera so
-  //   iOS releases the capture device cleanly. Restarting a stream that iOS
-  //   suspended underneath us is what produced CoreMedia err -12710.
-  // - Becoming active (app foregrounded / cold launch finishes): mark active
-  //   and (re)start with the retry loop. This is the moment iOS will actually
-  //   allow capture, so it is the right trigger rather than a blind mount timer.
+  // Keep the camera in sync with page visibility.
+  //
+  // We drive this off document.visibilityState (the Page Visibility API) rather
+  // than Capacitor's appStateChange, because the native isActive events are
+  // noisy on iOS (a spurious isActive:false fires right after launch, which
+  // previously tore down the camera the instant it started). visibilitychange
+  // only fires "hidden" when the app is genuinely backgrounded.
+  //
+  // - visible  -> (re)start the camera with the retry loop.
+  // - hidden   -> stop cleanly so iOS releases the capture device (prevents the
+  //               CoreMedia -12710 error on the next start).
   useEffect(() => {
     if (!autoStart || disabled) return;
 
-    const onActive = () => {
-      appActiveRef.current = true;
+    const onVisible = () => {
+      console.log("[scanner] visibilitychange -> visible");
       if (isScanningRef.current || isStartingRef.current) return;
       void startWithRetry();
     };
 
-    const onInactive = () => {
-      appActiveRef.current = false;
+    const onHidden = () => {
+      console.log("[scanner] visibilitychange -> hidden, stopping camera");
       if (retryStartRef.current) retryStartRef.current.cancelled = true;
       void stopScanner();
     };
 
-    let cleanup = () => {};
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") onVisible();
+      else onHidden();
+    };
 
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    // Native belt-and-suspenders: when iOS reports the app became active again
+    // and the page is visible but the camera isn't running (it can get
+    // suspended on background without a visibilitychange firing), restart it.
+    let removeNative = () => {};
     if (isNative) {
       const handlePromise = App.addListener("appStateChange", ({ isActive }) => {
-        if (isActive) onActive();
-        else onInactive();
+        console.log(`[scanner] appStateChange isActive=${isActive} visibility=${document.visibilityState}`);
+        if (isActive && document.visibilityState === "visible" && !isScanningRef.current && !isStartingRef.current) {
+          void startWithRetry();
+        }
       });
-      cleanup = () => {
+      removeNative = () => {
         void handlePromise.then((handle) => handle.remove());
       };
-    } else {
-      const onVisible = () => {
-        if (document.visibilityState === "visible") onActive();
-        else onInactive();
-      };
-      document.addEventListener("visibilitychange", onVisible);
-      cleanup = () => document.removeEventListener("visibilitychange", onVisible);
     }
 
-    return cleanup;
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      removeNative();
+    };
   }, [autoStart, disabled, isNative, startWithRetry, stopScanner]);
 
   const showBlockedOverlay = errorKind === "blocked";

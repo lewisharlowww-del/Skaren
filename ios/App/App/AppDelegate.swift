@@ -1,11 +1,15 @@
 import UIKit
 import Capacitor
 import AVFoundation
+import os.log
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
+
+    private let camLog = OSLog(subsystem: "no.skaren.app", category: "camera")
+    private var didRequestCamera = false
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Set WebView background to app cream to prevent white flash while remote URL loads
@@ -18,34 +22,33 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             rootVC.webView?.allowsBackForwardNavigationGestures = true
         }
 
-        // Pre-authorize the camera at launch.
-        //
-        // The scan screen runs inside a WKWebView and uses getUserMedia. On a
-        // fresh install the AVFoundation camera permission is `.notDetermined`,
-        // and WKWebView frequently fails to surface the iOS permission prompt on
-        // a cold launch (the prompt only appeared after the user backgrounded and
-        // foregrounded the app). That also meant no "Camera" row ever showed up
-        // in Settings, because iOS never recorded a request.
-        //
-        // Requesting access natively here forces the system prompt at startup,
-        // registers the Camera row in Settings, and — once granted — sets the
-        // authorization status to `.authorized` so the WebView's getUserMedia
-        // succeeds immediately on every later cold launch with no app-switch.
-        requestCameraAccess()
+        os_log("didFinishLaunching: camera authStatus=%{public}d",
+               log: camLog, type: .info,
+               AVCaptureDevice.authorizationStatus(for: .video).rawValue)
 
         return true
     }
 
-    private func requestCameraAccess() {
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .notDetermined:
-            // Surface the system prompt once. Subsequent launches short-circuit
-            // because the status is no longer `.notDetermined`.
-            AVCaptureDevice.requestAccess(for: .video) { _ in }
-        default:
-            // Already authorized or denied — nothing to do; the WebView will use
-            // the existing decision and our JS layer handles the denied case.
-            break
+    private func requestCameraAccessOnce() {
+        guard !didRequestCamera else { return }
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        os_log("didBecomeActive: camera authStatus=%{public}d", log: camLog, type: .info, status.rawValue)
+
+        guard status == .notDetermined else {
+            // Already authorized or denied — the WebView uses the existing
+            // decision and the JS layer handles the denied case.
+            didRequestCamera = true
+            return
+        }
+
+        didRequestCamera = true
+        // Dispatch to the next runloop tick so the key window is fully attached
+        // before the system alert is presented.
+        DispatchQueue.main.async { [weak self] in
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                os_log("requestAccess completed granted=%{public}d",
+                       log: self?.camLog ?? .default, type: .info, granted ? 1 : 0)
+            }
         }
     }
 
@@ -64,7 +67,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        // Request camera permission the first time the app becomes *active*.
+        // iOS only presents a permission alert to a fully foreground-active app
+        // with a key window. Requesting during didFinishLaunching (splash up /
+        // app inactive) caused the alert to be deferred until the next
+        // foreground, which is why the prompt only appeared after an app-switch.
+        requestCameraAccessOnce()
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
