@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, RotateCcw, ScanLine, Settings, X } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
-import { App } from "@capacitor/app";
 import { Spinner } from "@/components/Spinner";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { vibrate } from "@/lib/haptics";
@@ -62,6 +61,12 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
   const isStartingRef = useRef(false);
   // Mirror errorKind too so the retry loop can read the latest value.
   const errorKindRef = useRef<CameraErrorKind>("none");
+  // Cleanup for the current video-track mute watcher + its pending restart timer.
+  const trackWatchCleanupRef = useRef<() => void>(() => {});
+  const muteRestartTimerRef = useRef(0);
+  // Set by the lifecycle effect so startScanner's track watcher can trigger a
+  // full restart when iOS delivers a muted (black) track.
+  const requestRestartRef = useRef<(reason: string) => void>(() => {});
   const [isStarting, setIsStarting] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [errorKind, setErrorKindState] = useState<CameraErrorKind>("none");
@@ -87,6 +92,11 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
   }, []);
 
   const stopScanner = useCallback(async () => {
+    // Tear down any track-mute watcher from the previous session.
+    trackWatchCleanupRef.current();
+    trackWatchCleanupRef.current = () => {};
+    window.clearTimeout(muteRestartTimerRef.current);
+
     const scanner = scannerRef.current;
 
     if (scanner?.isScanning) {
@@ -98,6 +108,52 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     setScanning(false);
     setStarting(false);
   }, [setScanning, setStarting]);
+
+  // Watch a live video track for the iOS "muted" (suspended/black) state. iOS
+  // can hand back a muted track during the cold-launch lifecycle storm even
+  // though getUserMedia resolved. If it stays muted past a short grace window,
+  // ask the lifecycle effect to perform a full clean restart (the same thing a
+  // manual app background/foreground does). unmute within the window cancels.
+  const attachTrackWatch = useCallback((track: MediaStreamTrack) => {
+    trackWatchCleanupRef.current();
+
+    const scheduleMuteRestart = () => {
+      window.clearTimeout(muteRestartTimerRef.current);
+      muteRestartTimerRef.current = window.setTimeout(() => {
+        if (track.muted && document.visibilityState === "visible") {
+          console.log("[scanner] track still muted -> requesting restart");
+          requestRestartRef.current("muted track");
+        }
+      }, 900);
+    };
+
+    const onMute = () => {
+      console.log("[scanner] track mute event");
+      scheduleMuteRestart();
+    };
+    const onUnmute = () => {
+      console.log("[scanner] track unmute event");
+      window.clearTimeout(muteRestartTimerRef.current);
+    };
+    const onEnded = () => {
+      console.log("[scanner] track ended -> requesting restart");
+      if (document.visibilityState === "visible") requestRestartRef.current("track ended");
+    };
+
+    track.addEventListener("mute", onMute);
+    track.addEventListener("unmute", onUnmute);
+    track.addEventListener("ended", onEnded);
+
+    // If it arrived already muted, start the grace timer immediately.
+    if (track.muted) scheduleMuteRestart();
+
+    trackWatchCleanupRef.current = () => {
+      track.removeEventListener("mute", onMute);
+      track.removeEventListener("unmute", onUnmute);
+      track.removeEventListener("ended", onEnded);
+      window.clearTimeout(muteRestartTimerRef.current);
+    };
+  }, []);
 
   const startScanner = useCallback(async (fromGesture = false) => {
     // Already running is "success" for the retry loop; already starting is a
@@ -177,6 +233,21 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
 
       setScanning(true);
       console.log("[scanner] start SUCCESS — camera live");
+
+      // Watch the live video track for iOS suspending capture. During the cold-
+      // launch lifecycle storm the track can be delivered "muted" (black frame)
+      // even though start() resolved. The track fires mute/unmute events; if it
+      // stays muted briefly, force a clean restart (what the app-switch did).
+      try {
+        const video = document.querySelector<HTMLVideoElement>(`#${scannerElementId} video`);
+        const track = (video?.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
+        if (track) {
+          console.log(`[scanner] track state muted=${track.muted} readyState=${track.readyState}`);
+          attachTrackWatch(track);
+        }
+      } catch (watchErr) {
+        console.log(`[scanner] track watch error: ${String(watchErr)}`);
+      }
       return true;
     } catch (caught) {
       scannerRef.current?.clear();
@@ -198,7 +269,7 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     } finally {
       setStarting(false);
     }
-  }, [disabled, hideControls, onDetected, setErrorKind, setScanning, setStarting, stopScanner]);
+  }, [attachTrackWatch, disabled, hideControls, onDetected, setErrorKind, setScanning, setStarting, stopScanner]);
 
   // Cold-launch retry loop. On a fresh app open the iOS camera subsystem often
   // isn't ready yet (the splash screen is still up / the WebView isn't the
@@ -278,81 +349,72 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     };
   }, [autoStart, disabled, isNative, startWithRetry]);
 
-  // Keep the camera in sync with the app/page lifecycle on iOS.
+  // Keep the camera in sync with the app/page lifecycle.
   //
-  // Device-console findings on cold launch:
-  //   1. camera starts SUCCESS,
-  //   2. iOS fires appStateChange isActive:false (page still visible),
-  //   3. a transient visibilitychange -> hidden fires during launch settling.
-  // Reacting to (3) by stopping immediately killed the camera with no recovery,
-  // because the page does not always emit a later "visible" event. The manual
-  // background/foreground worked only because it forced a clean stop+start.
-  //
-  // Robust approach: never stop instantly on "hidden". Debounce it — only treat
-  // the app as truly backgrounded if it is STILL hidden after a short delay. A
-  // launch blip flips back to visible within that window, so we instead do a
-  // clean restart (reproducing the app-switch fix). A real background stays
-  // hidden, so we stop and release the camera.
+  // The black-camera-on-cold-launch bug is caused by iOS delivering a *muted*
+  // capture track during the launch lifecycle storm (the track watcher in
+  // startScanner detects that and calls requestRestartRef). This effect only
+  // needs to: (a) provide that guarded restart, (b) restart when the app truly
+  // returns to the foreground, and (c) release the camera when truly hidden.
+  // It deliberately does NOT react to every transient active/visible toggle, to
+  // avoid the restart thrashing that the device logs showed.
   useEffect(() => {
     if (!autoStart || disabled) return;
 
-    let lifecycleTimer = 0;
+    let restartTimer = 0;
+    let stopTimer = 0;
+    let restarting = false;
 
-    const restartSoon = (reason: string) => {
-      window.clearTimeout(lifecycleTimer);
-      lifecycleTimer = window.setTimeout(() => {
-        if (document.visibilityState !== "visible") return;
-        console.log(`[scanner] restart (${reason})`);
-        if (retryStartRef.current) retryStartRef.current.cancelled = true;
-        void stopScanner().finally(() => {
-          void startWithRetry();
+    // Guarded clean restart: stop the (possibly suspended) stream, then start a
+    // fresh one. Coalesces concurrent requests so we never stack restarts.
+    const doRestart = (reason: string) => {
+      if (document.visibilityState !== "visible") return;
+      if (restarting) return;
+      restarting = true;
+      console.log(`[scanner] doRestart (${reason})`);
+      if (retryStartRef.current) retryStartRef.current.cancelled = true;
+      void stopScanner().finally(() => {
+        void startWithRetry().finally(() => {
+          restarting = false;
         });
-      }, 400);
+      });
     };
 
-    const stopSoonIfStillHidden = () => {
-      window.clearTimeout(lifecycleTimer);
-      lifecycleTimer = window.setTimeout(() => {
-        if (document.visibilityState === "visible") {
-          // It was only a transient blip — make sure the camera is alive.
-          if (!isScanningRef.current && !isStartingRef.current) void startWithRetry();
-          return;
-        }
-        console.log("[scanner] confirmed hidden -> stopping camera");
-        if (retryStartRef.current) retryStartRef.current.cancelled = true;
-        void stopScanner();
-      }, 700);
+    // Exposed to the track watcher (debounced so a burst collapses to one).
+    requestRestartRef.current = (reason: string) => {
+      window.clearTimeout(restartTimer);
+      restartTimer = window.setTimeout(() => doRestart(reason), 250);
     };
 
     const onVisibilityChange = () => {
       console.log(`[scanner] visibilitychange -> ${document.visibilityState}`);
-      if (document.visibilityState === "visible") restartSoon("became visible");
-      else stopSoonIfStillHidden();
+      if (document.visibilityState === "visible") {
+        window.clearTimeout(stopTimer);
+        // Returning to foreground: ensure a live camera (restart if not running
+        // or if the stream may be stale). Small delay lets the WebView settle.
+        window.clearTimeout(restartTimer);
+        restartTimer = window.setTimeout(() => {
+          if (!isScanningRef.current && !isStartingRef.current) doRestart("became visible");
+        }, 300);
+      } else {
+        // Only stop if STILL hidden after a grace period (ignores launch blips).
+        window.clearTimeout(stopTimer);
+        stopTimer = window.setTimeout(() => {
+          if (document.visibilityState === "visible") return;
+          console.log("[scanner] confirmed hidden -> stopping camera");
+          if (retryStartRef.current) retryStartRef.current.cancelled = true;
+          void stopScanner();
+        }, 800);
+      }
     };
 
     document.addEventListener("visibilitychange", onVisibilityChange);
 
-    // On native, an appStateChange while the page is visible also signals a
-    // possible capture suspend; rebuild via the same debounced restart.
-    let removeNative = () => {};
-    if (isNative) {
-      const handlePromise = App.addListener("appStateChange", ({ isActive }) => {
-        console.log(`[scanner] appStateChange isActive=${isActive} visibility=${document.visibilityState}`);
-        if (document.visibilityState === "visible") {
-          restartSoon(`appStateChange isActive=${isActive}`);
-        } else if (!isActive) {
-          stopSoonIfStillHidden();
-        }
-      });
-      removeNative = () => {
-        void handlePromise.then((handle) => handle.remove());
-      };
-    }
-
     return () => {
-      window.clearTimeout(lifecycleTimer);
+      window.clearTimeout(restartTimer);
+      window.clearTimeout(stopTimer);
+      requestRestartRef.current = () => {};
       document.removeEventListener("visibilitychange", onVisibilityChange);
-      removeNative();
     };
   }, [autoStart, disabled, isNative, startWithRetry, stopScanner]);
 
