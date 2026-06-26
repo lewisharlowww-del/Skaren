@@ -72,17 +72,49 @@ async function ensureVideoPlaying(video: HTMLVideoElement): Promise<void> {
     // Playing if not paused and frames are advancing.
     if (!video.paused && video.readyState >= 2) {
       console.log("[scanner] video confirmed playing");
+      forceVideoRepaint(video);
       return;
     }
     try {
       await video.play();
       console.log(`[scanner] video.play() ok after ${delay}ms (paused=${video.paused})`);
-      if (!video.paused) return;
+      if (!video.paused) {
+        forceVideoRepaint(video);
+        return;
+      }
     } catch (err) {
       console.log(`[scanner] video.play() rejected after ${delay}ms: ${(err as Error)?.name ?? String(err)}`);
     }
   }
   console.log(`[scanner] video still not playing after retries (paused=${video.paused} readyState=${video.readyState})`);
+}
+
+/**
+ * Force the WebKit compositor to repaint a MediaStream <video>.
+ *
+ * On iOS a getUserMedia <video> can play() successfully yet stay BLACK because
+ * its compositing layer is not repainted until something invalidates it — which
+ * is exactly what backgrounding/foregrounding the app does, and why the manual
+ * app-switch "fixes" the camera. We reproduce that invalidation by nudging the
+ * element's transform/opacity across a few animation frames, which forces a
+ * fresh GPU composite without restarting the stream. We repeat it a handful of
+ * times over ~2.5s because the moment the layer becomes paintable varies.
+ */
+function forceVideoRepaint(video: HTMLVideoElement): void {
+  const apply = (t: string, o: string) => {
+    video.style.transform = t;
+    video.style.opacity = o;
+  };
+  const kick = () => {
+    requestAnimationFrame(() => {
+      apply("translateZ(0) scale(1.0001)", "0.999");
+      requestAnimationFrame(() => {
+        apply("translateZ(0) scale(1)", "1");
+      });
+    });
+  };
+  console.log("[scanner] forcing video repaint");
+  [0, 150, 400, 800, 1500, 2500].forEach((d) => window.setTimeout(kick, d));
 }
 
 export function BarcodeScanner({ disabled = false, autoStart = false, hideControls = false, onDetected }: BarcodeScannerProps) {
