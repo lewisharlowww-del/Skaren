@@ -50,6 +50,41 @@ function classifyCameraError(caught: unknown): CameraErrorKind {
   return "generic";
 }
 
+/**
+ * Force an iOS WKWebView <video> to actually start playing.
+ *
+ * html5-qrcode binds the camera MediaStream and calls video.play() but ignores
+ * the returned promise. On a cold launch iOS rejects that initial play() (the
+ * WebView is not yet the active responder), leaving the element paused and the
+ * viewfinder BLACK even though the stream is live. We re-issue play() with a
+ * few retries until the element is genuinely playing.
+ */
+async function ensureVideoPlaying(video: HTMLVideoElement): Promise<void> {
+  // Required for inline playback on iOS; harmless elsewhere.
+  video.muted = true;
+  video.setAttribute("muted", "true");
+  video.setAttribute("playsinline", "true");
+  (video as HTMLVideoElement & { playsInline: boolean }).playsInline = true;
+
+  const delays = [0, 200, 500, 1000, 1600];
+  for (const delay of delays) {
+    if (delay > 0) await new Promise((r) => window.setTimeout(r, delay));
+    // Playing if not paused and frames are advancing.
+    if (!video.paused && video.readyState >= 2) {
+      console.log("[scanner] video confirmed playing");
+      return;
+    }
+    try {
+      await video.play();
+      console.log(`[scanner] video.play() ok after ${delay}ms (paused=${video.paused})`);
+      if (!video.paused) return;
+    } catch (err) {
+      console.log(`[scanner] video.play() rejected after ${delay}ms: ${(err as Error)?.name ?? String(err)}`);
+    }
+  }
+  console.log(`[scanner] video still not playing after retries (paused=${video.paused} readyState=${video.readyState})`);
+}
+
 export function BarcodeScanner({ disabled = false, autoStart = false, hideControls = false, onDetected }: BarcodeScannerProps) {
   const { lang } = useLang();
   const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -245,6 +280,12 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
           console.log(`[scanner] track state muted=${track.muted} readyState=${track.readyState}`);
           attachTrackWatch(track);
         }
+        // CRITICAL iOS FIX: html5-qrcode calls video.play() but ignores the
+        // returned promise. On a cold launch iOS rejects that play() (the
+        // WebView isn't the active responder yet), so the <video> stays paused
+        // and BLACK even though getUserMedia succeeded and the track is live.
+        // We explicitly (re)play it with a few retries until it actually runs.
+        if (video) void ensureVideoPlaying(video);
       } catch (watchErr) {
         console.log(`[scanner] track watch error: ${String(watchErr)}`);
       }
@@ -390,8 +431,11 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
       console.log(`[scanner] visibilitychange -> ${document.visibilityState}`);
       if (document.visibilityState === "visible") {
         window.clearTimeout(stopTimer);
-        // Returning to foreground: ensure a live camera (restart if not running
-        // or if the stream may be stale). Small delay lets the WebView settle.
+        // If a stream is already up, the <video> may have been paused by iOS on
+        // the background transition — nudge it to play again without a full
+        // restart. If nothing is running, do a guarded restart.
+        const video = document.querySelector<HTMLVideoElement>(`#${scannerElementId} video`);
+        if (video && video.srcObject) void ensureVideoPlaying(video);
         window.clearTimeout(restartTimer);
         restartTimer = window.setTimeout(() => {
           if (!isScanningRef.current && !isStartingRef.current) doRestart("became visible");
