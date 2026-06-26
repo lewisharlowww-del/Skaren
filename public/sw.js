@@ -1,4 +1,4 @@
-const CACHE_VERSION = "skaren-pwa-v6";
+const CACHE_VERSION = "skaren-pwa-v7";
 const STATIC_CACHE = `${CACHE_VERSION}:static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}:runtime`;
 const IMAGE_CACHE = `${CACHE_VERSION}:images`;

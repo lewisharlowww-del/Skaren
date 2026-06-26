@@ -278,87 +278,79 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     };
   }, [autoStart, disabled, isNative, startWithRetry]);
 
-  // Keep the camera in sync with page visibility.
+  // Keep the camera in sync with the app/page lifecycle on iOS.
   //
-  // We drive this off document.visibilityState (the Page Visibility API) rather
-  // than Capacitor's appStateChange, because the native isActive events are
-  // noisy on iOS (a spurious isActive:false fires right after launch, which
-  // previously tore down the camera the instant it started). visibilitychange
-  // only fires "hidden" when the app is genuinely backgrounded.
+  // Device-console findings on cold launch:
+  //   1. camera starts SUCCESS,
+  //   2. iOS fires appStateChange isActive:false (page still visible),
+  //   3. a transient visibilitychange -> hidden fires during launch settling.
+  // Reacting to (3) by stopping immediately killed the camera with no recovery,
+  // because the page does not always emit a later "visible" event. The manual
+  // background/foreground worked only because it forced a clean stop+start.
   //
-  // - visible  -> (re)start the camera with the retry loop.
-  // - hidden   -> stop cleanly so iOS releases the capture device (prevents the
-  //               CoreMedia -12710 error on the next start).
+  // Robust approach: never stop instantly on "hidden". Debounce it — only treat
+  // the app as truly backgrounded if it is STILL hidden after a short delay. A
+  // launch blip flips back to visible within that window, so we instead do a
+  // clean restart (reproducing the app-switch fix). A real background stays
+  // hidden, so we stop and release the camera.
   useEffect(() => {
     if (!autoStart || disabled) return;
 
-    const onVisible = () => {
-      console.log("[scanner] visibilitychange -> visible");
-      if (isScanningRef.current || isStartingRef.current) return;
-      void startWithRetry();
+    let lifecycleTimer = 0;
+
+    const restartSoon = (reason: string) => {
+      window.clearTimeout(lifecycleTimer);
+      lifecycleTimer = window.setTimeout(() => {
+        if (document.visibilityState !== "visible") return;
+        console.log(`[scanner] restart (${reason})`);
+        if (retryStartRef.current) retryStartRef.current.cancelled = true;
+        void stopScanner().finally(() => {
+          void startWithRetry();
+        });
+      }, 400);
     };
 
-    const onHidden = () => {
-      console.log("[scanner] visibilitychange -> hidden, stopping camera");
-      if (retryStartRef.current) retryStartRef.current.cancelled = true;
-      void stopScanner();
+    const stopSoonIfStillHidden = () => {
+      window.clearTimeout(lifecycleTimer);
+      lifecycleTimer = window.setTimeout(() => {
+        if (document.visibilityState === "visible") {
+          // It was only a transient blip — make sure the camera is alive.
+          if (!isScanningRef.current && !isStartingRef.current) void startWithRetry();
+          return;
+        }
+        console.log("[scanner] confirmed hidden -> stopping camera");
+        if (retryStartRef.current) retryStartRef.current.cancelled = true;
+        void stopScanner();
+      }, 700);
     };
 
     const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") onVisible();
-      else onHidden();
+      console.log(`[scanner] visibilitychange -> ${document.visibilityState}`);
+      if (document.visibilityState === "visible") restartSoon("became visible");
+      else stopSoonIfStillHidden();
     };
 
     document.addEventListener("visibilitychange", onVisibilityChange);
 
-    // Native lifecycle handling for the iOS capture-suspend race.
-    //
-    // Observed on device: the camera starts successfully on cold launch, then
-    // iOS immediately fires appStateChange isActive:false WHILE THE PAGE IS
-    // STILL VISIBLE, with no recovering isActive:true. That event corresponds to
-    // iOS suspending the WKWebView's AVCaptureSession during launch settling,
-    // which leaves the <video> frozen/black even though our JS still thinks it
-    // is "scanning". The manual app-switch fixed it precisely because
-    // background->foreground performs a full stop+start.
-    //
-    // So: any appStateChange while the page is visible is treated as "the
-    // current stream may be dead — rebuild it" via a debounced restart. When the
-    // page is actually hidden (real background) we just stop. The debounce
-    // prevents a restart storm if several lifecycle events arrive together.
+    // On native, an appStateChange while the page is visible also signals a
+    // possible capture suspend; rebuild via the same debounced restart.
     let removeNative = () => {};
-    let restartTimer = 0;
-    const scheduleRestart = () => {
-      window.clearTimeout(restartTimer);
-      restartTimer = window.setTimeout(() => {
-        if (document.visibilityState !== "visible") return;
-        if (retryStartRef.current) retryStartRef.current.cancelled = true;
-        console.log("[scanner] scheduled restart firing");
-        void stopScanner().finally(() => {
-          void startWithRetry();
-        });
-      }, 500);
-    };
-
     if (isNative) {
       const handlePromise = App.addListener("appStateChange", ({ isActive }) => {
         console.log(`[scanner] appStateChange isActive=${isActive} visibility=${document.visibilityState}`);
         if (document.visibilityState === "visible") {
-          // Visible: a lifecycle blip likely suspended capture — rebuild it.
-          scheduleRestart();
+          restartSoon(`appStateChange isActive=${isActive}`);
         } else if (!isActive) {
-          // Genuine background — release the device cleanly.
-          window.clearTimeout(restartTimer);
-          if (retryStartRef.current) retryStartRef.current.cancelled = true;
-          void stopScanner();
+          stopSoonIfStillHidden();
         }
       });
       removeNative = () => {
-        window.clearTimeout(restartTimer);
         void handlePromise.then((handle) => handle.remove());
       };
     }
 
     return () => {
+      window.clearTimeout(lifecycleTimer);
       document.removeEventListener("visibilitychange", onVisibilityChange);
       removeNative();
     };
