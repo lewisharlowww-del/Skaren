@@ -71,22 +71,18 @@ async function ensureVideoPlaying(video: HTMLVideoElement): Promise<void> {
     if (delay > 0) await new Promise((r) => window.setTimeout(r, delay));
     // Playing if not paused and frames are advancing.
     if (!video.paused && video.readyState >= 2) {
-      console.log("[scanner] video confirmed playing");
       forceVideoRepaint(video);
       return;
     }
     try {
       await video.play();
-      console.log(`[scanner] video.play() ok after ${delay}ms (paused=${video.paused})`);
       if (!video.paused) {
         forceVideoRepaint(video);
         return;
       }
     } catch (err) {
-      console.log(`[scanner] video.play() rejected after ${delay}ms: ${(err as Error)?.name ?? String(err)}`);
     }
   }
-  console.log(`[scanner] video still not playing after retries (paused=${video.paused} readyState=${video.readyState})`);
 }
 
 /**
@@ -113,7 +109,6 @@ function forceVideoRepaint(video: HTMLVideoElement): void {
       });
     });
   };
-  console.log("[scanner] forcing video repaint");
   [0, 150, 400, 800, 1500, 2500].forEach((d) => window.setTimeout(kick, d));
 }
 
@@ -139,51 +134,9 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
   // True once the automatic start has been attempted. Until then we don't show
   // the "tap to start" fallback, so a successful auto-start never flashes it.
   const [autoStartAttempted, setAutoStartAttempted] = useState(false);
-  // On-screen debug log (temporary): mirrors the [scanner] console output so we
-  // can read camera lifecycle state directly on the device. Shown on native by
-  // default while we diagnose; also forceable with ?camdebug.
-  const [debugLines, setDebugLines] = useState<string[]>([]);
-  const [videoStat, setVideoStat] = useState("(no video yet)");
-  const debugEnabled =
-    Capacitor.isNativePlatform() ||
-    (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("camdebug"));
 
   const isNative = Capacitor.isNativePlatform();
 
-  // Mirror [scanner] console output onto the screen while debugging.
-  useEffect(() => {
-    if (!debugEnabled) return;
-    const orig = console.log;
-    console.log = (...args: unknown[]) => {
-      orig(...args);
-      const text = args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ");
-      if (text.includes("[scanner]")) {
-        setDebugLines((prev) => [...prev.slice(-40), `${new Date().toISOString().slice(11, 19)} ${text.replace("[scanner]", "")}`]);
-      }
-    };
-    return () => {
-      console.log = orig;
-    };
-  }, [debugEnabled]);
-
-  // Poll the live <video>/track state so we can SEE on-device whether the
-  // pixels should be visible (playing + unmuted + has dimensions) vs black.
-  useEffect(() => {
-    if (!debugEnabled) return;
-    const id = window.setInterval(() => {
-      const v = document.querySelector<HTMLVideoElement>(`#${scannerElementId} video`);
-      if (!v) {
-        setVideoStat("no <video> element");
-        return;
-      }
-      const track = (v.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
-      setVideoStat(
-        `paused=${v.paused} ready=${v.readyState} size=${v.videoWidth}x${v.videoHeight} ` +
-        `disp=${v.clientWidth}x${v.clientHeight} muted=${track?.muted} state=${track?.readyState ?? "-"}`
-      );
-    }, 500);
-    return () => window.clearInterval(id);
-  }, [debugEnabled]);
 
 
   const setErrorKind = useCallback((value: CameraErrorKind) => {
@@ -231,22 +184,18 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
       window.clearTimeout(muteRestartTimerRef.current);
       muteRestartTimerRef.current = window.setTimeout(() => {
         if (track.muted && document.visibilityState === "visible") {
-          console.log("[scanner] track still muted -> requesting restart");
           requestRestartRef.current("muted track");
         }
       }, 900);
     };
 
     const onMute = () => {
-      console.log("[scanner] track mute event");
       scheduleMuteRestart();
     };
     const onUnmute = () => {
-      console.log("[scanner] track unmute event");
       window.clearTimeout(muteRestartTimerRef.current);
     };
     const onEnded = () => {
-      console.log("[scanner] track ended -> requesting restart");
       if (document.visibilityState === "visible") requestRestartRef.current("track ended");
     };
 
@@ -275,11 +224,9 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     // reliable foreground signal (the native isActive events are noisy and emit
     // spurious false right after launch). A real tap always means visible.
     if (!fromGesture && typeof document !== "undefined" && document.visibilityState === "hidden") {
-      console.log("[scanner] start skipped: document hidden");
       return false;
     }
 
-    console.log(`[scanner] start attempt (fromGesture=${fromGesture})`);
     setErrorKind("none");
     setStarting(true);
     detectedRef.current = false;
@@ -342,7 +289,6 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
       );
 
       setScanning(true);
-      console.log("[scanner] start SUCCESS — camera live");
 
       // Watch the live video track for iOS suspending capture. During the cold-
       // launch lifecycle storm the track can be delivered "muted" (black frame)
@@ -352,7 +298,6 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
         const video = document.querySelector<HTMLVideoElement>(`#${scannerElementId} video`);
         const track = (video?.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
         if (track) {
-          console.log(`[scanner] track state muted=${track.muted} readyState=${track.readyState}`);
           attachTrackWatch(track);
         }
         // CRITICAL iOS FIX: html5-qrcode calls video.play() but ignores the
@@ -362,7 +307,6 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
         // We explicitly (re)play it with a few retries until it actually runs.
         if (video) void ensureVideoPlaying(video);
       } catch (watchErr) {
-        console.log(`[scanner] track watch error: ${String(watchErr)}`);
       }
       return true;
     } catch (caught) {
@@ -370,7 +314,6 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
       scannerRef.current = null;
       setScanning(false);
       const kind = classifyCameraError(caught);
-      console.log(`[scanner] start FAILED kind=${kind} name=${(caught as { name?: string })?.name ?? ""} msg=${caught instanceof Error ? caught.message : String(caught)}`);
       // On iOS the first (gesture-less) getUserMedia attempt is rejected with a
       // NotAllowedError even though the user never denied anything. Treat a
       // "blocked" result from a non-gesture attempt as "needs a tap" rather than
@@ -429,7 +372,9 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     const maxAttempts = 6;
     const quietMs = 900; // lifecycle must be silent this long before we start
 
-    const log = (m: string) => console.log(`[scanner] ${m}`);
+    const log = (m: string) => {
+      if (process.env.NODE_ENV !== "production") console.log(`[scanner] ${m}`);
+    };
 
     const isPainting = () => {
       const v = document.querySelector<HTMLVideoElement>(`#${scannerElementId} video`);
@@ -541,62 +486,6 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
       )}
       <div className={`relative bg-black ${hideControls ? "h-full w-full" : "overflow-hidden rounded-[2rem] bg-lime-50"}`}>
         <div id={scannerElementId} className={`${hideControls ? "h-full w-full" : "min-h-56 w-full"} ${isScanning ? "bg-black" : ""}`} />
-
-        {debugEnabled ? (
-          <div className="absolute inset-x-0 top-0 z-[60] max-h-[62%] overflow-y-auto bg-black/85 p-2 text-left font-mono text-[9px] leading-tight text-lime-300">
-            <div className="mb-1 font-bold text-white">
-              cam · native={String(isNative)} scan={String(isScanning)} start={String(isStarting)} err={errorKind}
-            </div>
-            <div className="mb-1 break-all text-cyan-300">video: {videoStat}</div>
-            <div className="mb-1 flex flex-wrap gap-1">
-              <button
-                type="button"
-                onClick={() => {
-                  const v = document.querySelector<HTMLVideoElement>(`#${scannerElementId} video`);
-                  if (v) void ensureVideoPlaying(v);
-                }}
-                className="rounded bg-lime-600 px-2 py-1 text-[10px] font-bold text-white"
-              >
-                A: play+repaint
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const v = document.querySelector<HTMLVideoElement>(`#${scannerElementId} video`);
-                  const s = v?.srcObject as MediaStream | null;
-                  if (v && s) {
-                    v.srcObject = null;
-                    requestAnimationFrame(() => {
-                      v.srcObject = s;
-                      void v.play().catch(() => {});
-                      console.log("[scanner] B: srcObject reattached");
-                    });
-                  }
-                }}
-                className="rounded bg-amber-600 px-2 py-1 text-[10px] font-bold text-white"
-              >
-                B: reattach
-              </button>
-              <button
-                type="button"
-                onClick={() => requestRestartRef.current("manual button")}
-                className="rounded bg-rose-600 px-2 py-1 text-[10px] font-bold text-white"
-              >
-                C: restart
-              </button>
-              <button
-                type="button"
-                onClick={() => setDebugLines([])}
-                className="rounded bg-white/20 px-2 py-1 text-[10px] font-bold text-white"
-              >
-                clear
-              </button>
-            </div>
-            {debugLines.map((line, i) => (
-              <div key={i}>{line}</div>
-            ))}
-          </div>
-        ) : null}
 
         {/* Permission-blocked recovery overlay — shown in BOTH modes so the
             embedded scan screen no longer dead-ends after a denial. */}
