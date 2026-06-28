@@ -285,14 +285,27 @@ export default function ProductSearchPage() {
             ) : null}
 
             {loading ? (
-              <div className="space-y-3">
-                {[0, 1, 2, 3].map((item) => (
-                  <div
-                    key={item}
-                    className="h-[5.5rem] animate-pulse rounded-2xl border border-[var(--sk-border-default)] bg-white"
-                  />
-                ))}
-              </div>
+              <>
+                <p className="type-section-label mb-3 px-1 text-[var(--sk-text-muted)]">
+                  Finding products
+                </p>
+                <div className="space-y-3">
+                  {[0, 1, 2, 3, 4].map((item) => (
+                    <div
+                      key={item}
+                      className="flex min-h-[5.5rem] items-center gap-4 rounded-2xl border border-[var(--sk-border-default)] bg-white px-3 py-3"
+                    >
+                      <div className="skeleton-shimmer h-[60px] w-[60px] shrink-0 rounded-xl bg-[var(--sk-grade-a-bg)]" />
+                      <div className="min-w-0 flex-1">
+                        <div className="skeleton-shimmer h-3 w-4/5 rounded-full bg-[#ece6dc]" />
+                        <div className="skeleton-shimmer mt-2.5 h-3 w-3/5 rounded-full bg-[#ece6dc]" />
+                        <div className="skeleton-shimmer mt-2.5 h-2.5 w-2/5 rounded-full bg-[#ece6dc]" />
+                      </div>
+                      <div className="skeleton-shimmer h-3.5 w-2 shrink-0 rounded-full bg-[#ece6dc]" />
+                    </div>
+                  ))}
+                </div>
+              </>
             ) : null}
 
             {hasSearched && !loading && !error && results.length === 0 ? (

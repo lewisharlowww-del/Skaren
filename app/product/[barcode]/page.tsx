@@ -884,73 +884,127 @@ export default function ProductPage({ params }: ProductPageProps) {
     <>
       <main className="w-full">
         {loading ? (
-          <div className="flex min-h-screen flex-col bg-[var(--sk-brand-mist)]">
+          <div className="min-h-screen bg-[var(--sk-brand-mist)]" role="status" aria-live="polite">
             <style>{`
-              @keyframes sk-scan { 0%{top:18%} 50%{top:80%} 100%{top:18%} }
-              @keyframes sk-ring { 0%,100%{transform:scale(0.93);opacity:0.65} 50%{transform:scale(1.05);opacity:0.28} }
-              @keyframes sk-dot { 0%,100%{opacity:0.4;transform:scale(0.88)} 50%{opacity:1;transform:scale(1)} }
-              @keyframes sk-shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
-              .sk-shimmer {
-                background: linear-gradient(90deg, var(--sk-border-default,#ede8df) 25%, color-mix(in srgb, var(--sk-border-default,#ede8df) 60%, white) 50%, var(--sk-border-default,#ede8df) 75%);
-                background-size: 1200px 100%;
-                animation: sk-shimmer 1.6s ease-in-out infinite;
-                border-radius: 10px;
+              @keyframes sk-sweep { 0%{transform:translateX(-130%)} 100%{transform:translateX(130%)} }
+              @keyframes sk-sheen { 0%{transform:translateX(-60%) rotate(8deg)} 100%{transform:translateX(170%) rotate(8deg)} }
+              @keyframes sk-ringpulse { 0%,100%{transform:scale(0.85);opacity:0.7} 50%{transform:scale(1.1);opacity:0.28} }
+              .sk2 { position:relative; overflow:hidden; background:#ece6dc; border-radius:12px; }
+              .sk2::after {
+                content:""; position:absolute; inset:0; transform:translateX(-130%);
+                background:linear-gradient(90deg,transparent,rgba(255,255,255,0.9),transparent);
+                animation:sk-sweep 1.6s ease-in-out infinite;
+              }
+              .sk2-d1::after{animation-delay:0s}
+              .sk2-d2::after{animation-delay:.12s}
+              .sk2-d3::after{animation-delay:.24s}
+              .sk2-d4::after{animation-delay:.36s}
+              @media (prefers-reduced-motion: reduce) {
+                .sk2::after, .sk-sheen-el, .sk-ring-el { animation: none !important; }
               }
             `}</style>
-            <header className="flex items-center px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
-              <Link
-                href="/scan"
-                aria-label={lang === "no" ? "Tilbake til skanner" : "Back to scan"}
-                className="focus-ring grid h-11 w-11 place-items-center rounded-full text-[var(--sk-brand-forest)]"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
-            </header>
 
-            <div className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4">
-              <div className="flex flex-1 flex-col items-center justify-center pb-8 pt-2" role="status" aria-live="polite">
-                <div style={{ position: "relative", width: 112, height: 112, marginBottom: 24 }}>
-                  <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1.5px solid var(--sk-brand-forest)", opacity: 0.14, animation: "sk-ring 2.6s ease-in-out infinite" }} />
-                  <div style={{ position: "absolute", inset: 14, borderRadius: "50%", border: "1.5px solid var(--sk-brand-forest)", opacity: 0.2, animation: "sk-ring 2.6s ease-in-out infinite 0.18s" }} />
-                  <div style={{ position: "absolute", inset: 28, borderRadius: "50%", border: "1.5px solid var(--sk-brand-forest)", opacity: 0.28, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <div style={{ position: "absolute", left: 0, right: 0, height: 1.5, background: "linear-gradient(90deg,transparent,rgba(74,140,92,0.85),transparent)", animation: "sk-scan 2s ease-in-out infinite" }} />
+            <div className="mx-auto w-full max-w-xl">
+              {/* Hero skeleton — mirrors the product image header */}
+              <div
+                className="relative flex items-end overflow-hidden p-4 pt-[calc(1rem+env(safe-area-inset-top))]"
+                style={{ height: "min(48vh, 18rem)", background: "linear-gradient(155deg,#2c3f24 0%,#2d4a26 55%,#23381d 100%)" }}
+              >
+                <div
+                  className="sk-sheen-el pointer-events-none absolute inset-y-0 left-0 w-1/2"
+                  style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.10),transparent)", animation: "sk-sheen 2.4s ease-in-out infinite" }}
+                />
+
+                <Link
+                  href="/scan"
+                  aria-label={lang === "no" ? "Tilbake til skanner" : "Back to scan"}
+                  className="focus-ring absolute left-3 top-[calc(0.75rem+env(safe-area-inset-top))] grid h-11 w-11 place-items-center rounded-full text-white/90"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Link>
+
+                {/* Glass "Analyzing" pill with the radar */}
+                <div className="absolute right-3 top-[calc(0.85rem+env(safe-area-inset-top))] inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 py-1.5 pl-2 pr-3 text-[11px] font-bold text-[#eaf3de] backdrop-blur-md">
+                  <span className="relative grid h-[18px] w-[18px] place-items-center">
+                    <span className="sk-ring-el absolute inset-0 rounded-full border-[1.5px] border-[rgba(169,224,176,0.7)]" style={{ animation: "sk-ringpulse 2s ease-in-out infinite" }} />
+                    <span className="sk-ring-el absolute inset-[3px] rounded-full border-[1.5px] border-[rgba(169,224,176,0.9)]" style={{ animation: "sk-ringpulse 2s ease-in-out infinite 0.2s" }} />
+                    <span className="h-[5px] w-[5px] rounded-full bg-[#a9e0b0]" />
+                  </span>
+                  {loadingSlow
+                    ? (lang === "no" ? "Laster…" : "Loading…")
+                    : (lang === "no" ? "Analyserer" : "Analyzing")}
+                </div>
+
+                {/* Product image placeholder */}
+                <div className="absolute left-1/2 top-7 h-[126px] w-[104px] -translate-x-1/2 rounded-2xl border border-white/10 bg-white/10" />
+
+                {/* Name + brand placeholder lines */}
+                <div className="relative z-[2] w-full">
+                  <div className="h-5 w-2/3 rounded-lg bg-white/30" />
+                  <div className="mt-2 h-3 w-2/5 rounded-md bg-white/20" />
+                </div>
+              </div>
+
+              {/* Content skeleton — overlaps the hero like the real report */}
+              <div className="relative z-[2] -mt-6 flex flex-col gap-3 px-4 pb-10">
+                {/* Grade card */}
+                <div className="flex items-center gap-4 rounded-[1.4rem] border border-black/5 bg-white p-4 shadow-[0_10px_30px_rgba(26,92,58,0.07)]">
+                  <div
+                    className="relative grid h-[66px] w-[66px] shrink-0 place-items-center rounded-full"
+                    style={{ background: "conic-gradient(#cfe6d2 0 70%, #eee7dc 0)" }}
+                  >
+                    <div className="absolute inset-2 rounded-full bg-white" />
+                    <div className="sk2 sk2-d1 relative h-[30px] w-[30px] rounded-[10px]" />
                   </div>
-                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <div style={{ width: 9, height: 9, borderRadius: "50%", background: "#4a8c5c", animation: "sk-dot 2s ease-in-out infinite" }} />
+                  <div className="flex flex-1 flex-col gap-2.5">
+                    <div className="sk2 sk2-d1 h-3 w-2/5 rounded-full" />
+                    <div className="sk2 sk2-d2 h-4 w-3/4 rounded-full" />
+                    <div className="sk2 sk2-d3 h-2.5 w-1/2 rounded-full" />
                   </div>
                 </div>
 
-                <p className="type-heading-3 text-[var(--sk-text-primary)] text-center">
-                  {loadingSlow
-                    ? (lang === "no" ? "Dette tar lengre enn vanlig" : "This is taking longer than usual")
-                    : (lang === "no" ? "Analyserer produkt" : "Analyzing product")}
-                </p>
-                <p className="type-body-sm mx-auto mt-2 max-w-xs text-[var(--sk-text-muted)] text-center">
-                  {loadingSlow
-                    ? (lang === "no" ? "Du kan prøve igjen eller gå tilbake." : "You can retry or return to the scanner.")
-                    : (lang === "no" ? "Sjekker næring, ingredienser og karakterer." : "Checking nutrition, ingredients, and grades.")}
-                </p>
+                {/* Facts card */}
+                <div className="rounded-[1.4rem] border border-black/5 bg-white p-4 shadow-[0_8px_24px_rgba(26,92,58,0.05)]">
+                  <div className="mb-3 flex flex-col gap-2">
+                    <div className="sk2 sk2-d1 h-2.5 w-1/3 rounded-full" />
+                    <div className="sk2 sk2-d2 h-4 w-1/2 rounded-full" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {[0, 1, 2, 3].map((cell) => (
+                      <div key={cell} className="flex flex-col gap-2 rounded-2xl border border-black/5 bg-[#fcfbf8] p-2.5">
+                        <div className={`sk2 sk2-d${cell + 1} h-8 w-8 rounded-[11px]`} />
+                        <div className={`sk2 sk2-d${cell + 1} h-2.5 w-3/5 rounded-full`} />
+                        <div className={`sk2 sk2-d${cell + 1} h-3 w-4/5 rounded-full`} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Slow-loading recovery (kept) */}
                 {loadingSlow ? (
-                  <button
-                    type="button"
-                    onClick={() => void loadProduct({ skipCache: true })}
-                    className="focus-ring mt-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--sk-border-default)] bg-white px-5 text-sm font-bold text-[var(--sk-brand-forest)]"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    {lang === "no" ? "Prøv igjen" : "Retry"}
-                  </button>
+                  <div className="mt-1 flex flex-col items-center gap-3 rounded-[1.4rem] border border-[var(--sk-border-default)] bg-white px-5 py-5 text-center">
+                    <p className="type-body-sm font-bold text-[var(--sk-text-primary)]">
+                      {lang === "no" ? "Dette tar lengre enn vanlig" : "This is taking longer than usual"}
+                    </p>
+                    <p className="type-body-sm max-w-xs text-[var(--sk-text-muted)]">
+                      {lang === "no" ? "Du kan prøve igjen eller gå tilbake." : "You can retry or return to the scanner."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void loadProduct({ skipCache: true })}
+                      className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--sk-border-default)] bg-white px-5 text-sm font-bold text-[var(--sk-brand-forest)]"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      {lang === "no" ? "Prøv igjen" : "Retry"}
+                    </button>
+                  </div>
                 ) : null}
               </div>
-
-              <div className="flex flex-col gap-3 pb-8">
-                <div className="sk-shimmer h-28 rounded-2xl" />
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="sk-shimmer h-36 rounded-2xl" />
-                  <div className="sk-shimmer h-36 rounded-2xl" />
-                </div>
-                <div className="sk-shimmer h-28 rounded-2xl" />
-              </div>
             </div>
+
+            <span className="sr-only">
+              {lang === "no" ? "Analyserer produkt – sjekker næring, ingredienser og karakterer." : "Analyzing product – checking nutrition, ingredients, and grades."}
+            </span>
           </div>
         ) : error ? (
           <div className="mx-auto mt-8 max-w-xl rounded-[2rem] border border-black/5 bg-white p-6 text-center shadow-soft sm:mt-10 sm:p-8">
