@@ -121,7 +121,6 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
   const { lang } = useLang();
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const detectedRef = useRef(false);
-  const autoStartedRef = useRef(false);
   // Mirror scanning/starting state in refs so the start/stop/restart logic can
   // read the *current* value without being trapped by React's stale closures.
   const isScanningRef = useRef(false);
@@ -131,11 +130,9 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
   // Cleanup for the current video-track mute watcher + its pending restart timer.
   const trackWatchCleanupRef = useRef<() => void>(() => {});
   const muteRestartTimerRef = useRef(0);
-  // Set by the lifecycle effect so startScanner's track watcher can trigger a
-  // full restart when iOS delivers a muted (black) track.
+  // Set by the camera controller so startScanner's track watcher can request a
+  // restart when iOS delivers a muted (black) track.
   const requestRestartRef = useRef<(reason: string) => void>(() => {});
-  // Counts self-heal restarts so the watchdog doesn't loop forever.
-  const healRestartsRef = useRef(0);
   const [isStarting, setIsStarting] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [errorKind, setErrorKindState] = useState<CameraErrorKind>("none");
@@ -390,45 +387,6 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     }
   }, [attachTrackWatch, disabled, hideControls, onDetected, setErrorKind, setScanning, setStarting, stopScanner]);
 
-  // Cold-launch retry loop. On a fresh app open the iOS camera subsystem often
-  // isn't ready yet (the splash screen is still up / the WebView isn't the
-  // active responder), so the first getUserMedia is rejected WITHOUT a prompt.
-  // The user discovered that backgrounding + foregrounding fixes it — that just
-  // makes the app fully active. We reproduce that automatically: retry a few
-  // times with backoff until the camera actually starts, so neither a prompt
-  // nor a tap is needed on subsequent launches. Each attempt is gesture-less,
-  // so a real denial still falls through to the tap/Settings recovery.
-  const retryStartRef = useRef<{ cancelled: boolean } | null>(null);
-  const startWithRetry = useCallback(async () => {
-    // Cancel any in-flight retry loop before starting a new one.
-    if (retryStartRef.current) retryStartRef.current.cancelled = true;
-    const token = { cancelled: false };
-    retryStartRef.current = token;
-
-    // Backoff schedule (ms) — fast at first, then give iOS time to wake the
-    // camera. Total ~6s covers the 3s splash plus settling time.
-    const delays = [0, 350, 700, 1200, 1800, 2500];
-
-    for (const delay of delays) {
-      if (token.cancelled) return;
-      if (delay > 0) {
-        await new Promise((resolve) => window.setTimeout(resolve, delay));
-        if (token.cancelled) return;
-      }
-      if (isScanningRef.current) return;
-      console.log(`[scanner] retry loop attempt after ${delay}ms`);
-      const ok = await startScanner();
-      if (ok || token.cancelled) return;
-      // If the failure was a genuine block/https/etc. that surfaced an overlay,
-      // stop hammering — the recovery UI (tap / Settings) now owns the flow.
-      if (errorKindRef.current === "blocked" || errorKindRef.current === "https") {
-        console.log(`[scanner] retry loop stop: errorKind=${errorKindRef.current}`);
-        return;
-      }
-    }
-    console.log("[scanner] retry loop exhausted without starting camera");
-  }, [startScanner]);
-
   function openAppSettings() {
     if (isNative) {
       // Deep-link straight to this app's settings page (iOS & Android).
@@ -445,153 +403,123 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
     };
   }, [stopScanner]);
 
-  // Auto-start on mount (web + native). We try to open the camera automatically
-  // with a retry loop, because on iOS cold launch the camera subsystem often
-  // isn't ready on the first attempt (splash still up / WebView not yet the
-  // active responder) and getUserMedia is rejected without a prompt. The retry
-  // loop reproduces the user's "switch apps and come back" workaround
-  // automatically. Once permission is granted this all happens silently, so
-  // returning users just see the live camera with no prompt and no button. If
-  // every attempt is blocked (real denial), the tap target / Settings recovery
-  // takes over.
-  useEffect(() => {
-    if (!autoStart || disabled || autoStartedRef.current) return;
-
-    autoStartedRef.current = true;
-    const timer = window.setTimeout(() => {
-      void startWithRetry().finally(() => setAutoStartAttempted(true));
-    }, isNative ? 150 : 350);
-
-    return () => {
-      window.clearTimeout(timer);
-      if (retryStartRef.current) retryStartRef.current.cancelled = true;
-    };
-  }, [autoStart, disabled, isNative, startWithRetry]);
-
-  // Keep the camera in sync with the app/page lifecycle.
+  // ───────────────────────────────────────────────────────────────────────
+  // Single camera controller.
   //
-  // The black-camera-on-cold-launch bug is caused by iOS delivering a *muted*
-  // capture track during the launch lifecycle storm (the track watcher in
-  // startScanner detects that and calls requestRestartRef). This effect only
-  // needs to: (a) provide that guarded restart, (b) restart when the app truly
-  // returns to the foreground, and (c) release the camera when truly hidden.
-  // It deliberately does NOT react to every transient active/visible toggle, to
-  // avoid the restart thrashing that the device logs showed.
+  // Hard-won lesson from on-device logs: starting the camera DURING the iOS
+  // launch lifecycle storm (rapid active<->inactive / visible<->hidden) yields a
+  // stream where getUserMedia + play() "succeed" but no frames ever arrive
+  // (readyState=0, videoWidth=0) — a black viewfinder. A single manual restart
+  // a few seconds later fixes it, because by then the app is calm.
+  //
+  // So this one effect is the ONLY thing that starts/stops the camera. It:
+  //   1. waits for the lifecycle to be QUIET (no churn for `quietMs`),
+  //   2. starts the camera exactly once,
+  //   3. verifies real frames flow; if still black, does ONE serialized restart
+  //      (bounded), each preceded by another quiet-settle.
+  // No other timers, retry loops, or listeners race it.
   useEffect(() => {
     if (!autoStart || disabled) return;
 
-    let restartTimer = 0;
-    let stopTimer = 0;
-    let restarting = false;
+    let cancelled = false;
+    let quietTimer = 0;
+    let verifyTimer = 0;
+    let busy = false; // a start/restart sequence is in flight
+    let attempts = 0;
+    const maxAttempts = 6;
+    const quietMs = 900; // lifecycle must be silent this long before we start
 
-    // Guarded clean restart: stop the (possibly suspended) stream, then start a
-    // fresh one. Coalesces concurrent requests so we never stack restarts.
-    const doRestart = (reason: string) => {
-      if (document.visibilityState !== "visible") return;
-      if (restarting) return;
-      restarting = true;
-      console.log(`[scanner] doRestart (${reason})`);
-      if (retryStartRef.current) retryStartRef.current.cancelled = true;
-      void stopScanner().finally(() => {
-        void startWithRetry().finally(() => {
-          restarting = false;
-        });
-      });
-    };
+    const log = (m: string) => console.log(`[scanner] ${m}`);
 
-    // Exposed to the track watcher (debounced so a burst collapses to one).
-    requestRestartRef.current = (reason: string) => {
-      window.clearTimeout(restartTimer);
-      restartTimer = window.setTimeout(() => doRestart(reason), 250);
-    };
-
-    const onVisibilityChange = () => {
-      console.log(`[scanner] visibilitychange -> ${document.visibilityState}`);
-      if (document.visibilityState === "visible") {
-        window.clearTimeout(stopTimer);
-        // If a stream is already up, the <video> may have been paused by iOS on
-        // the background transition — nudge it to play again without a full
-        // restart. If nothing is running, do a guarded restart.
-        const video = document.querySelector<HTMLVideoElement>(`#${scannerElementId} video`);
-        if (video && video.srcObject) void ensureVideoPlaying(video);
-        window.clearTimeout(restartTimer);
-        restartTimer = window.setTimeout(() => {
-          if (!isScanningRef.current && !isStartingRef.current) doRestart("became visible");
-        }, 300);
-      } else {
-        // Only stop if STILL hidden after a grace period (ignores launch blips).
-        window.clearTimeout(stopTimer);
-        stopTimer = window.setTimeout(() => {
-          if (document.visibilityState === "visible") return;
-          console.log("[scanner] confirmed hidden -> stopping camera");
-          if (retryStartRef.current) retryStartRef.current.cancelled = true;
-          void stopScanner();
-        }, 800);
-      }
-    };
-
-    document.addEventListener("visibilitychange", onVisibilityChange);
-
-    return () => {
-      window.clearTimeout(restartTimer);
-      window.clearTimeout(stopTimer);
-      requestRestartRef.current = () => {};
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-    };
-  }, [autoStart, disabled, isNative, startWithRetry, stopScanner]);
-
-  // Self-healing watchdog for the iOS black-camera-on-cold-launch bug.
-  //
-  // The user confirmed that a manual "restart" (stop + start) reliably brings
-  // the viewfinder up, while the initial auto-start leaves it black. The reason
-  // is timing: the first start happens during the launch lifecycle storm and
-  // yields a stream that never paints, yet still reports "scanning", so nothing
-  // else retries. This watchdog watches the REAL <video> pixels and, if the
-  // viewfinder is black (no frame dimensions / paused / muted) despite us
-  // believing we're scanning, performs the exact restart the button does — a
-  // few times max, then gives up to the tap fallback.
-  useEffect(() => {
-    if (!autoStart || disabled || !isNative) return;
-
-    let consecutiveBlack = 0;
-    const id = window.setInterval(() => {
-      if (document.visibilityState !== "visible") {
-        consecutiveBlack = 0;
-        return;
-      }
-      // Only police a stream we think is live and not mid-(re)start.
-      if (!isScanningRef.current || isStartingRef.current) {
-        consecutiveBlack = 0;
-        return;
-      }
-
+    const isPainting = () => {
       const v = document.querySelector<HTMLVideoElement>(`#${scannerElementId} video`);
       const track = (v?.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
-      const painting = !!v && !v.paused && v.readyState >= 2 && v.videoWidth > 0 && track?.muted === false;
+      return !!v && !v.paused && v.readyState >= 2 && v.videoWidth > 0 && track?.muted === false;
+    };
 
-      if (painting) {
-        consecutiveBlack = 0;
-        healRestartsRef.current = 0; // healthy — reset budget for future sessions
+    // (Re)start the camera once, then verify frames actually flow.
+    const startOnceAndVerify = async () => {
+      if (cancelled || busy) return;
+      if (document.visibilityState !== "visible") return;
+      if (isScanningRef.current && isPainting()) return; // already healthy
+      if (attempts >= maxAttempts) {
+        log("giving up auto-start; tap fallback owns it");
+        setAutoStartAttempted(true);
         return;
       }
+      busy = true;
+      attempts += 1;
+      log(`start sequence #${attempts}`);
 
-      consecutiveBlack += 1;
-      console.log(
-        `[scanner] watchdog black#${consecutiveBlack} ` +
-        `paused=${v?.paused} ready=${v?.readyState} w=${v?.videoWidth} muted=${track?.muted}`
-      );
+      await stopScanner();
+      if (cancelled) { busy = false; return; }
+      await startScanner();
+      setAutoStartAttempted(true);
+      busy = false;
 
-      // ~1.2s of continuous black (3 x 400ms) before acting, with a budget.
-      if (consecutiveBlack >= 3 && healRestartsRef.current < 4) {
-        consecutiveBlack = 0;
-        healRestartsRef.current += 1;
-        console.log(`[scanner] watchdog -> auto restart #${healRestartsRef.current}`);
-        requestRestartRef.current("watchdog black video");
+      // Give the pipeline up to ~2.5s to deliver frames; if still black, the
+      // app likely wasn't fully ready — settle again and retry once.
+      window.clearTimeout(verifyTimer);
+      verifyTimer = window.setTimeout(() => {
+        if (cancelled) return;
+        if (document.visibilityState !== "visible") return;
+        if (isScanningRef.current && !isPainting()) {
+          log("still black after start -> scheduling another settle+restart");
+          scheduleStart();
+        }
+      }, 2500);
+    };
+
+    // Wait for the lifecycle to be quiet for `quietMs`, then start once.
+    const scheduleStart = () => {
+      window.clearTimeout(quietTimer);
+      quietTimer = window.setTimeout(() => {
+        void startOnceAndVerify();
+      }, quietMs);
+    };
+
+    // Any lifecycle event resets the quiet timer (so we only start once calm).
+    const onLifecycle = (label: string) => {
+      log(`lifecycle: ${label} (visibility=${document.visibilityState})`);
+      if (document.visibilityState === "visible") {
+        // If the camera is already painting, a transient event shouldn't disturb
+        // it. Otherwise, (re)arm the settle timer.
+        if (!(isScanningRef.current && isPainting())) scheduleStart();
+      } else {
+        // Truly hidden: stop after a grace period so a launch blip doesn't kill
+        // a healthy camera.
+        window.clearTimeout(quietTimer);
+        window.clearTimeout(verifyTimer);
+        window.setTimeout(() => {
+          if (cancelled) return;
+          if (document.visibilityState !== "visible") {
+            log("confirmed hidden -> stopping camera");
+            void stopScanner();
+          }
+        }, 700);
       }
-    }, 400);
+    };
 
-    return () => window.clearInterval(id);
-  }, [autoStart, disabled, isNative]);
+    const onVis = () => onLifecycle("visibilitychange");
+    document.addEventListener("visibilitychange", onVis);
+
+    // Watchdog also lets the muted-track watcher request a restart.
+    requestRestartRef.current = () => {
+      if (!cancelled && document.visibilityState === "visible") scheduleStart();
+    };
+
+    // Kick off the first settle.
+    scheduleStart();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(quietTimer);
+      window.clearTimeout(verifyTimer);
+      requestRestartRef.current = () => {};
+      document.removeEventListener("visibilitychange", onVis);
+      void stopScanner();
+    };
+  }, [autoStart, disabled, startScanner, stopScanner]);
 
   const showBlockedOverlay = errorKind === "blocked";
   // Fallback tap target for the iOS first-launch gesture requirement. Only
