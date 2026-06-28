@@ -134,6 +134,8 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
   // Set by the lifecycle effect so startScanner's track watcher can trigger a
   // full restart when iOS delivers a muted (black) track.
   const requestRestartRef = useRef<(reason: string) => void>(() => {});
+  // Counts self-heal restarts so the watchdog doesn't loop forever.
+  const healRestartsRef = useRef(0);
   const [isStarting, setIsStarting] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [errorKind, setErrorKindState] = useState<CameraErrorKind>("none");
@@ -537,6 +539,59 @@ export function BarcodeScanner({ disabled = false, autoStart = false, hideContro
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [autoStart, disabled, isNative, startWithRetry, stopScanner]);
+
+  // Self-healing watchdog for the iOS black-camera-on-cold-launch bug.
+  //
+  // The user confirmed that a manual "restart" (stop + start) reliably brings
+  // the viewfinder up, while the initial auto-start leaves it black. The reason
+  // is timing: the first start happens during the launch lifecycle storm and
+  // yields a stream that never paints, yet still reports "scanning", so nothing
+  // else retries. This watchdog watches the REAL <video> pixels and, if the
+  // viewfinder is black (no frame dimensions / paused / muted) despite us
+  // believing we're scanning, performs the exact restart the button does — a
+  // few times max, then gives up to the tap fallback.
+  useEffect(() => {
+    if (!autoStart || disabled || !isNative) return;
+
+    let consecutiveBlack = 0;
+    const id = window.setInterval(() => {
+      if (document.visibilityState !== "visible") {
+        consecutiveBlack = 0;
+        return;
+      }
+      // Only police a stream we think is live and not mid-(re)start.
+      if (!isScanningRef.current || isStartingRef.current) {
+        consecutiveBlack = 0;
+        return;
+      }
+
+      const v = document.querySelector<HTMLVideoElement>(`#${scannerElementId} video`);
+      const track = (v?.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
+      const painting = !!v && !v.paused && v.readyState >= 2 && v.videoWidth > 0 && track?.muted === false;
+
+      if (painting) {
+        consecutiveBlack = 0;
+        healRestartsRef.current = 0; // healthy — reset budget for future sessions
+        return;
+      }
+
+      consecutiveBlack += 1;
+      console.log(
+        `[scanner] watchdog black#${consecutiveBlack} ` +
+        `paused=${v?.paused} ready=${v?.readyState} w=${v?.videoWidth} muted=${track?.muted}`
+      );
+
+      // ~1.2s of continuous black (3 x 400ms) before acting, with a budget.
+      if (consecutiveBlack >= 3 && healRestartsRef.current < 4) {
+        consecutiveBlack = 0;
+        healRestartsRef.current += 1;
+        console.log(`[scanner] watchdog -> auto restart #${healRestartsRef.current}`);
+        requestRestartRef.current("watchdog black video");
+      }
+    }, 400);
+
+    return () => window.clearInterval(id);
+  }, [autoStart, disabled, isNative]);
 
   const showBlockedOverlay = errorKind === "blocked";
   // Fallback tap target for the iOS first-launch gesture requirement. Only
