@@ -32,6 +32,11 @@ export function NativeBarcodeScanner({ disabled = false, onDetected }: Props) {
   const detectedRef = useRef(false);
   const listenerRef = useRef<PluginListenerHandle | null>(null);
   const startedRef = useRef(false);
+  // Keep the latest onDetected without retriggering the start/stop effect.
+  const onDetectedRef = useRef(onDetected);
+  useEffect(() => {
+    onDetectedRef.current = onDetected;
+  }, [onDetected]);
 
   useEffect(() => {
     if (disabled) return;
@@ -42,7 +47,7 @@ export function NativeBarcodeScanner({ disabled = false, onDetected }: Props) {
     };
 
     async function start() {
-      if (startedRef.current) return;
+      if (startedRef.current || cancelled) return;
       startedRef.current = true;
       detectedRef.current = false;
       setState("starting");
@@ -57,6 +62,7 @@ export function NativeBarcodeScanner({ disabled = false, onDetected }: Props) {
         if (cancelled) return;
         if (!granted) {
           setState("blocked");
+          startedRef.current = false;
           return;
         }
 
@@ -66,7 +72,8 @@ export function NativeBarcodeScanner({ disabled = false, onDetected }: Props) {
           if (!clean) return;
           detectedRef.current = true;
           vibrate([18, 28, 28]);
-          void stop().finally(() => onDetected(clean));
+          const cb = onDetectedRef.current;
+          void stop().finally(() => cb(clean));
         });
 
         setPassthrough(true);
@@ -77,6 +84,7 @@ export function NativeBarcodeScanner({ disabled = false, onDetected }: Props) {
         }
         setState("scanning");
       } catch {
+        startedRef.current = false;
         if (!cancelled) setState("error");
         setPassthrough(false);
       }
@@ -100,12 +108,13 @@ export function NativeBarcodeScanner({ disabled = false, onDetected }: Props) {
 
     void start();
 
-    // Restart the native camera when returning to the foreground.
+    // Pause/resume with app foreground state — but only act on real transitions,
+    // not the noisy events seen at launch.
     const onVisible = () => {
-      if (document.visibilityState === "visible" && !detectedRef.current && !disabled) {
-        startedRef.current = false;
-        void start();
-      } else if (document.visibilityState === "hidden") {
+      if (cancelled || disabled) return;
+      if (document.visibilityState === "visible") {
+        if (!detectedRef.current && !startedRef.current) void start();
+      } else {
         void stop();
       }
     };
@@ -116,7 +125,10 @@ export function NativeBarcodeScanner({ disabled = false, onDetected }: Props) {
       document.removeEventListener("visibilitychange", onVisible);
       void stop();
     };
-  }, [disabled, onDetected]);
+    // Intentionally NOT depending on onDetected (captured via ref) so the camera
+    // isn't torn down and restarted on every parent re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disabled]);
 
   async function retry() {
     startedRef.current = false;

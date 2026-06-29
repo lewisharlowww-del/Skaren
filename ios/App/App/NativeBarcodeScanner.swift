@@ -183,7 +183,10 @@ public class NativeBarcodeScannerPlugin: CAPPlugin, CAPBridgedPlugin, AVCaptureM
     }
 
     private func attachPreview(session: AVCaptureSession) {
-        guard let webView = self.webView, let superview = webView.superview else { return }
+        guard let webView = self.webView, let superview = webView.superview else {
+            NSLog("[NativeBarcode] attachPreview: no webView/superview")
+            return
+        }
 
         let container = UIView(frame: superview.bounds)
         container.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -199,11 +202,15 @@ public class NativeBarcodeScannerPlugin: CAPPlugin, CAPBridgedPlugin, AVCaptureM
 
         superview.insertSubview(container, belowSubview: webView)
 
-        // Make the webview transparent so the camera shows through behind the
-        // web-rendered viewfinder overlay.
+        // Make the webview (and the views above it in the hierarchy) transparent
+        // so the camera preview behind it shows through the web-rendered overlay.
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
+        superview.backgroundColor = .clear
+        superview.isOpaque = false
+
+        NSLog("[NativeBarcode] attachPreview: camera inserted below webView (superview=%@)", String(describing: type(of: superview)))
 
         self.cameraContainer = container
         self.previewLayer = preview
