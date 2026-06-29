@@ -61,6 +61,20 @@ textarea {
   background: rgba(76, 175, 125, 0.35);
 }
 
+/* Native camera passthrough — when the native iOS barcode scanner is active,
+   the camera preview is rendered behind the WKWebView. We make the document
+   transparent so it shows through; the scan-page viewfinder overlay renders on
+   top. The scanner-host element keeps a transparent background; only the
+   region it occupies needs to see through (the rest of the scan UI sits in the
+   opaque bottom sheet which paints its own background). */
+html.sk-native-cam-active,
+html.sk-native-cam-active body {
+  background: transparent !important;
+}
+html.sk-native-cam-active .sk-native-cam-host {
+  background: transparent !important;
+}
+
 .sk-auth-background {
   background:
     radial-gradient(

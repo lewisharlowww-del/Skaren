@@ -6,6 +6,8 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, Crown, ScanBarcode, Search } from "lucide-react";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { NativeBarcodeScanner } from "@/components/NativeBarcodeScanner";
+import { isNativeScannerAvailable } from "@/lib/nativeScanner";
 import { BottomNav } from "@/components/BottomNav";
 import { Spinner } from "@/components/Spinner";
 import { useUser } from "@/hooks/useUser";
@@ -113,6 +115,13 @@ export default function ScanPage() {
   const [scanSuccess, setScanSuccess] = useState(false);
   const [savedToHistory, setSavedToHistory] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
+  // Use the native iOS AVFoundation scanner when available (hardware-accelerated,
+  // instant); fall back to the html5-qrcode JS scanner on web/Android.
+  const [useNativeScanner, setUseNativeScanner] = useState(false);
+
+  useEffect(() => {
+    setUseNativeScanner(isNativeScannerAvailable());
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -221,24 +230,31 @@ export default function ScanPage() {
       <AnimatePresence>
         {loading ? <ScanLoadingOverlay barcode={barcode} scanSuccess={scanSuccess} saved={savedToHistory} /> : null}
       </AnimatePresence>
-      <div className="flex h-screen flex-col bg-[#f7f2ea]">
+      <div className={`flex h-screen flex-col ${useNativeScanner ? "sk-native-cam-host bg-transparent" : "bg-[#f7f2ea]"}`}>
         {/* Scanner panel */}
         <div
-          className="relative overflow-hidden"
+          className={`relative overflow-hidden ${useNativeScanner ? "sk-native-cam-host" : ""}`}
           style={{
             height: "min(56vh, 34rem)",
             minHeight: 300,
-            background: "var(--sk-brand-forest)",
+            background: useNativeScanner ? "transparent" : "var(--sk-brand-forest)",
           }}
         >
           {/* Real camera feed fills the full area */}
           <div className="absolute inset-0">
-            <BarcodeScanner
-              autoStart
-              hideControls
-              disabled={loading}
-              onDetected={(detectedBarcode) => void analyzeBarcode(detectedBarcode)}
-            />
+            {useNativeScanner ? (
+              <NativeBarcodeScanner
+                disabled={loading}
+                onDetected={(detectedBarcode) => void analyzeBarcode(detectedBarcode)}
+              />
+            ) : (
+              <BarcodeScanner
+                autoStart
+                hideControls
+                disabled={loading}
+                onDetected={(detectedBarcode) => void analyzeBarcode(detectedBarcode)}
+              />
+            )}
           </div>
 
           {/* Decorative overlay: dark vignette + corner brackets + text */}
