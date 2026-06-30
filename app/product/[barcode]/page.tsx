@@ -884,122 +884,128 @@ export default function ProductPage({ params }: ProductPageProps) {
     <>
       <main className="w-full">
         {loading ? (
-          <div className="min-h-screen bg-[var(--sk-brand-mist)]" role="status" aria-live="polite">
+          <div
+            className="min-h-screen"
+            role="status"
+            aria-live="polite"
+            style={{ minHeight: "100dvh", background: "var(--sk-brand-mist)" }}
+          >
             <style>{`
               @keyframes sk-sweep { 0%{transform:translateX(-130%)} 100%{transform:translateX(130%)} }
-              @keyframes sk-sheen { 0%{transform:translateX(-60%) rotate(8deg)} 100%{transform:translateX(170%) rotate(8deg)} }
               @keyframes sk-ringpulse { 0%,100%{transform:scale(0.85);opacity:0.7} 50%{transform:scale(1.1);opacity:0.28} }
-              .sk2 { position:relative; overflow:hidden; background:#ece6dc; border-radius:12px; }
+              .sk2 { position:relative; overflow:hidden; background:#ece6dc; border-radius:8px; }
               .sk2::after {
                 content:""; position:absolute; inset:0; transform:translateX(-130%);
-                background:linear-gradient(90deg,transparent,rgba(255,255,255,0.9),transparent);
+                background:linear-gradient(90deg,transparent,rgba(255,255,255,0.85),transparent);
                 animation:sk-sweep 1.6s ease-in-out infinite;
               }
               .sk2-d1::after{animation-delay:0s}
               .sk2-d2::after{animation-delay:.12s}
               .sk2-d3::after{animation-delay:.24s}
-              .sk2-d4::after{animation-delay:.36s}
               @media (prefers-reduced-motion: reduce) {
-                .sk2::after, .sk-sheen-el, .sk-ring-el { animation: none !important; }
+                .sk2::after, .sk-ring-el { animation: none !important; }
               }
             `}</style>
 
-            <div className="mx-auto w-full max-w-xl">
-              {/* Hero skeleton — mirrors the product image header */}
-              <div
-                className="relative flex items-end overflow-hidden p-4 pt-[calc(1rem+env(safe-area-inset-top))]"
-                style={{ height: "min(48vh, 18rem)", background: "linear-gradient(155deg,#2c3f24 0%,#2d4a26 55%,#23381d 100%)" }}
+            {/* Top bar — matches the real report (back arrow + status pill) */}
+            <div
+              className="sticky top-0 z-40 flex items-center justify-between px-4 pb-2"
+              style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))", background: "rgba(250,247,242,0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
+            >
+              <Link
+                href="/scan"
+                aria-label={lang === "no" ? "Tilbake til skanner" : "Back to scan"}
+                className="grid h-10 w-10 place-items-center rounded-full"
+                style={{ color: "var(--sk-text-green)" }}
               >
-                <div
-                  className="sk-sheen-el pointer-events-none absolute inset-y-0 left-0 w-1/2"
-                  style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.10),transparent)", animation: "sk-sheen 2.4s ease-in-out infinite" }}
-                />
+                <ArrowLeft className="h-5 w-5" />
+              </Link>
+              <span className="inline-flex items-center gap-1.5" style={{ color: "var(--sk-text-muted)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+                <span className="relative grid h-[14px] w-[14px] place-items-center">
+                  <span className="sk-ring-el absolute inset-0 rounded-full border-[1.5px]" style={{ borderColor: "var(--sk-brand-leaf)", animation: "sk-ringpulse 2s ease-in-out infinite" }} />
+                  <span className="h-[4px] w-[4px] rounded-full" style={{ background: "var(--sk-brand-forest)" }} />
+                </span>
+                {loadingSlow
+                  ? (lang === "no" ? "Laster…" : "Loading…")
+                  : (lang === "no" ? "Analyserer" : "Analyzing")}
+              </span>
+              <div className="h-10 w-10" aria-hidden="true" />
+            </div>
 
-                <Link
-                  href="/scan"
-                  aria-label={lang === "no" ? "Tilbake til skanner" : "Back to scan"}
-                  className="focus-ring absolute left-3 top-[calc(0.75rem+env(safe-area-inset-top))] grid h-11 w-11 place-items-center rounded-full text-white/90"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </Link>
-
-                {/* Glass "Analyzing" pill with the radar */}
-                <div className="absolute right-3 top-[calc(0.85rem+env(safe-area-inset-top))] inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 py-1.5 pl-2 pr-3 text-[11px] font-bold text-[#eaf3de] backdrop-blur-md">
-                  <span className="relative grid h-[18px] w-[18px] place-items-center">
-                    <span className="sk-ring-el absolute inset-0 rounded-full border-[1.5px] border-[rgba(169,224,176,0.7)]" style={{ animation: "sk-ringpulse 2s ease-in-out infinite" }} />
-                    <span className="sk-ring-el absolute inset-[3px] rounded-full border-[1.5px] border-[rgba(169,224,176,0.9)]" style={{ animation: "sk-ringpulse 2s ease-in-out infinite 0.2s" }} />
-                    <span className="h-[5px] w-[5px] rounded-full bg-[#a9e0b0]" />
-                  </span>
-                  {loadingSlow
-                    ? (lang === "no" ? "Laster…" : "Loading…")
-                    : (lang === "no" ? "Analyserer" : "Analyzing")}
-                </div>
-
-                {/* Product image placeholder */}
-                <div className="absolute left-1/2 top-7 h-[126px] w-[104px] -translate-x-1/2 rounded-2xl border border-white/10 bg-white/10" />
-
-                {/* Name + brand placeholder lines */}
-                <div className="relative z-[2] w-full">
-                  <div className="h-5 w-2/3 rounded-lg bg-white/30" />
-                  <div className="mt-2 h-3 w-2/5 rounded-md bg-white/20" />
+            {/* Hero card — circular image + name/brand/status, cream bg, green left border */}
+            <div
+              className="relative mx-4 mt-2 overflow-hidden rounded-2xl"
+              style={{ background: "var(--sk-brand-mist-card)", border: "0.5px solid var(--sk-border-default)", borderLeftWidth: 4, borderLeftColor: "var(--sk-brand-leaf)" }}
+            >
+              <div className="flex items-center gap-3.5" style={{ padding: "18px 18px 18px 14px" }}>
+                <div className="sk2 sk2-d1 shrink-0 rounded-full" style={{ width: 80, height: 80, background: "#e6efe6" }} />
+                <div className="min-w-0 flex-1">
+                  <div className="sk2 sk2-d1 h-3.5 w-4/5 rounded-full" />
+                  <div className="sk2 sk2-d2 mt-2 h-2.5 w-2/5 rounded-full" />
+                  <div className="sk2 sk2-d3 mt-2.5 h-5 w-1/2 rounded-full" />
                 </div>
               </div>
+            </div>
 
-              {/* Content skeleton — overlaps the hero like the real report */}
-              <div className="relative z-[2] -mt-6 flex flex-col gap-3 px-4 pb-10">
-                {/* Grade card */}
-                <div className="flex items-center gap-4 rounded-[1.4rem] border border-black/5 bg-white p-4 shadow-[0_10px_30px_rgba(26,92,58,0.07)]">
-                  <div
-                    className="relative grid h-[66px] w-[66px] shrink-0 place-items-center rounded-full"
-                    style={{ background: "conic-gradient(#cfe6d2 0 70%, #eee7dc 0)" }}
-                  >
-                    <div className="absolute inset-2 rounded-full bg-white" />
-                    <div className="sk2 sk2-d1 relative h-[30px] w-[30px] rounded-[10px]" />
+            {/* Grades — section label + two side-by-side grade circles */}
+            <section className="mx-4 mt-3">
+              <div className="sk2 sk2-d1 mb-2 ml-0.5 h-2.5 w-16 rounded-full" />
+              <div className="overflow-hidden rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "0.5px solid var(--sk-border-default)" }}>
+                <div className="grid grid-cols-2">
+                  <div className="flex flex-col items-center gap-2 px-4 py-4">
+                    <div className="sk2 sk2-d1 rounded-full" style={{ width: 72, height: 72 }} />
+                    <div className="sk2 sk2-d1 h-2.5 w-12 rounded-full" />
+                    <div className="sk2 sk2-d1 h-2 w-16 rounded-full" />
                   </div>
-                  <div className="flex flex-1 flex-col gap-2.5">
-                    <div className="sk2 sk2-d1 h-3 w-2/5 rounded-full" />
-                    <div className="sk2 sk2-d2 h-4 w-3/4 rounded-full" />
-                    <div className="sk2 sk2-d3 h-2.5 w-1/2 rounded-full" />
+                  <div className="flex flex-col items-center gap-2 px-4 py-4" style={{ borderLeft: "0.5px solid var(--sk-border-default)" }}>
+                    <div className="sk2 sk2-d2 rounded-full" style={{ width: 72, height: 72 }} />
+                    <div className="sk2 sk2-d2 h-2.5 w-12 rounded-full" />
+                    <div className="sk2 sk2-d2 h-2 w-16 rounded-full" />
                   </div>
                 </div>
+              </div>
+            </section>
 
-                {/* Facts card */}
-                <div className="rounded-[1.4rem] border border-black/5 bg-white p-4 shadow-[0_8px_24px_rgba(26,92,58,0.05)]">
-                  <div className="mb-3 flex flex-col gap-2">
-                    <div className="sk2 sk2-d1 h-2.5 w-1/3 rounded-full" />
-                    <div className="sk2 sk2-d2 h-4 w-1/2 rounded-full" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {[0, 1, 2, 3].map((cell) => (
-                      <div key={cell} className="flex flex-col gap-2 rounded-2xl border border-black/5 bg-[#fcfbf8] p-2.5">
-                        <div className={`sk2 sk2-d${cell + 1} h-8 w-8 rounded-[11px]`} />
-                        <div className={`sk2 sk2-d${cell + 1} h-2.5 w-3/5 rounded-full`} />
-                        <div className={`sk2 sk2-d${cell + 1} h-3 w-4/5 rounded-full`} />
+            {/* Two section cards below (processing / nutrition placeholders) */}
+            <div className="px-4 pb-10 pt-1">
+              {[0, 1].map((block) => (
+                <div key={block} className="mb-4 flex flex-col gap-2.5">
+                  <div className="sk2 sk2-d1 ml-0.5 h-2.5 w-24 rounded-full" />
+                  <div className="rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "0.5px solid var(--sk-border-default)", padding: 16 }}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="sk2 sk2-d1 h-3.5 w-2/5 rounded-full" />
+                        <div className="sk2 sk2-d2 mt-2 h-2.5 w-3/5 rounded-full" />
                       </div>
-                    ))}
+                      <div className="sk2 sk2-d2 h-12 w-14 rounded-xl" />
+                    </div>
+                    <div className="mt-3 flex items-center gap-1.5">
+                      {[0, 1, 2, 3].map((seg) => (
+                        <div key={seg} className="sk2 sk2-d3 h-2 flex-1 rounded" />
+                      ))}
+                    </div>
                   </div>
                 </div>
+              ))}
 
-                {/* Slow-loading recovery (kept) */}
-                {loadingSlow ? (
-                  <div className="mt-1 flex flex-col items-center gap-3 rounded-[1.4rem] border border-[var(--sk-border-default)] bg-white px-5 py-5 text-center">
-                    <p className="type-body-sm font-bold text-[var(--sk-text-primary)]">
-                      {lang === "no" ? "Dette tar lengre enn vanlig" : "This is taking longer than usual"}
-                    </p>
-                    <p className="type-body-sm max-w-xs text-[var(--sk-text-muted)]">
-                      {lang === "no" ? "Du kan prøve igjen eller gå tilbake." : "You can retry or return to the scanner."}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => void loadProduct({ skipCache: true })}
-                      className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--sk-border-default)] bg-white px-5 text-sm font-bold text-[var(--sk-brand-forest)]"
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                      {lang === "no" ? "Prøv igjen" : "Retry"}
-                    </button>
-                  </div>
-                ) : null}
-              </div>
+              {loadingSlow ? (
+                <div className="flex flex-col items-center gap-3 rounded-2xl px-5 py-5 text-center" style={{ background: "var(--sk-surface-white)", border: "0.5px solid var(--sk-border-default)" }}>
+                  <p className="type-body-sm font-bold text-[var(--sk-text-primary)]">
+                    {lang === "no" ? "Dette tar lengre enn vanlig" : "This is taking longer than usual"}
+                  </p>
+                  <p className="type-body-sm max-w-xs text-[var(--sk-text-muted)]">
+                    {lang === "no" ? "Du kan prøve igjen eller gå tilbake." : "You can retry or return to the scanner."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void loadProduct({ skipCache: true })}
+                    className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--sk-border-default)] bg-white px-5 text-sm font-bold text-[var(--sk-brand-forest)]"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    {lang === "no" ? "Prøv igjen" : "Retry"}
+                  </button>
+                </div>
+              ) : null}
             </div>
 
             <span className="sr-only">
