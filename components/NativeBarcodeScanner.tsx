@@ -19,6 +19,33 @@ type NativeState = "starting" | "scanning" | "blocked" | "error";
 const PASSTHROUGH_CLASS = "sk-native-cam-active";
 
 /**
+ * Force WebKit to recomposite the (now transparent) document so the native
+ * camera preview sitting behind the WKWebView becomes visible immediately,
+ * instead of only after the user navigates to another tab and back.
+ *
+ * Switching tabs "fixes" the black/invisible camera precisely because the
+ * remount forces WebKit to repaint the transparent DOM. Flipping the
+ * passthrough class alone changes the styles but doesn't always invalidate the
+ * already-composited opaque backing layer. We reproduce that invalidation by
+ * toggling a GPU-compositing hint on <html> across a few animation frames,
+ * which forces a fresh composite without any visible flicker. Repeated over a
+ * short window because the layer can take a beat to become paintable on a cold
+ * launch (mirrors the native `forceWebViewRecomposite`).
+ */
+function forceWebViewRepaint(): void {
+  const root = document.documentElement;
+  const kick = () => {
+    requestAnimationFrame(() => {
+      root.style.transform = "translateZ(0)";
+      requestAnimationFrame(() => {
+        root.style.transform = "";
+      });
+    });
+  };
+  [0, 120, 300, 600, 1100].forEach((d) => window.setTimeout(kick, d));
+}
+
+/**
  * iOS-only scanner backed by the native AVFoundation plugin.
  *
  * The native camera preview is inserted behind the WKWebView, so for it to be
@@ -44,6 +71,7 @@ export function NativeBarcodeScanner({ disabled = false, onDetected }: Props) {
 
     const setPassthrough = (on: boolean) => {
       document.documentElement.classList.toggle(PASSTHROUGH_CLASS, on);
+      if (on) forceWebViewRepaint();
     };
 
     async function start() {

@@ -214,6 +214,49 @@ public class NativeBarcodeScannerPlugin: CAPPlugin, CAPBridgedPlugin, AVCaptureM
 
         self.cameraContainer = container
         self.previewLayer = preview
+
+        // CRITICAL VISIBILITY FIX: flipping `isOpaque` mid-session does NOT make
+        // WKWebView recomposite its already-rendered opaque backing layer, so the
+        // camera behind it stays hidden until something invalidates the layer.
+        // That "something" is exactly what switching tabs and coming back does —
+        // hence the camera only appearing after a navigation. We reproduce that
+        // invalidation here by nudging the layout/compositor a few times over a
+        // short window (the moment the layer becomes paintable varies on cold
+        // launch), without restarting the capture session.
+        self.forceWebViewRecomposite(webView)
+    }
+
+    /// Force WebKit to recomposite a transparent WKWebView so the native camera
+    /// preview inserted behind it becomes visible immediately (instead of only
+    /// after the user navigates away and back). Mirrors the web scanner's
+    /// `forceVideoRepaint` trick on the native side.
+    ///
+    /// WKWebView renders out-of-process; `setNeedsDisplay` alone is ignored. A
+    /// committed size change is what reliably makes WebKit produce a new frame
+    /// (this is effectively what a tab switch does). We inset the frame by a
+    /// sub-pixel amount on one run-loop tick and restore it on the next, so the
+    /// displacement never visibly draws but WebKit still re-renders — now with
+    /// the transparent background, revealing the camera behind it.
+    private func forceWebViewRecomposite(_ webView: UIView) {
+        let original = webView.frame
+        let invalidate: () -> Void = {
+            webView.frame = original.insetBy(dx: -0.5, dy: -0.5)
+            webView.setNeedsLayout()
+            webView.layoutIfNeeded()
+        }
+        let restore: () -> Void = {
+            webView.frame = original
+            webView.setNeedsLayout()
+            webView.layoutIfNeeded()
+        }
+        // Repeat across a short window because the WebView's layer can take a
+        // beat to become paintable on a cold launch; each pair is one invalidate
+        // tick followed by a restore tick.
+        let starts: [TimeInterval] = [0, 0.2, 0.5, 1.0]
+        for start in starts {
+            DispatchQueue.main.asyncAfter(deadline: .now() + start, execute: invalidate)
+            DispatchQueue.main.asyncAfter(deadline: .now() + start + 0.05, execute: restore)
+        }
     }
 
     @objc func stopScan(_ call: CAPPluginCall) {
