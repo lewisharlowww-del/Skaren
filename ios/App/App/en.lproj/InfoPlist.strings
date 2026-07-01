@@ -1,0 +1,5 @@
+/* English localized Info.plist strings */
+"CFBundleDisplayName" = "Skaren";
+"NSCameraUsageDescription" = "Skaren uses your camera to scan product barcodes.";
+"NSFaceIDUsageDescription" = "Skaren uses Face ID for secure sign-in.";
+"NSPhotoLibraryUsageDescription" = "Skaren may save product images to your photo library.";

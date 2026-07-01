@@ -1,0 +1,5 @@
+/* Bokmål (Norwegian) localized Info.plist strings */
+"CFBundleDisplayName" = "Skaren";
+"NSCameraUsageDescription" = "Skaren bruker kameraet til å skanne strekkoder på produkter.";
+"NSFaceIDUsageDescription" = "Skaren bruker Face ID for sikker innlogging.";
+"NSPhotoLibraryUsageDescription" = "Skaren kan lagre produktbilder i bildebiblioteket ditt.";
