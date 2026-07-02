@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   ChevronRight,
   Crown,
+  Info,
   PackageSearch,
   Search,
   X
@@ -121,6 +122,12 @@ export default function ProductSearchPage() {
       }
 
       if (response.status === 403) {
+        const premium = supabase ? await getUserPremiumStatus(supabase) : false;
+        if (premium) {
+          setResults([]);
+          setError("Your Pro access is syncing. Try search again in a moment.");
+          return;
+        }
         setIsPremium(false);
         return;
       }
@@ -217,7 +224,7 @@ export default function ProductSearchPage() {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Milk, salmon, yogurt..."
+                placeholder="Melk, laks, yoghurt..."
                 aria-label="Search Norwegian products"
                 autoComplete="off"
                 className="h-14 min-w-0 flex-1 bg-transparent px-3 text-[16px] font-semibold outline-none placeholder:font-normal placeholder:text-[var(--sk-text-faint)]"
@@ -241,6 +248,12 @@ export default function ProductSearchPage() {
               {loading ? <Spinner size={16} /> : <Search className="h-4 w-4" />}
               {loading ? "Searching..." : "Search"}
             </button>
+            <div className="mt-3 flex items-start gap-2 rounded-2xl border border-[var(--sk-border-default)] bg-white/70 px-3.5 py-2.5">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sk-brand-forest)]" />
+              <p className="type-body-sm text-[var(--sk-text-muted)]">
+                Search in Norwegian. Product names come from Norwegian stores, so use terms like <span className="font-semibold text-[var(--sk-text-primary)]">melk</span>, <span className="font-semibold text-[var(--sk-text-primary)]">laks</span> or <span className="font-semibold text-[var(--sk-text-primary)]">yoghurt</span>.
+              </p>
+            </div>
           </form>
 
           <section className="mt-6" aria-live="polite">
