@@ -197,7 +197,18 @@ const englishToNorwegianSearchTerms: Record<string, string[]> = {
   rice: ["ris"],
   cereal: ["frokostblanding"],
   ham: ["skinke"],
-  sausage: ["pølse"]
+  sausage: ["pølse"],
+  onion: ["løk"],
+  carrot: ["gulrot"],
+  cucumber: ["agurk"],
+  pepper: ["paprika"],
+  "sour cream": ["rømme"],
+  "minced meat": ["kjøttdeig"],
+  "ground beef": ["kjøttdeig", "storfe"],
+  shrimp: ["reker"],
+  prawns: ["reker"],
+  cod: ["torsk"],
+  pork: ["svin"]
 };
 
 // Broad Norwegian staple queries that are really an umbrella for several
@@ -207,12 +218,46 @@ const englishToNorwegianSearchTerms: Record<string, string[]> = {
 // query out to the concrete subtypes so those staples surface. Keep the lists
 // short: each extra term is an additional upstream request.
 const norwegianStapleExpansions: Record<string, string[]> = {
+  // Dairy & eggs
   melk: ["helmelk", "lettmelk", "skummet melk", "ekstra lettmelk"],
-  ost: ["gulost", "hvitost", "brunost"],
-  brød: ["grovbrød", "loff", "rugbrød"],
-  yoghurt: ["yoghurt naturell"],
+  ost: ["gulost", "hvitost", "brunost", "revet ost"],
+  yoghurt: ["yoghurt naturell", "gresk yoghurt", "drikkeyoghurt"],
+  fløte: ["kremfløte", "matfløte"],
+  rømme: ["seterrømme", "lettrømme"],
+  smør: ["meierismør", "bremykt", "meierismor"],
+  egg: ["frokostegg", "egg frittgående", "økologiske egg"],
+
+  // Bakery
+  brød: ["grovbrød", "loff", "rugbrød", "kneippbrød"],
+  rundstykker: ["grove rundstykker", "rundstykker fine"],
+
+  // Meat & fish
+  kylling: ["kyllingfilet", "kyllinglår", "kylling hel"],
+  kjøttdeig: ["karbonadedeig", "kjøttdeig storfe"],
+  fisk: ["torsk", "sei", "fiskefilet", "laks"],
+  laks: ["laksefilet", "røkt laks"],
+  pølse: ["grillpølse", "wienerpølse", "kjøttpølse"],
+  bacon: ["bacon strimlet"],
+  skinke: ["kokt skinke", "spekeskinke"],
+
+  // Produce (Norwegian nouns are usually pluralised on the shelf)
+  eple: ["epler"],
+  banan: ["bananer"],
+  appelsin: ["appelsiner"],
+  tomat: ["tomater", "cherrytomater"],
+  potet: ["poteter", "mandelpotet"],
+  løk: ["gul løk", "rødløk"],
+  gulrot: ["gulrøtter"],
+  agurk: ["slangeagurk"],
+  paprika: ["paprika rød"],
+
+  // Pantry
+  pasta: ["spaghetti", "makaroni", "fusilli"],
+  ris: ["jasminris", "basmatiris", "langkornet ris"],
   juice: ["appelsinjuice", "eplejuice"],
-  fløte: ["kremfløte", "matfløte"]
+  brus: ["cola", "brus sukkerfri"],
+  kaffe: ["filtermalt kaffe", "kaffe bønner", "kokmalt kaffe"],
+  te: ["te poser", "grønn te"]
 };
 
 function expandKassalappSearchQueries(query: string) {
@@ -710,6 +755,37 @@ export function scoreSearchRelevance(
   );
 }
 
+// Map over items with bounded concurrency. Kassalapp rate-limits bursts, so we
+// cannot fire every expansion request at once (that returns HTTP 429), but we
+// also do not want to wait for them one at a time. A small pool keeps search
+// fast while staying under the limit.
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T, index: number) => Promise<R>
+): Promise<Array<PromiseSettledResult<R>>> {
+  const results: Array<PromiseSettledResult<R>> = new Array(items.length);
+  let cursor = 0;
+
+  async function runNext(): Promise<void> {
+    const index = cursor++;
+    if (index >= items.length) return;
+    try {
+      results[index] = { status: "fulfilled", value: await worker(items[index], index) };
+    } catch (reason) {
+      results[index] = { status: "rejected", reason };
+    }
+    await runNext();
+  }
+
+  const pool = Array.from(
+    { length: Math.min(Math.max(1, concurrency), items.length || 1) },
+    () => runNext()
+  );
+  await Promise.all(pool);
+  return results;
+}
+
 export async function searchKassalappProducts(
   query: string,
   limit = 6,
@@ -724,69 +800,91 @@ export async function searchKassalappProducts(
       ...searchQueries.map((search) => ({ search })),
       ...(options.includeBrandMatch ? [{ brand: query.trim() }] : [])
     ];
-    const results: KassalappSearchProduct[] = [];
 
-    for (const searchRequest of requests) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
-      const url = new URL("https://kassal.app/api/v1/products");
-      if (searchRequest.search) {
-        url.searchParams.set("search", searchRequest.search);
-      }
-      if (searchRequest.brand) {
-        url.searchParams.set("brand", searchRequest.brand);
-      }
-      if (options.categoryId) {
-        url.searchParams.set("category_id", String(options.categoryId));
-      }
-      if (options.category) {
-        url.searchParams.set("category", options.category);
-      }
-      url.searchParams.set("unique", "1");
-      url.searchParams.set("exclude_without_ean", "1");
-      url.searchParams.set("size", String(Math.min(100, Math.max(limit, 6))));
+    const size = String(Math.min(100, Math.max(limit, 6)));
 
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${apiKey}`
-        },
-        cache: "no-store",
-        signal: controller.signal
+    // Run expansion requests with a small concurrency pool: parallel enough to
+    // stay fast, bounded enough to avoid Kassalapp's burst rate limit (60/min).
+    // A single failed sub-request should not fail the whole search.
+    const settled = await mapWithConcurrency(requests, 2, async (searchRequest) => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const url = new URL("https://kassal.app/api/v1/products");
+        if (searchRequest.search) {
+          url.searchParams.set("search", searchRequest.search);
+        }
+        if (searchRequest.brand) {
+          url.searchParams.set("brand", searchRequest.brand);
+        }
+        if (options.categoryId) {
+          url.searchParams.set("category_id", String(options.categoryId));
+        }
+        if (options.category) {
+          url.searchParams.set("category", options.category);
+        }
+        url.searchParams.set("unique", "1");
+        url.searchParams.set("exclude_without_ean", "1");
+        url.searchParams.set("size", size);
+
+        try {
+          const response = await fetch(url, {
+            headers: { Authorization: `Bearer ${apiKey}` },
+            // Kassalapp allows only 60 requests/minute and each search fans out
+            // into several sub-requests. Product results are stable for a long
+            // time, so cache each upstream request in Next's Data Cache for an
+            // hour. Popular staples ("melk", "brød"...) then cost zero requests
+            // against the rate budget after the first lookup.
+            next: { revalidate: 3600 },
+            signal: controller.signal
+          });
+
+          if (!response.ok) {
+            const details = await response.text().catch(() => "");
+            console.error(
+              "[Kassalapp] Search failed:",
+              response.status,
+              searchRequest.search ?? searchRequest.brand ?? `category ${options.categoryId ?? options.category ?? ""}`
+            );
+            throw new KassalappSearchError("Kassalapp search failed.", response.status, details);
+          }
+
+          const rawResponse = (await response.json()) as KassalappSearchResponse;
+          return unwrapKassalappSearchProducts(rawResponse)
+            .map<KassalappSearchProduct | null>((product) => {
+              const name = firstText(product.name);
+              const barcode = barcodeFromProduct(product);
+              if (!name || !barcode) return null;
+
+              return {
+                barcode,
+                name,
+                brand: firstText(product.brand, product.vendor) ?? "Brand not listed",
+                image: imageFromProduct(product),
+                categories: normalizeCategories(product),
+                healthGrade: healthGradeFromRawProduct(product)
+              };
+            })
+            .filter((product): product is KassalappSearchProduct => Boolean(product));
+        } finally {
+          clearTimeout(timeout);
+        }
       });
 
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        const details = await response.text().catch(() => "");
-        console.error(
-          "[Kassalapp] Search failed:",
-          response.status,
-          searchRequest.search ?? searchRequest.brand ?? `category ${options.categoryId ?? options.category ?? ""}`
-        );
-        throw new KassalappSearchError("Kassalapp search failed.", response.status, details);
-      }
-
-      const rawResponse = (await response.json()) as KassalappSearchResponse;
-      const products = unwrapKassalappSearchProducts(rawResponse)
-        .map<KassalappSearchProduct | null>((product) => {
-          const name = firstText(product.name);
-          const barcode = barcodeFromProduct(product);
-          if (!name || !barcode) return null;
-
-          return {
-            barcode,
-            name,
-            brand: firstText(product.brand, product.vendor) ?? "Brand not listed",
-            image: imageFromProduct(product),
-            categories: normalizeCategories(product),
-            healthGrade: healthGradeFromRawProduct(product)
-          };
-        })
-        .filter((product): product is KassalappSearchProduct => Boolean(product));
-
-      results.push(...products);
-
+    // If every request failed, surface the first error so callers can react
+    // (e.g. show "search unavailable"); a partial failure just yields fewer
+    // results.
+    const fulfilled = settled.filter(
+      (outcome): outcome is PromiseFulfilledResult<KassalappSearchProduct[]> =>
+        outcome.status === "fulfilled"
+    );
+    if (fulfilled.length === 0) {
+      const firstRejection = settled.find(
+        (outcome): outcome is PromiseRejectedResult => outcome.status === "rejected"
+      );
+      if (firstRejection) throw firstRejection.reason;
     }
+
+    const results = fulfilled.flatMap((outcome) => outcome.value);
 
     return uniqueByText(results, (product) => product.barcode ?? product.name)
       .map((product) => ({
