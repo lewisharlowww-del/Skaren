@@ -2,11 +2,10 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, Crown, ScanBarcode, Search } from "lucide-react";
-import { BarcodeScanner } from "@/components/BarcodeScanner";
-import { NativeBarcodeScanner } from "@/components/NativeBarcodeScanner";
 import { isNativeScannerAvailable } from "@/lib/nativeScanner";
 import { BottomNav } from "@/components/BottomNav";
 import { Spinner } from "@/components/Spinner";
@@ -19,6 +18,19 @@ import { cacheProductLocally } from "@/lib/localProducts";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { getUserPremiumStatus } from "@/lib/premium";
 import type { ProductResult } from "@/lib/types";
+
+// The web scanner pulls in html5-qrcode (~3.3 MB of source), and the native
+// scanner is only used inside the Capacitor app. Load both on demand so the
+// scan page's initial bundle stays small; the camera UI only appears after the
+// page has mounted anyway. ssr:false because both need browser camera APIs.
+const BarcodeScanner = dynamic(
+  () => import("@/components/BarcodeScanner").then((mod) => mod.BarcodeScanner),
+  { ssr: false }
+);
+const NativeBarcodeScanner = dynamic(
+  () => import("@/components/NativeBarcodeScanner").then((mod) => mod.NativeBarcodeScanner),
+  { ssr: false }
+);
 
 const loadingMessages = ["Reading barcode...", "Checking ingredients...", "Checking product grades...", "Analyzing nutrition..."];
 
