@@ -3,6 +3,18 @@ import { PHASE_DEVELOPMENT_SERVER } from "next/constants.js";
 /** @type {(phase: string) => import('next').NextConfig} */
 const createNextConfig = (phase) => ({
   distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next",
+  async redirects() {
+    // The old animated splash + landing/front screen were removed.
+    // Open the app directly on the real scanner with an instant HTTP redirect
+    // (no meta-refresh flash).
+    return [
+      {
+        source: "/",
+        destination: "/scan",
+        permanent: false
+      }
+    ];
+  },
   async headers() {
     return [
       {
