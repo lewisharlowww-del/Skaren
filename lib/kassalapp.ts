@@ -200,6 +200,21 @@ const englishToNorwegianSearchTerms: Record<string, string[]> = {
   sausage: ["pølse"]
 };
 
+// Broad Norwegian staple queries that are really an umbrella for several
+// specific product types. Kassalapp searches product names literally, and a
+// carton of milk is named "Helmelk"/"Lettmelk" (its type), not "Melk" - so a
+// plain "melk" search misses the Tine/Q cartons people actually buy. Fan the
+// query out to the concrete subtypes so those staples surface. Keep the lists
+// short: each extra term is an additional upstream request.
+const norwegianStapleExpansions: Record<string, string[]> = {
+  melk: ["helmelk", "lettmelk", "skummet melk", "ekstra lettmelk"],
+  ost: ["gulost", "hvitost", "brunost"],
+  brød: ["grovbrød", "loff", "rugbrød"],
+  yoghurt: ["yoghurt naturell"],
+  juice: ["appelsinjuice", "eplejuice"],
+  fløte: ["kremfløte", "matfløte"]
+};
+
 function expandKassalappSearchQueries(query: string) {
   const cleanedQuery = cleanForKassalappSearch(query);
   const normalized = cleanedQuery.toLowerCase();
@@ -216,11 +231,19 @@ function expandKassalappSearchQueries(query: string) {
     (word) => englishToNorwegianSearchTerms[word] ?? []
   );
 
+  // If the query (or its Norwegian translation) is a broad staple, also search
+  // its concrete subtypes so e.g. "melk"/"milk" surfaces Helmelk & Lettmelk.
+  const stapleKeys = [normalized, ...aliases, ...translatedWords];
+  const stapleExpansions = stapleKeys.flatMap(
+    (key) => norwegianStapleExpansions[key] ?? []
+  );
+
   return uniqueSearchTerms([
     ...aliases,
     translatedPhrase,
     ...wordAliases,
-    cleanedQuery || query
+    cleanedQuery || query,
+    ...stapleExpansions
   ]);
 }
 
@@ -605,7 +628,7 @@ function wordMatchesQuery(word: string, query: string): boolean {
   return NORWEGIAN_INFLECTION_SUFFIXES.includes(suffix);
 }
 
-export function scoreSearchRelevance(
+function scoreSearchRelevanceForTerm(
   product: Pick<KassalappSearchProduct, "name" | "categories" | "image">,
   query: string
 ): number {
@@ -668,6 +691,23 @@ export function scoreSearchRelevance(
   if (product.image) score += 3;
 
   return score;
+}
+
+// Public relevance score. Accepts the user's query plus any expanded Norwegian
+// terms (e.g. "milk" -> ["melk"], "melk" -> ["helmelk", "lettmelk", ...]) and
+// returns the best score across all of them. This keeps English and broad
+// staple searches ranking the actual Norwegian products first, since the
+// underlying product data is Norwegian.
+export function scoreSearchRelevance(
+  product: Pick<KassalappSearchProduct, "name" | "categories" | "image">,
+  query: string,
+  extraTerms: string[] = []
+): number {
+  const terms = uniqueSearchTerms([query, ...extraTerms]);
+  return terms.reduce(
+    (best, term) => Math.max(best, scoreSearchRelevanceForTerm(product, term)),
+    Number.NEGATIVE_INFINITY
+  );
 }
 
 export async function searchKassalappProducts(
@@ -751,7 +791,9 @@ export async function searchKassalappProducts(
     return uniqueByText(results, (product) => product.barcode ?? product.name)
       .map((product) => ({
         product,
-        relevance: scoreSearchRelevance(product, query)
+        // Score against the query and its Norwegian expansions so English and
+        // broad staple searches still rank the actual products first.
+        relevance: scoreSearchRelevance(product, query, searchQueries)
       }))
       .sort((a, b) => {
         // Primary: relevance to the typed query (actual product over derivatives).
