@@ -1,4 +1,9 @@
-import type { KassalappNutrition, ProductResult, ProductStore, StorePrice } from "@/lib/types";
+import type { GradeLetter, KassalappNutrition, ProductResult, ProductStore, StorePrice } from "@/lib/types";
+import {
+  calculateHealthGrade,
+  hasNokkelhullLabel,
+  nutritionDataFromKassalapp
+} from "@/lib/healthscore";
 
 type KassalappStorePrice = {
   price?: number | string | null;
@@ -72,6 +77,7 @@ export type KassalappSearchProduct = {
   brand: string;
   image: string | null;
   categories: string[];
+  healthGrade: GradeLetter | null;
 };
 
 export class KassalappLookupError extends Error {
@@ -330,6 +336,25 @@ function normalizeNutrition(values?: KassalappProduct["nutrition"]): KassalappNu
     .filter((value): value is KassalappNutrition => Boolean(value));
 }
 
+// Compute a health grade directly from a raw Kassalapp product. The search
+// payload already carries nutrition/labels/category, so we can grade every
+// result without an extra per-product API call. Returns null when there is no
+// nutrition signal to grade against.
+function healthGradeFromRawProduct(product: KassalappProduct): GradeLetter | null {
+  const nutrition = normalizeNutrition(product.nutrition);
+  const labels = normalizeLabels(product.labels);
+
+  if (nutrition.length === 0 && !hasNokkelhullLabel(labels)) return null;
+
+  const categories = normalizeCategories(product);
+
+  return calculateHealthGrade({
+    nutrition: nutritionDataFromKassalapp(nutrition),
+    labels,
+    category: categories.join(" ")
+  });
+}
+
 function uniqueByText<T>(values: T[], getKey: (value: T) => string) {
   const seen = new Set<string>();
 
@@ -583,7 +608,8 @@ export async function searchKassalappProducts(
             name,
             brand: firstText(product.brand, product.vendor) ?? "Brand not listed",
             image: imageFromProduct(product),
-            categories: normalizeCategories(product)
+            categories: normalizeCategories(product),
+            healthGrade: healthGradeFromRawProduct(product)
           };
         })
         .filter((product): product is KassalappSearchProduct => Boolean(product));

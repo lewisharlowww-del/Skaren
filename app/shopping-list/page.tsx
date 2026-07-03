@@ -359,6 +359,7 @@ function AddProductSheet({
         quantity: formatQuantity(quantityAmount, quantityUnit),
         category:
           category === "Other" ? inferShoppingCategory(product) : category,
+        healthGrade: product.healthGrade ?? undefined,
         addedFromScan: false
       });
       setAddedMessage(
@@ -607,6 +608,14 @@ function AddProductSheet({
                         {product.brand || t('list_brand_unknown', lang)}
                       </span>
                     </span>
+                    {product.healthGrade ? (
+                      <span
+                        className={`grid h-7 min-w-7 shrink-0 place-items-center rounded-full px-2 text-[11px] font-bold ${gradeStyles[product.healthGrade]}`}
+                        aria-label={`Health grade ${product.healthGrade}`}
+                      >
+                        {product.healthGrade}
+                      </span>
+                    ) : null}
                     {isAdding ? (
                       <Spinner size={16} className="shrink-0" aria-label="Adding product" />
                     ) : isSelected ? (

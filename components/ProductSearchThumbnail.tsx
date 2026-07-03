@@ -2,9 +2,10 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PackageSearch } from "lucide-react";
 import type { KassalappSearchProduct } from "@/lib/kassalapp";
+import { buildProductImageCandidates } from "@/lib/productImage";
 
 export function ProductSearchThumbnail({
   product,
@@ -13,8 +14,17 @@ export function ProductSearchThumbnail({
   product: KassalappSearchProduct;
   className?: string;
 }) {
-  const [imageFailed, setImageFailed] = useState(false);
-  const showImage = Boolean(product.image && !imageFailed);
+  const candidates = buildProductImageCandidates(product.image, product.barcode);
+  const [candidateIndex, setCandidateIndex] = useState(0);
+
+  // Reset to the first candidate whenever the product (and therefore its
+  // candidate list) changes, e.g. when a result row is reused across searches.
+  useEffect(() => {
+    setCandidateIndex(0);
+  }, [product.barcode, product.image]);
+
+  const currentSrc = candidates[candidateIndex];
+  const showImage = Boolean(currentSrc);
 
   return (
     <div
@@ -22,10 +32,11 @@ export function ProductSearchThumbnail({
     >
       {showImage ? (
         <img
-          src={product.image ?? ""}
+          key={currentSrc}
+          src={currentSrc}
           alt=""
           className="h-full w-full object-contain"
-          onError={() => setImageFailed(true)}
+          onError={() => setCandidateIndex((index) => index + 1)}
         />
       ) : (
         <>
