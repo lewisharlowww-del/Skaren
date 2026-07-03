@@ -574,8 +574,35 @@ const RELEVANCE_DERIVATIVE_CATEGORIES = [
   "kaker"
 ];
 
+// Flavoured / sweetened variants of a plain staple. When someone searches for a
+// base product ("melk"/milk) we still want to show these (they sit in the right
+// category), but the plain version should come first. Chocolate milk lives in
+// the "Sjokolademelk" category and its name carries these cues.
+const RELEVANCE_FLAVOURED_VARIANTS = [
+  "sjokolade",
+  "sjoko",
+  "vanilje",
+  "jordbær",
+  "banan",
+  "birthday",
+  "cookies",
+  "karamell"
+];
+
 function tokenize(value: string): string[] {
   return value.toLowerCase().match(/[a-zæøå0-9]+/g) ?? [];
+}
+
+// Norwegian nouns inflect ("banan" -> "bananer"/"bananen", "eple" -> "epler").
+// Treat a word as matching the query when it equals the query or is the query
+// plus a short inflection suffix, so "Bananer" still matches a "banan" search.
+const NORWEGIAN_INFLECTION_SUFFIXES = ["", "en", "et", "er", "ene", "a", "n"];
+
+function wordMatchesQuery(word: string, query: string): boolean {
+  if (word === query) return true;
+  if (word.length <= query.length || !word.startsWith(query)) return false;
+  const suffix = word.slice(query.length);
+  return NORWEGIAN_INFLECTION_SUFFIXES.includes(suffix);
 }
 
 export function scoreSearchRelevance(
@@ -588,18 +615,20 @@ export function scoreSearchRelevance(
   const name = product.name.toLowerCase();
   const nameWords = tokenize(name);
   const categories = product.categories.map((category) => category.toLowerCase());
+  const categoryWords = categories.flatMap((category) => tokenize(category));
   const categoryText = categories.join(" ");
 
   let score = 0;
 
-  // Strongest signal: the query exactly matches one of the product's categories
-  // (e.g. query "melk" and category "Melk"), which is Kassalapp's own taxonomy.
-  if (categories.includes(q)) score += 100;
+  // Strongest signal: a product category matches the query (e.g. query "melk"
+  // and category "Melk", or "banan" and "Bananer"), which is Kassalapp's own
+  // taxonomy. Matching accounts for Norwegian noun inflection.
+  if (categoryWords.some((word) => wordMatchesQuery(word, q))) score += 100;
   // Softer: the query appears somewhere inside the category path.
   else if (categoryText.includes(q)) score += 20;
 
-  // The query is a standalone word in the product name.
-  if (nameWords.includes(q)) score += 40;
+  // The query matches a standalone word in the product name (inflection-aware).
+  if (nameWords.some((word) => wordMatchesQuery(word, q))) score += 40;
 
   // The product name starts with the query word.
   if (name === q || name.startsWith(`${q} `)) score += 25;
@@ -607,13 +636,32 @@ export function scoreSearchRelevance(
   // "Uten melk" / "melkefri" / "u/melk" are explicitly WITHOUT the thing.
   if (new RegExp(`(^|\\s)(u/|uten\\s|${q}fri\\b)`).test(name)) score -= 60;
 
-  // The query is only a substring of a bigger word (melkepulver, melkesjokolade)
-  // rather than a standalone word: this is usually a derivative product.
-  if (name.includes(q) && !nameWords.includes(q)) score -= 20;
+  // The query is only a substring of a bigger, unrelated word (melkepulver,
+  // melkesjokolade) rather than a matching word: usually a derivative product.
+  if (
+    name.includes(q) &&
+    !nameWords.some((word) => wordMatchesQuery(word, q))
+  ) {
+    score -= 20;
+  }
 
   // Clearly-different product categories that merely reference the query word.
   if (RELEVANCE_DERIVATIVE_CATEGORIES.some((category) => categoryText.includes(category))) {
     score -= 35;
+  }
+
+  // Flavoured variant of the queried staple (e.g. chocolate milk for "melk"):
+  // keep it in the results but rank plain versions ahead of it. We never treat
+  // the query itself as a "flavour", so searching "banan" or "jordbær" still
+  // ranks those fruits normally.
+  if (
+    RELEVANCE_FLAVOURED_VARIANTS.some(
+      (flavour) =>
+        !q.includes(flavour) &&
+        (categoryText.includes(flavour) || name.includes(flavour))
+    )
+  ) {
+    score -= 45;
   }
 
   // Tiny tie-breaker so a result with a usable image edges out one without.
