@@ -231,7 +231,15 @@ function getQuickFacts(product: ProductResult, lang: Language = "en") {
 
 function hasNutritionSignal(product: ProductResult) {
   const nutri = product.nutriGrade.toLowerCase();
-  return ["a", "b", "c", "d", "e"].includes(nutri) || product.kassalappNutrition.length > 0 || product.norwegianDataStatus === "kassalapp";
+  // Only claim a health grade when we have a real basis for it: an official
+  // Nutri-Score, actual Kassalapp nutrition values, or the Norwegian Nøkkelhull
+  // healthy-choice label. Being a Kassalapp product on its own is NOT enough -
+  // that used to show a confident "C" built purely from the neutral base score.
+  return (
+    ["a", "b", "c", "d", "e"].includes(nutri) ||
+    product.kassalappNutrition.length > 0 ||
+    product.hasNokkelhull
+  );
 }
 
 function getHealthGradeReason(product: ProductResult, grade: GradeLetter | null) {
