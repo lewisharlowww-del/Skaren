@@ -35,7 +35,11 @@ type KassalappProduct = {
   ingredients?: string | null;
   ingredient_list?: string | null;
   ingredientList?: string | null;
-  category?: string | { name?: string | null; display_name?: string | null } | null;
+  category?:
+    | string
+    | { name?: string | null; display_name?: string | null }
+    | Array<string | { name?: string | null; display_name?: string | null }>
+    | null;
   category_name?: string | null;
   categories?: Array<string | { name?: string | null; display_name?: string | null }> | string | null;
   product_category?: string | null;
@@ -298,7 +302,15 @@ function normalizeCategories(product: KassalappProduct) {
     : product.categories
       ? [product.categories]
       : [];
-  const rawCategory = product.category ? [product.category] : [];
+  // Kassalapp's search API returns `category` as an ARRAY of taxonomy nodes
+  // ({ id, depth, name }), while the single-product API returns a single object
+  // or string. Flatten both shapes so we never end up with a nested array that
+  // silently drops every category name.
+  const rawCategory = Array.isArray(product.category)
+    ? product.category
+    : product.category
+      ? [product.category]
+      : [];
 
   return uniqueByText(
     [
@@ -540,6 +552,76 @@ export async function fetchKassalappImageByEan(ean: string) {
   return image;
 }
 
+// Score how well a search result matches the user's query, so the actual
+// product they typed (e.g. plain "melk"/milk) ranks above derivatives that
+// merely contain the word (melkesjokolade/milk chocolate, melkefri/milk-free,
+// melkepulver/milk powder). Higher is better.
+//
+// The strongest signal is Kassalapp's own category tree: a carton of milk sits
+// in the "Melk" category, while milk chocolate sits under "Sjokolade". We also
+// reward the query appearing as a standalone word and penalise "without X"
+// products and clearly-unrelated categories.
+const RELEVANCE_DERIVATIVE_CATEGORIES = [
+  "sjokolade",
+  "kjeks",
+  "cookies",
+  "snacks",
+  "godteri",
+  "dessert",
+  "iskrem",
+  "baking",
+  "pølser",
+  "kaker"
+];
+
+function tokenize(value: string): string[] {
+  return value.toLowerCase().match(/[a-zæøå0-9]+/g) ?? [];
+}
+
+export function scoreSearchRelevance(
+  product: Pick<KassalappSearchProduct, "name" | "categories" | "image">,
+  query: string
+): number {
+  const q = query.trim().toLowerCase();
+  if (!q) return 0;
+
+  const name = product.name.toLowerCase();
+  const nameWords = tokenize(name);
+  const categories = product.categories.map((category) => category.toLowerCase());
+  const categoryText = categories.join(" ");
+
+  let score = 0;
+
+  // Strongest signal: the query exactly matches one of the product's categories
+  // (e.g. query "melk" and category "Melk"), which is Kassalapp's own taxonomy.
+  if (categories.includes(q)) score += 100;
+  // Softer: the query appears somewhere inside the category path.
+  else if (categoryText.includes(q)) score += 20;
+
+  // The query is a standalone word in the product name.
+  if (nameWords.includes(q)) score += 40;
+
+  // The product name starts with the query word.
+  if (name === q || name.startsWith(`${q} `)) score += 25;
+
+  // "Uten melk" / "melkefri" / "u/melk" are explicitly WITHOUT the thing.
+  if (new RegExp(`(^|\\s)(u/|uten\\s|${q}fri\\b)`).test(name)) score -= 60;
+
+  // The query is only a substring of a bigger word (melkepulver, melkesjokolade)
+  // rather than a standalone word: this is usually a derivative product.
+  if (name.includes(q) && !nameWords.includes(q)) score -= 20;
+
+  // Clearly-different product categories that merely reference the query word.
+  if (RELEVANCE_DERIVATIVE_CATEGORIES.some((category) => categoryText.includes(category))) {
+    score -= 35;
+  }
+
+  // Tiny tie-breaker so a result with a usable image edges out one without.
+  if (product.image) score += 3;
+
+  return score;
+}
+
 export async function searchKassalappProducts(
   query: string,
   limit = 6,
@@ -619,12 +701,20 @@ export async function searchKassalappProducts(
     }
 
     return uniqueByText(results, (product) => product.barcode ?? product.name)
+      .map((product) => ({
+        product,
+        relevance: scoreSearchRelevance(product, query)
+      }))
       .sort((a, b) => {
-        const aStartsWith = a.name.toLowerCase().startsWith(query.toLowerCase());
-        const bStartsWith = b.name.toLowerCase().startsWith(query.toLowerCase());
+        // Primary: relevance to the typed query (actual product over derivatives).
+        if (a.relevance !== b.relevance) return b.relevance - a.relevance;
+        // Tie-break: results that start with the query, then those with an image.
+        const aStartsWith = a.product.name.toLowerCase().startsWith(query.toLowerCase());
+        const bStartsWith = b.product.name.toLowerCase().startsWith(query.toLowerCase());
         if (aStartsWith !== bStartsWith) return Number(bStartsWith) - Number(aStartsWith);
-        return Number(Boolean(b.image)) - Number(Boolean(a.image));
+        return Number(Boolean(b.product.image)) - Number(Boolean(a.product.image));
       })
+      .map(({ product }) => product)
       .slice(0, limit);
   } catch (error) {
     console.error("[Kassalapp] Search error:", error instanceof Error ? error.message : String(error));
