@@ -18,6 +18,8 @@ import { Spinner } from "@/components/Spinner";
 import { markSearchProductForHistory } from "@/lib/productHistory";
 import { getUserPremiumStatus } from "@/lib/premium";
 import { supabase } from "@/lib/supabase";
+import { t } from "@/lib/i18n";
+import { useLang } from "@/lib/language-context";
 import type { KassalappSearchProduct } from "@/lib/kassalapp";
 
 type SearchResponse = {
@@ -30,6 +32,7 @@ const recentSearchesKey = "skaren:recent-product-searches";
 
 export default function ProductSearchPage() {
   const router = useRouter();
+  const { lang } = useLang();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<KassalappSearchProduct[]>([]);
@@ -76,7 +79,7 @@ export default function ProductSearchPage() {
     const cleanQuery = query.trim();
 
     if (cleanQuery.length < 2) {
-      setError("Enter at least two characters.");
+      setError(t("search_min_chars", lang));
       setResults([]);
       return;
     }
@@ -125,7 +128,7 @@ export default function ProductSearchPage() {
         const premium = supabase ? await getUserPremiumStatus(supabase) : false;
         if (premium) {
           setResults([]);
-          setError("Your Pro access is syncing. Try search again in a moment.");
+          setError(t("search_syncing", lang));
           return;
         }
         setIsPremium(false);
@@ -134,14 +137,14 @@ export default function ProductSearchPage() {
 
       if (!response.ok) {
         setResults([]);
-        setError(data.error ?? "Search is unavailable right now. Try again.");
+        setError(data.error ?? t("search_unavailable", lang));
         return;
       }
 
       setResults(data.products ?? []);
     } catch {
       setResults([]);
-      setError("Search is unavailable right now. Check your connection and try again.");
+      setError(t("search_unavailable_connection", lang));
     } finally {
       setLoading(false);
     }
@@ -174,22 +177,22 @@ export default function ProductSearchPage() {
               <Crown className="h-8 w-8 text-amber-700" />
             </div>
             <h1 className="type-heading-1 mt-5 text-[var(--sk-text-primary)]">
-              Search products
+              {t("search_locked_title", lang)}
             </h1>
             <p className="type-body-sm mt-3 max-w-xs text-[var(--sk-text-muted)]">
-              Find Norwegian grocery products by name without scanning a barcode.
+              {t("search_locked_subtitle", lang)}
             </p>
             <Link
               href="/pricing"
               className="mt-6 inline-flex h-12 items-center rounded-full bg-[var(--sk-brand-forest)] px-6 text-sm font-bold text-white"
             >
-              View Pro
+              {t("search_view_pro", lang)}
             </Link>
             <Link
               href="/scan"
               className="mt-4 text-sm font-semibold text-[var(--sk-brand-forest)]"
             >
-              Back to scan
+              {t("search_back_to_scan", lang)}
             </Link>
           </div>
         </main>
@@ -205,14 +208,14 @@ export default function ProductSearchPage() {
           <header className="flex items-center gap-3 py-2">
             <Link
               href="/scan"
-              aria-label="Back to scan"
+              aria-label={t("search_back_aria", lang)}
               className="focus-ring grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[var(--sk-brand-forest)]"
             >
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
-              <p className="type-section-label text-[var(--sk-text-muted)]">Norwegian product search</p>
-              <h1 className="type-heading-2">Search products</h1>
+              <p className="type-section-label text-[var(--sk-text-muted)]">{t("search_section_label", lang)}</p>
+              <h1 className="type-heading-2">{t("search_title", lang)}</h1>
             </div>
           </header>
 
@@ -224,8 +227,8 @@ export default function ProductSearchPage() {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Melk, laks, yoghurt..."
-                aria-label="Search Norwegian products"
+                placeholder={t("search_placeholder", lang)}
+                aria-label={t("search_input_aria", lang)}
                 autoComplete="off"
                 className="h-14 min-w-0 flex-1 bg-transparent px-3 text-[16px] font-semibold outline-none placeholder:font-normal placeholder:text-[var(--sk-text-faint)]"
               />
@@ -233,7 +236,7 @@ export default function ProductSearchPage() {
                 <button
                   type="button"
                   onClick={clearSearch}
-                  aria-label="Clear search"
+                  aria-label={t("search_clear_aria", lang)}
                   className="grid h-10 w-10 place-items-center rounded-full text-[var(--sk-text-muted)]"
                 >
                   <X className="h-4 w-4" />
@@ -246,12 +249,12 @@ export default function ProductSearchPage() {
               className="mt-3 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--sk-brand-forest)] text-sm font-bold text-white disabled:opacity-45"
             >
               {loading ? <Spinner size={16} /> : <Search className="h-4 w-4" />}
-              {loading ? "Searching..." : "Search"}
+              {loading ? t("search_button_loading", lang) : t("search_button", lang)}
             </button>
             <div className="mt-3 flex items-start gap-2 rounded-2xl border border-[var(--sk-border-default)] bg-white/70 px-3.5 py-2.5">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sk-brand-forest)]" />
               <p className="type-body-sm text-[var(--sk-text-muted)]">
-                Search in Norwegian. Product names come from Norwegian stores, so use terms like <span className="font-semibold text-[var(--sk-text-primary)]">melk</span>, <span className="font-semibold text-[var(--sk-text-primary)]">laks</span> or <span className="font-semibold text-[var(--sk-text-primary)]">yoghurt</span>.
+                {t("search_hint", lang)} <span className="font-semibold text-[var(--sk-text-primary)]">melk</span>, <span className="font-semibold text-[var(--sk-text-primary)]">laks</span> or <span className="font-semibold text-[var(--sk-text-primary)]">yoghurt</span>.
               </p>
             </div>
           </form>
@@ -268,14 +271,14 @@ export default function ProductSearchPage() {
                 <div className="grid h-16 w-16 place-items-center rounded-2xl bg-[var(--sk-grade-a-bg)] text-[var(--sk-brand-forest)]">
                   <PackageSearch className="h-8 w-8" />
                 </div>
-                <h2 className="type-heading-3 mt-5">Find it by name</h2>
+                <h2 className="type-heading-3 mt-5">{t("search_empty_title", lang)}</h2>
                 <p className="type-body-sm mt-2 max-w-xs text-[var(--sk-text-muted)]">
-                  Search products sold in Norwegian grocery stores, then open the full Skaren report.
+                  {t("search_empty_subtitle", lang)}
                 </p>
                 {recentSearches.length > 0 ? (
                   <div className="mt-6 w-full max-w-sm text-left">
                     <p className="type-section-label text-[var(--sk-text-muted)]">
-                      Recent searches
+                      {t("search_recent", lang)}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {recentSearches.map((item) => (
@@ -300,7 +303,7 @@ export default function ProductSearchPage() {
             {loading ? (
               <>
                 <p className="type-section-label mb-3 px-1 text-[var(--sk-text-muted)]">
-                  Finding products
+                  {t("search_finding", lang)}
                 </p>
                 <div className="space-y-3">
                   {[0, 1, 2, 3, 4].map((item) => (
@@ -323,9 +326,9 @@ export default function ProductSearchPage() {
 
             {hasSearched && !loading && !error && results.length === 0 ? (
               <div className="rounded-2xl border border-[var(--sk-border-default)] bg-white px-5 py-8 text-center">
-                <h2 className="type-heading-3">No products found</h2>
+                <h2 className="type-heading-3">{t("search_no_results_title", lang)}</h2>
                 <p className="type-body-sm mt-2 text-[var(--sk-text-muted)]">
-                  Try a shorter name, another spelling, or include the brand.
+                  {t("search_no_results_subtitle", lang)}
                 </p>
               </div>
             ) : null}
@@ -333,7 +336,7 @@ export default function ProductSearchPage() {
             {results.length > 0 && !loading ? (
               <>
                 <p className="type-section-label mb-3 px-1 text-[var(--sk-text-muted)]">
-                  {results.length} results
+                  {results.length} {t("search_results_count", lang)}
                 </p>
                 <div className="space-y-3">
                   {results.slice(0, visibleCount).map((product) => {
@@ -370,7 +373,7 @@ export default function ProductSearchPage() {
                     }
                     className="focus-ring mt-4 inline-flex h-12 w-full items-center justify-center rounded-2xl border border-[var(--sk-border-default)] bg-white text-sm font-bold text-[var(--sk-brand-forest)] transition active:scale-[0.99]"
                   >
-                    Load more
+                    {t("search_load_more", lang)}
                   </button>
                 ) : null}
               </>
