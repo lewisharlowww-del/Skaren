@@ -16,7 +16,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { ProductSearchThumbnail } from "@/components/ProductSearchThumbnail";
 import { Spinner } from "@/components/Spinner";
 import { markSearchProductForHistory } from "@/lib/productHistory";
-import { getUserPremiumStatus } from "@/lib/premium";
+import { usePremium } from "@/hooks/usePremium";
 import { supabase } from "@/lib/supabase";
 import { t } from "@/lib/i18n";
 import { useLang } from "@/lib/language-context";
@@ -36,8 +36,11 @@ export default function ProductSearchPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<KassalappSearchProduct[]>([]);
-  const [checkingAccess, setCheckingAccess] = useState(true);
-  const [isPremium, setIsPremium] = useState(false);
+  const { isPremium, checking, refresh } = usePremium();
+  // Only show the loading gate when we have no cached answer yet. A returning
+  // Pro user (cached isPremium=true) sees the search UI instantly; an unknown
+  // user waits on the first check so we never flash the paywall then search.
+  const checkingAccess = checking && !isPremium;
   const [hasSearched, setHasSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -45,24 +48,10 @@ export default function ProductSearchPage() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   useEffect(() => {
-    let active = true;
-
-    async function checkAccess() {
-      const premium = supabase ? await getUserPremiumStatus(supabase) : false;
-      if (!active) return;
-      setIsPremium(premium);
-      setCheckingAccess(false);
-      if (premium) {
-        window.setTimeout(() => inputRef.current?.focus(), 100);
-      }
+    if (isPremium) {
+      window.setTimeout(() => inputRef.current?.focus(), 100);
     }
-
-    void checkAccess();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  }, [isPremium]);
 
   useEffect(() => {
     try {
@@ -125,13 +114,13 @@ export default function ProductSearchPage() {
       }
 
       if (response.status === 403) {
-        const premium = supabase ? await getUserPremiumStatus(supabase) : false;
+        // The server says not-Pro. Re-verify against RevenueCat: if the user is
+        // actually Pro, their profile flag is just still syncing server-side.
+        const premium = await refresh();
         if (premium) {
           setResults([]);
           setError(t("search_syncing", lang));
-          return;
         }
-        setIsPremium(false);
         return;
       }
 

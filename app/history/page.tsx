@@ -10,7 +10,7 @@ import { useScans } from '@/hooks/useScans'
 import { useUser } from '@/hooks/useUser'
 import { t } from '@/lib/i18n'
 import { useLang } from '@/lib/language-context'
-import { getUserPremiumStatus } from '@/lib/premium'
+import { usePremium } from '@/hooks/usePremium'
 import { readLocalProduct } from '@/lib/localProducts'
 import { supabase } from '@/lib/supabase'
 import type { GradeLetter, ScanRecord } from '@/lib/types'
@@ -219,7 +219,7 @@ export default function HistoryPage() {
   const { user, loading: userLoading, isConfigured } = useUser()
   const { scans, loading: scansLoading, clearHistory } = useScans(user)
   const [activeFilter, setActiveFilter] = useState<Filter>('all')
-  const [isPremium, setIsPremium] = useState(false)
+  const { isPremium } = usePremium()
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmClear, setConfirmClear] = useState(false)
   const [clearing, setClearing] = useState(false)
@@ -231,13 +231,6 @@ export default function HistoryPage() {
       router.push('/login?next=%2Fhistory')
     }
   }, [isConfigured, router, user, userLoading])
-
-  useEffect(() => {
-    if (!user || !supabase) return
-    getUserPremiumStatus(supabase)
-      .then((premium) => setIsPremium(premium))
-      .catch(() => setIsPremium(false))
-  }, [user])
 
   useEffect(() => {
     if (!menuOpen) return

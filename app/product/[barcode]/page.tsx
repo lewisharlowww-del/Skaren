@@ -7,7 +7,7 @@ import { getEcoGrade } from "@/lib/ecoscore";
 import { useLang } from "@/lib/language-context";
 import { cacheProductLocally, readLocalProduct } from "@/lib/localProducts";
 import { supabase } from "@/lib/supabase";
-import { getUserPremiumStatus } from "@/lib/premium";
+import { usePremium } from "@/hooks/usePremium";
 import {
   consumeSearchProductHistoryMarker,
   saveProductToHistory
@@ -39,7 +39,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [error, setError] = useState<ProductError | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingSlow, setLoadingSlow] = useState(false);
-  const [isPremium, setIsPremium] = useState(false);
+  const { isPremium } = usePremium();
   const historySaveBarcode = useRef<string | null>(null);
 
   async function loadProduct(options: { skipCache?: boolean } = {}) {
@@ -138,32 +138,6 @@ export default function ProductPage({ params }: ProductPageProps) {
     historySaveBarcode.current = params.barcode;
     void saveProductToHistory(product);
   }, [params.barcode, product]);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadPremiumStatus() {
-      const premium = supabase ? await getUserPremiumStatus(supabase) : false;
-      if (active) setIsPremium(premium);
-    }
-
-    loadPremiumStatus();
-
-    const listener = supabase?.auth.onAuthStateChange((_event, session) => {
-      if (!session?.user) {
-        setIsPremium(false);
-        return;
-      }
-      if (supabase) {
-        void getUserPremiumStatus(supabase).then((premium) => setIsPremium(premium));
-      }
-    });
-
-    return () => {
-      active = false;
-      listener?.data.subscription.unsubscribe();
-    };
-  }, []);
 
   useEffect(() => {
     if (!product || product.displayImage || !product.barcode) return;

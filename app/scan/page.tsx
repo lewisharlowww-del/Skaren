@@ -16,7 +16,7 @@ import { PhoneFrame } from "@/components/PhoneFrame";
 import { vibrate } from "@/lib/haptics";
 import { cacheProductLocally } from "@/lib/localProducts";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
-import { getUserPremiumStatus } from "@/lib/premium";
+import { usePremium } from "@/hooks/usePremium";
 import type { ProductResult } from "@/lib/types";
 
 // The web scanner pulls in html5-qrcode (~3.3 MB of source), and the native
@@ -126,36 +126,13 @@ export default function ScanPage() {
   const [loading, setLoading] = useState(false);
   const [scanSuccess, setScanSuccess] = useState(false);
   const [savedToHistory, setSavedToHistory] = useState(false);
-  const [isPremium, setIsPremium] = useState(false);
+  const { isPremium } = usePremium();
   // Use the native iOS AVFoundation scanner when available (hardware-accelerated,
   // instant); fall back to the html5-qrcode JS scanner on web/Android.
   const [useNativeScanner, setUseNativeScanner] = useState(false);
 
   useEffect(() => {
     setUseNativeScanner(isNativeScannerAvailable());
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadSession() {
-      const premium = supabase ? await getUserPremiumStatus(supabase) : false;
-      if (active) setIsPremium(premium);
-    }
-
-    loadSession();
-    const listener = supabase?.auth.onAuthStateChange((_event, session) => {
-      if (session?.user && supabase) {
-        void getUserPremiumStatus(supabase).then((premium) => setIsPremium(premium));
-      } else {
-        setIsPremium(false);
-      }
-    });
-
-    return () => {
-      active = false;
-      listener?.data.subscription.unsubscribe();
-    };
   }, []);
 
   async function analyzeBarcode(nextBarcode: string) {

@@ -25,7 +25,7 @@ import { useShoppingList } from "@/hooks/useShoppingList";
 import { t, type Language } from "@/lib/i18n";
 import type { KassalappSearchProduct } from "@/lib/kassalapp";
 import { useLang } from "@/lib/language-context";
-import { getUserPremiumStatus } from "@/lib/premium";
+import { usePremium } from "@/hooks/usePremium";
 import { supabase } from "@/lib/supabase";
 import type {
   NewShoppingListItem,
@@ -768,20 +768,9 @@ export default function ShoppingListPage() {
     updateItem,
     restoreItems
   } = useShoppingList();
-  const [isPremium, setIsPremium] = useState(false);
-  const [checkingPremium, setCheckingPremium] = useState(true);
+  const { isPremium, checking: checkingPremium } = usePremium();
   const [activeCategory, setActiveCategory] = useState("All");
 
-  useEffect(() => {
-    if (!supabase) {
-      setCheckingPremium(false);
-      return;
-    }
-    getUserPremiumStatus(supabase)
-      .then((premium) => setIsPremium(premium))
-      .catch(() => setIsPremium(false))
-      .finally(() => setCheckingPremium(false));
-  }, []);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
