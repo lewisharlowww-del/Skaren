@@ -1,4 +1,4 @@
-const CACHE_VERSION = "skaren-pwa-v15";
+const CACHE_VERSION = "skaren-pwa-v16";
 const STATIC_CACHE = `${CACHE_VERSION}:static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}:runtime`;
 const IMAGE_CACHE = `${CACHE_VERSION}:images`;
@@ -78,6 +78,13 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
+
+  // Never cache API responses. These are dynamic (search results, scans,
+  // account data) and a stale cache silently serves old results even after a
+  // fresh deploy. Always go straight to the network.
+  if (url.pathname.startsWith("/api/")) {
+    return;
+  }
 
   if (request.mode === "navigate") {
     event.respondWith(networkFirst(request, RUNTIME_CACHE));
