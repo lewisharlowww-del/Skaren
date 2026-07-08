@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useTransition, useState, useEffect } from "react";
+import { useTransition, useState, useEffect, useRef } from "react";
 import { BarChart3, History, ScanBarcode, ShoppingCart, UserRound } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { useLang } from "@/lib/language-context";
@@ -25,6 +25,10 @@ export function BottomNav() {
   // Optimistic target: the tab the user just tapped. Lights up instantly,
   // before the route actually finishes changing.
   const [pending, setPending] = useState<string | null>(null);
+  // Which tab is currently playing its tap animation, plus a nonce so the same
+  // tab retriggers the animation on every tap.
+  const [tapped, setTapped] = useState<{ path: string; nonce: number } | null>(null);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Once the real route catches up to the tapped tab, drop the optimistic state.
   useEffect(() => {
@@ -32,6 +36,8 @@ export function BottomNav() {
       setPending(null);
     }
   }, [pathname, pending]);
+
+  useEffect(() => () => { if (tapTimer.current) clearTimeout(tapTimer.current); }, []);
 
   // The path we treat as "current" for highlighting: the tapped tab wins so the
   // button reacts on the same frame as the tap.
@@ -41,12 +47,17 @@ export function BottomNav() {
     (path) => activePath === path || activePath.startsWith(`${path}/`)
   );
 
-  const navigate = (href: string) => (e: React.MouseEvent) => {
+  const handleTap = (href: string) => (e: React.MouseEvent) => {
+    const target = href.split("?")[0];
+    // Always fire the visual effect, even when tapping the current tab.
+    setTapped({ path: target, nonce: Date.now() });
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+    tapTimer.current = setTimeout(() => setTapped(null), 520);
+
     // Ignore modifier clicks so open-in-new-tab etc. still work.
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
-    const target = href.split("?")[0];
-    if (target === pathname) return; // already here, do nothing
+    if (target === pathname) return; // already here, just play the effect
     setPending(target);
     // Navigating inside a transition keeps the current screen on-screen instead
     // of flashing the full-page route loader, so the switch feels instant.
@@ -64,13 +75,14 @@ export function BottomNav() {
           activePath.startsWith(`${itemPath}/`) ||
           (itemPath === "/stats" && activePath.startsWith("/dashboard")) ||
           (item.primary && !hasSelectedTab);
+        const isTapping = tapped?.path === itemPath;
 
         return (
           <Link
             key={item.href}
             href={item.href}
-            onClick={navigate(item.href)}
-            className={`focus-ring type-caption group flex min-h-[3.25rem] flex-col items-center justify-center gap-1 rounded-[1.2rem] px-2 py-2 transition-all duration-150 ease-out active:scale-90 ${
+            onClick={handleTap(item.href)}
+            className={`focus-ring type-caption relative flex min-h-[3.25rem] flex-col items-center justify-center gap-1 overflow-hidden rounded-[1.2rem] px-2 py-2 transition-all duration-150 ease-out active:scale-90 ${
               item.primary
                 ? "bg-ink dark:bg-[#2d5025] text-white shadow-soft"
                 : active
@@ -78,12 +90,17 @@ export function BottomNav() {
                   : "text-soil-500 dark:text-[#8a8070] hover:bg-soil-50/60 dark:hover:bg-[#6abf58]/5"
             }`}
           >
+            {/* Ripple burst on tap. key+nonce restarts the animation each tap. */}
+            {isTapping && (
+              <span key={tapped!.nonce} className="nav-ripple run" aria-hidden />
+            )}
             <item.icon
-              className={`h-[1.1rem] w-[1.1rem] transition-transform duration-150 ease-out group-active:scale-110 ${
-                item.primary ? "" : active ? "stroke-[2.4px] scale-110" : ""
+              key={isTapping ? `a-${tapped!.nonce}` : "idle"}
+              className={`relative h-[1.1rem] w-[1.1rem] ${isTapping ? "nav-icon-anim" : ""} ${
+                item.primary ? "" : active ? "stroke-[2.4px]" : ""
               }`}
             />
-            <span style={{ fontSize: 11 }}>{t(item.key, lang)}</span>
+            <span className="relative" style={{ fontSize: 11 }}>{t(item.key, lang)}</span>
           </Link>
         );
       })}
