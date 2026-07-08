@@ -385,69 +385,62 @@ html.sk-native-cam-active .sk-native-cam-host {
   }
 }
 
-/* Bottom-nav signature tap effect: liquid magic-move pill + icon hop + glow */
+/* Bottom-nav signature effect: organic leaf-blob glide + gentle grow + leaf drift.
+   Tuned to feel calm and natural, matching Skaren's eco / clean-eating brand. */
 
-/* The pill container tweens its position/size; the layered transition on
-   left/top/width creates the physical "slide across" between tabs. */
-.nav-goo-outer {
-  border-radius: 1.2rem;
+.nav-blob-outer {
   transition:
-    left 0.42s cubic-bezier(0.34, 1.32, 0.5, 1),
-    top 0.42s cubic-bezier(0.34, 1.32, 0.5, 1),
-    width 0.42s cubic-bezier(0.34, 1.32, 0.5, 1),
-    height 0.42s cubic-bezier(0.34, 1.32, 0.5, 1),
-    opacity 0.25s ease;
+    left 0.5s cubic-bezier(0.5, 1.15, 0.4, 1),
+    top 0.5s cubic-bezier(0.5, 1.15, 0.4, 1),
+    width 0.5s cubic-bezier(0.5, 1.15, 0.4, 1),
+    height 0.5s cubic-bezier(0.5, 1.15, 0.4, 1),
+    opacity 0.3s ease;
   will-change: left, top, width;
 }
-.nav-goo-inner {
+.nav-blob-inner {
   position: absolute;
   inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(135deg, #eaf6e2 0%, #d6efcb 100%);
-  box-shadow: inset 0 0 0 1px rgba(45, 74, 38, 0.06);
-  transform-origin: center;
+  background: linear-gradient(140deg, #eaf6e2 0%, #d5eecb 100%);
+  box-shadow: inset 0 0 0 1px rgba(45, 74, 38, 0.05);
+  /* Asymmetric radius = soft organic droplet rather than a plain pill. */
+  border-radius: 46% 54% 52% 48% / 56% 48% 52% 44%;
+  /* Slow breathing wobble so the active blob feels alive, like a leaf. */
+  animation: nav-blob-breathe 5s ease-in-out infinite;
 }
-:root.dark .nav-goo-inner,
-.dark .nav-goo-inner {
-  background: linear-gradient(135deg, rgba(106, 191, 88, 0.16) 0%, rgba(106, 191, 88, 0.08) 100%);
-  box-shadow: inset 0 0 0 1px rgba(106, 191, 88, 0.14);
+:root.dark .nav-blob-inner,
+.dark .nav-blob-inner {
+  background: linear-gradient(140deg, rgba(106, 191, 88, 0.16) 0%, rgba(106, 191, 88, 0.07) 100%);
+  box-shadow: inset 0 0 0 1px rgba(106, 191, 88, 0.13);
 }
-/* Mid-travel gooey squash-and-stretch, keyed to restart on every move. */
-.nav-goo-inner {
-  animation: nav-goo-squish 0.42s cubic-bezier(0.34, 1.32, 0.5, 1);
-}
-@keyframes nav-goo-squish {
-  0%   { transform: scaleX(1) scaleY(1); }
-  35%  { transform: scaleX(1.35) scaleY(0.72); }
-  65%  { transform: scaleX(0.9) scaleY(1.12); }
-  100% { transform: scaleX(1) scaleY(1); }
+@keyframes nav-blob-breathe {
+  0%, 100% { border-radius: 46% 54% 52% 48% / 56% 48% 52% 44%; transform: scale(1); }
+  50%      { border-radius: 54% 46% 48% 52% / 48% 56% 44% 52%; transform: scale(1.015); }
 }
 
-/* Tapped icon springs up and settles. */
-@keyframes nav-hop {
-  0%   { transform: translateY(0) scale(1) rotate(0deg); }
-  25%  { transform: translateY(2px) scale(0.82); }
-  55%  { transform: translateY(-6px) scale(1.24) rotate(-6deg); }
-  75%  { transform: translateY(0) scale(0.97) rotate(3deg); }
-  100% { transform: translateY(0) scale(1) rotate(0deg); }
+/* Tapped icon unfurls: a soft, calm "grow" (no gimmicky spin). */
+@keyframes nav-grow {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(0.9); }
+  60%  { transform: scale(1.16); }
+  100% { transform: scale(1); }
 }
-.nav-hop { animation: nav-hop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.nav-grow { animation: nav-grow 0.55s cubic-bezier(0.34, 1.4, 0.5, 1); }
 
-/* Glow ring that blooms out from behind the tapped icon. */
-@keyframes nav-glow {
-  0%   { transform: scale(0.3); opacity: 0.55; }
-  70%  { opacity: 0.12; }
-  100% { transform: scale(2.4); opacity: 0; }
+/* A single small leaf drifts up, sways, and fades on select. */
+@keyframes nav-leaf-drift {
+  0%   { transform: translate(0, 2px) rotate(-8deg) scale(0.5); opacity: 0; }
+  20%  { opacity: 0.9; }
+  60%  { transform: translate(6px, -14px) rotate(18deg) scale(1); opacity: 0.8; }
+  100% { transform: translate(11px, -26px) rotate(34deg) scale(0.85); opacity: 0; }
 }
-.nav-glow {
-  position: absolute;
-  width: 1.9rem;
-  height: 1.9rem;
-  border-radius: 999px;
-  background: radial-gradient(circle, currentColor 0%, transparent 70%);
-  pointer-events: none;
-  animation: nav-glow 0.6s ease-out;
+.nav-leaf {
+  top: -2px;
+  color: #6aa84f;
+  fill: rgba(106, 168, 79, 0.25);
+  animation: nav-leaf-drift 0.85s ease-out forwards;
 }
+:root.dark .nav-leaf,
+.dark .nav-leaf { color: #7ec86a; fill: rgba(126, 200, 106, 0.28); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
