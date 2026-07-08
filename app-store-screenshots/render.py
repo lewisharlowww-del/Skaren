@@ -92,25 +92,19 @@ def save(canvas, name):
 
 
 def frame_1():
-    # Hero: headline + the real product-result screen with the A grade visible.
-    # Screenshot 1 drives the most conversion, so it must show the product, not
-    # text alone.
     im = Image.new("RGBA", (W, H), GREEN)
     d = ImageDraw.Draw(im)
-    place(im, logo_mark(120, cream=True), (92, 110))
-    d.text((92, 300), "Know what\nyou eat", font=font(150, "bold"), fill=OFF_WHITE, spacing=2)
+    place(im, logo_mark(132, cream=True), (92, 92))
+    d.text((92, 690), "Know what\nyou eat", font=font(166, "bold"), fill=OFF_WHITE, spacing=4)
     multiline(
         d,
-        (98, 690),
+        (98, 1910),
         "Instant health & eco grades for every product you scan",
-        font(60),
-        LIME,
-        1050,
-        14,
+        font(76),
+        OFF_WHITE,
+        1010,
+        16,
     )
-    # Real product screen, tilted, peeking up from the bottom.
-    p = phone(SOURCE / "product.png", 900)
-    place(im, p, (300, 980), angle=-4)
     save(im, "01_Know_What_You_Eat.png")
 
 
