@@ -12,6 +12,7 @@ import {
   consumeSearchProductHistoryMarker,
   saveProductToHistory
 } from "@/lib/productHistory";
+import { recordScanAndMaybePromptReview } from "@/lib/appReview";
 import {
   getKeyInsights,
   getNutritionRows,
@@ -41,6 +42,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [loadingSlow, setLoadingSlow] = useState(false);
   const { isPremium } = usePremium();
   const historySaveBarcode = useRef<string | null>(null);
+  const reviewCountedBarcode = useRef<string | null>(null);
 
   async function loadProduct(options: { skipCache?: boolean } = {}) {
     setLoading(true);
@@ -137,6 +139,17 @@ export default function ProductPage({ params }: ProductPageProps) {
 
     historySaveBarcode.current = params.barcode;
     void saveProductToHistory(product);
+  }, [params.barcode, product]);
+
+  // A successfully loaded product is a positive moment — count it and, once the
+  // user has seen a few, ask for a native App Store rating (throttled by Apple
+  // and capped to once per app version). Fires once per barcode.
+  useEffect(() => {
+    if (!product || product.barcode !== params.barcode) return;
+    if (reviewCountedBarcode.current === params.barcode) return;
+
+    reviewCountedBarcode.current = params.barcode;
+    void recordScanAndMaybePromptReview();
   }, [params.barcode, product]);
 
   useEffect(() => {
