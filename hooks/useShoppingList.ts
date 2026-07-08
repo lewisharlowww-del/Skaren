@@ -108,9 +108,12 @@ function toRow(item: ShoppingListItem, userId: string): ShoppingListRow {
 
 export function useShoppingList() {
   const { user, loading: userLoading } = useUser();
-  const [items, setItems] = useState<ShoppingListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const itemsRef = useRef<ShoppingListItem[]>([]);
+  // Seed synchronously from localStorage so the list renders instantly on tab
+  // switches instead of flashing the full-screen loader while Supabase loads.
+  const seedItems = typeof window !== "undefined" ? dedupeItems(readLocalItems()).items : [];
+  const [items, setItems] = useState<ShoppingListItem[]>(seedItems);
+  const [loading, setLoading] = useState(seedItems.length === 0);
+  const itemsRef = useRef<ShoppingListItem[]>(seedItems);
   const pendingNamesRef = useRef(new Set<string>());
 
   const updateItems = useCallback(

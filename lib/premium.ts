@@ -17,6 +17,17 @@ export function getCachedPremiumStatus(): boolean {
   }
 }
 
+/** True when a premium decision has been cached on-device at least once, so the
+ *  UI can trust the cached value immediately instead of blocking on a re-check. */
+export function hasCachedPremiumStatus(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(PREMIUM_CACHE_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
 /** Persists the latest premium flag so the next launch can show it instantly. */
 export function setCachedPremiumStatus(value: boolean): void {
   if (typeof window === "undefined") return;

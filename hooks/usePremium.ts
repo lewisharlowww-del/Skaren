@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { getCachedPremiumStatus, getUserPremiumStatus } from "@/lib/premium";
+import {
+  getCachedPremiumStatus,
+  getUserPremiumStatus,
+  hasCachedPremiumStatus
+} from "@/lib/premium";
 
 interface UsePremiumResult {
   /** Best-known premium status. Starts from the on-device cache (instant). */
@@ -13,6 +17,8 @@ interface UsePremiumResult {
    * this; gated screens that must not briefly grant/deny access can wait on it.
    */
   checking: boolean;
+  /** True once a premium decision has been cached on-device at least once. */
+  hasCachedStatus: boolean;
   /** Force a fresh live verification (e.g. after a server 403). */
   refresh: () => Promise<boolean>;
 }
@@ -27,7 +33,11 @@ interface UsePremiumResult {
  */
 export function usePremium(): UsePremiumResult {
   const [isPremium, setIsPremium] = useState<boolean>(getCachedPremiumStatus);
-  const [checking, setChecking] = useState(true);
+  const cachedOnceRef = useRef<boolean>(hasCachedPremiumStatus());
+  // If we already have a cached decision, don't block gated screens on a live
+  // re-check — trust the cache and revalidate quietly. Only the very first ever
+  // check (no cache) sets checking=true.
+  const [checking, setChecking] = useState(!cachedOnceRef.current);
   const activeRef = useRef(true);
 
   const refresh = useCallback(async () => {
@@ -71,5 +81,5 @@ export function usePremium(): UsePremiumResult {
     };
   }, [refresh]);
 
-  return { isPremium, checking, refresh };
+  return { isPremium, checking, hasCachedStatus: cachedOnceRef.current, refresh };
 }

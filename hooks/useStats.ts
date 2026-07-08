@@ -7,6 +7,7 @@ import { gradeLetterToScore } from "@/lib/ecoscore";
 import type { Language } from "@/lib/i18n";
 import { readLocalProduct } from "@/lib/localProducts";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { getCache, setCache } from "@/lib/clientCache";
 import type { GradeLetter, StatsScanRecord } from "@/lib/types";
 
 export type StatsRange = "week" | "month" | "all";
@@ -193,8 +194,11 @@ function fallbackInsight(
 
 export function useStats(range: StatsRange, language: Language = "en") {
   const { user, loading: userLoading } = useUser();
-  const [scans, setScans] = useState<StatsScanRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const statsCacheKey = user ? `stats-scans:${user.id}` : "stats-scans:anon";
+  const cachedScans = getCache<StatsScanRecord[]>(statsCacheKey);
+  const [scans, setScans] = useState<StatsScanRecord[]>(cachedScans ?? []);
+  // Skip the full-screen loader when we already have cached scans to render.
+  const [loading, setLoading] = useState(cachedScans === undefined);
   const [weeklyInsight, setWeeklyInsight] = useState("");
 
   useEffect(() => {
@@ -213,7 +217,12 @@ export function useStats(range: StatsRange, language: Language = "en") {
         return;
       }
 
-      setLoading(true);
+      // Stale-while-revalidate: only block on the loader for the first ever
+      // fetch; subsequent tab visits show cached data and refetch quietly.
+      const key = `stats-scans:${user.id}`;
+      if (getCache<StatsScanRecord[]>(key) === undefined) {
+        setLoading(true);
+      }
 
       try {
         // Always read from `scans` — it has additives_details, product_image etc.
@@ -225,7 +234,9 @@ export function useStats(range: StatsRange, language: Language = "en") {
           .order("created_at", { ascending: false });
 
         if (active) {
-          setScans((scansResult.data ?? []) as StatsScanRecord[]);
+          const next = (scansResult.data ?? []) as StatsScanRecord[];
+          setScans(next);
+          setCache(key, next);
           window.clearTimeout(timeout);
           setLoading(false);
         }

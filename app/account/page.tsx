@@ -33,7 +33,8 @@ import { computeBadges, earnedCount, type ScanSummary } from "@/lib/badges";
 import { t, type Language } from "@/lib/i18n";
 import { useLang } from "@/lib/language-context";
 import { useTheme } from "@/lib/theme-context";
-import { getUserPremiumStatus } from "@/lib/premium";
+import { getCachedPremiumStatus, getUserPremiumStatus } from "@/lib/premium";
+import { getCache, setCache } from "@/lib/clientCache";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { signOutEverywhere } from "@/lib/auth";
 
@@ -86,6 +87,17 @@ type AccountUser = {
   email?: string;
   created_at?: string;
 };
+
+// Cached account snapshot so returning to the tab renders instantly (no
+// full-screen loader) while fresh data loads quietly in the background.
+type AccountSnapshot = {
+  user: AccountUser;
+  isPremium: boolean;
+  streakDays: number;
+  scanCount: number;
+  scanSummaries: ScanSummary[];
+};
+const ACCOUNT_CACHE_KEY = "account-snapshot";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -414,13 +426,15 @@ export default function AccountPage() {
   const [badgesOpen, setBadgesOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
-  const [user, setUser] = useState<AccountUser | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isPremium, setIsPremium] = useState(false);
+  // Seed from the last known snapshot so revisiting the tab is instant.
+  const accountSnapshot = getCache<AccountSnapshot>(ACCOUNT_CACHE_KEY);
+  const [user, setUser] = useState<AccountUser | null>(accountSnapshot?.user ?? null);
+  const [loading, setLoading] = useState(accountSnapshot === undefined);
+  const [isPremium, setIsPremium] = useState(accountSnapshot?.isPremium ?? getCachedPremiumStatus());
   const [checkingPremium, setCheckingPremium] = useState(false);
-  const [streakDays, setStreakDays] = useState(0);
-  const [scanCount, setScanCount] = useState(0);
-  const [scanSummaries, setScanSummaries] = useState<ScanSummary[]>([]);
+  const [streakDays, setStreakDays] = useState(accountSnapshot?.streakDays ?? 0);
+  const [scanCount, setScanCount] = useState(accountSnapshot?.scanCount ?? 0);
+  const [scanSummaries, setScanSummaries] = useState<ScanSummary[]>(accountSnapshot?.scanSummaries ?? []);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -455,14 +469,17 @@ export default function AccountPage() {
           return;
         }
 
-        setUser({
+        const nextUser: AccountUser = {
           id: sessionUser.id,
           email: sessionUser.email ?? undefined,
           created_at: sessionUser.created_at,
-        });
-        setIsPremium(false);
+        };
+        setUser(nextUser);
 
         // Load scan data for gamification + badges
+        let nextScanCount = 0;
+        let nextStreakDays = 0;
+        let nextScanSummaries: ScanSummary[] = [];
         if (isSupabaseConfigured && supabase) {
           const { data: scansData } = await supabase
             .from("scans")
@@ -471,9 +488,12 @@ export default function AccountPage() {
             .order("created_at", { ascending: false });
 
           if (active && scansData) {
-            setScanCount(scansData.length);
-            setStreakDays(computeStreak(scansData.map((s) => s.created_at)));
-            setScanSummaries(scansData as ScanSummary[]);
+            nextScanCount = scansData.length;
+            nextStreakDays = computeStreak(scansData.map((s) => s.created_at));
+            nextScanSummaries = scansData as ScanSummary[];
+            setScanCount(nextScanCount);
+            setStreakDays(nextStreakDays);
+            setScanSummaries(nextScanSummaries);
           }
         }
 
@@ -485,6 +505,14 @@ export default function AccountPage() {
         if (active) {
           setIsPremium(premium);
           setCheckingPremium(false);
+          // Persist the assembled snapshot so the next tab visit is instant.
+          setCache<AccountSnapshot>(ACCOUNT_CACHE_KEY, {
+            user: nextUser,
+            isPremium: premium,
+            streakDays: nextStreakDays,
+            scanCount: nextScanCount,
+            scanSummaries: nextScanSummaries,
+          });
         }
       } catch {
         // fail gracefully — show what we have
