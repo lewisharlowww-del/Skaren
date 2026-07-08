@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Skaren nav — liquid magic-move</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #efe9e0; color: #2d4a26; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; padding: 30px 16px 60px;
+  }
+  h1 { font-size: 21px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #8a8070; margin-bottom: 24px; text-align: center; max-width: 380px; line-height: 1.5; }
+  .tapme { color: #2d6b28; font-weight: 700; }
+
+  .phone {
+    width: 320px; height: 640px; background: #faf7f2;
+    border-radius: 44px; border: 11px solid #1a1714;
+    position: relative; overflow: hidden; box-shadow: 0 26px 64px rgba(0,0,0,0.3);
+  }
+  .notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 140px; height: 28px; background: #1a1714; border-radius: 0 0 18px 18px; z-index: 60; }
+  .screen { position: absolute; inset: 0; overflow: hidden; }
+
+  .page { position: absolute; inset: 0; padding: 58px 22px 100px;
+    display: flex; flex-direction: column; gap: 14px;
+    opacity: 0; transform: translateY(10px) scale(.99);
+    transition: opacity .3s ease, transform .3s ease; pointer-events: none; overflow-y: auto; }
+  .page.show { opacity: 1; transform: none; }
+  .page h2 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+  .card { background: #fff; border: 1px solid rgba(0,0,0,.06); border-radius: 18px;
+    padding: 15px 16px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.03); }
+  .pill { width: 42px; height: 42px; border-radius: 12px; background: #e8f2e2; flex: none; }
+  .lines { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .ln { height: 9px; border-radius: 5px; background: #ece7de; }
+  .ln.s { width: 55%; }
+
+  /* NAV */
+  .nav { position: absolute; left: 0; right: 0; bottom: 0; z-index: 50;
+    display: grid; grid-template-columns: repeat(5,1fr); gap: 4px; padding: 8px 8px 20px;
+    background: rgba(255,255,255,.95); border-top: 1px solid rgba(0,0,0,.07); backdrop-filter: blur(20px); }
+
+  /* liquid magic-move pill */
+  .goo-outer { position: absolute; z-index: 0; border-radius: 20px; pointer-events: none;
+    transition: left .42s cubic-bezier(.34,1.32,.5,1), top .42s cubic-bezier(.34,1.32,.5,1),
+                width .42s cubic-bezier(.34,1.32,.5,1), height .42s cubic-bezier(.34,1.32,.5,1), opacity .25s ease; }
+  .goo-inner { position: absolute; inset: 0; border-radius: inherit;
+    background: linear-gradient(135deg,#eaf6e2 0%,#d6efcb 100%);
+    box-shadow: inset 0 0 0 1px rgba(45,74,38,.06); transform-origin: center; }
+  .goo-inner.run { animation: goo-squish .42s cubic-bezier(.34,1.32,.5,1); }
+  @keyframes goo-squish {
+    0% { transform: scaleX(1) scaleY(1); }
+    35% { transform: scaleX(1.35) scaleY(.72); }
+    65% { transform: scaleX(.9) scaleY(1.12); }
+    100% { transform: scaleX(1) scaleY(1); } }
+
+  .tab { position: relative; z-index: 10; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px; min-height: 54px; border-radius: 20px;
+    cursor: pointer; color: #9a9484; font-size: 10px; font-weight: 600; border: none; background: transparent;
+    transition: transform .15s ease, color .15s ease; }
+  .tab:active { transform: scale(.9); }
+  .tab.active { color: #2d6b28; }
+  .tab.active svg { stroke-width: 2.4; }
+  .tab.primary { background: #1a1714; color: #fff; }
+  .tab.primary:active { transform: scale(.9); }
+  .iconwrap { position: relative; display: flex; align-items: center; justify-content: center; }
+  .tab svg { width: 20px; height: 20px; position: relative; }
+
+  @keyframes nav-hop {
+    0% { transform: translateY(0) scale(1) rotate(0); }
+    25% { transform: translateY(2px) scale(.82); }
+    55% { transform: translateY(-6px) scale(1.24) rotate(-6deg); }
+    75% { transform: translateY(0) scale(.97) rotate(3deg); }
+    100% { transform: translateY(0) scale(1) rotate(0); } }
+  .hop { animation: nav-hop .6s cubic-bezier(.34,1.56,.64,1); }
+
+  @keyframes nav-glow { 0% { transform: scale(.3); opacity:.55; } 70%{opacity:.12;} 100%{transform:scale(2.4);opacity:0;} }
+  .glow { position: absolute; width: 34px; height: 34px; border-radius: 999px;
+    background: radial-gradient(circle, currentColor 0%, transparent 70%); pointer-events: none; animation: nav-glow .6s ease-out; }
+
+  .foot { margin-top: 26px; font-size: 12px; color: #a89f8e; text-align: center; max-width: 520px; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <h1>Liquid magic-move nav</h1>
+  <p class="sub">Tap the bottom tabs. <span class="tapme">A gooey pill physically glides between tabs, stretching mid-travel</span>, while the tapped icon hops with a glow bloom. No loader.</p>
+
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen"></div>
+  </div>
+
+  <p class="foot">This is the exact effect now in <b>components/BottomNav.tsx</b> + <b>app/globals.css</b>. The pill tweens its left/width so it slides tab-to-tab; a keyed squash animation makes it gooey. Scanner untouched, respects reduced-motion.</p>
+
+<script>
+const TABS = [
+  { key:'history', label:'History', icon:'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2' },
+  { key:'list',    label:'List',    icon:'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01' },
+  { key:'scan',    label:'Scan',    icon:'M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M6 12h12', primary:true },
+  { key:'stats',   label:'Stats',   icon:'M4 20V10M10 20V4M16 20v-8M22 20H2' },
+  { key:'account', label:'Account', icon:'M20 21a8 8 0 0 0-16 0M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z' },
+];
+const TITLES = { history:'History', list:'Shopping List', scan:'Scanner', stats:'Stats', account:'Account' };
+const svg = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
+const cards = n => Array.from({length:n}).map(()=>`<div class="card"><div class="pill"></div><div class="lines"><div class="ln"></div><div class="ln s"></div></div></div>`).join('');
+
+const screen = document.querySelector('.screen');
+let current = 'history';
+
+const pagesWrap = document.createElement('div');
+pagesWrap.style.cssText = 'position:absolute;inset:0';
+TABS.forEach(t => {
+  const p = document.createElement('div');
+  p.className = 'page' + (t.key===current?' show':'');
+  p.dataset.key = t.key;
+  p.innerHTML = `<h2>${TITLES[t.key]}</h2>` + cards(t.key==='scan'?2:5);
+  pagesWrap.appendChild(p);
+});
+screen.appendChild(pagesWrap);
+
+const nav = document.createElement('div');
+nav.className = 'nav';
+
+const goo = document.createElement('div');
+goo.className = 'goo-outer';
+goo.innerHTML = '<div class="goo-inner"></div>';
+nav.appendChild(goo);
+const gooInner = goo.querySelector('.goo-inner');
+
+const btns = {};
+TABS.forEach(t => {
+  const b = document.createElement('button');
+  b.className = 'tab' + (t.primary?' primary':'') + (t.key===current&&!t.primary?' active':'');
+  b.dataset.key = t.key;
+  b.innerHTML = `<span class="iconwrap">${svg(t.icon)}</span><span>${t.label}</span>`;
+  b.addEventListener('click', () => switchTo(t.key, b));
+  nav.appendChild(b);
+  btns[t.key] = b;
+});
+screen.appendChild(nav);
+
+function moveGoo(key){
+  const b = btns[key];
+  const t = TABS.find(x=>x.key===key);
+  if(t.primary){ goo.style.opacity = 0; return; }
+  const nr = nav.getBoundingClientRect();
+  const r = b.getBoundingClientRect();
+  goo.style.opacity = 1;
+  goo.style.left = (r.left - nr.left) + 'px';
+  goo.style.top = (r.top - nr.top) + 'px';
+  goo.style.width = r.width + 'px';
+  goo.style.height = r.height + 'px';
+  gooInner.classList.remove('run'); void gooInner.offsetWidth; gooInner.classList.add('run');
+}
+
+function switchTo(key, btn){
+  // icon hop + glow every tap
+  const iw = btn.querySelector('.iconwrap');
+  const icon = iw.querySelector('svg');
+  icon.classList.remove('hop'); void icon.offsetWidth; icon.classList.add('hop');
+  const g = document.createElement('span'); g.className='glow';
+  iw.insertBefore(g, iw.firstChild); g.addEventListener('animationend',()=>g.remove());
+
+  if(key===current){ moveGoo(key); return; }
+  current = key;
+  Object.entries(btns).forEach(([k,b])=>{
+    if(!b.classList.contains('primary')) b.classList.toggle('active', k===key);
+  });
+  pagesWrap.querySelectorAll('.page').forEach(p=>p.classList.toggle('show', p.dataset.key===key));
+  moveGoo(key);
+}
+
+// initial placement
+requestAnimationFrame(()=>{ goo.style.transition='none'; moveGoo(current); requestAnimationFrame(()=>{ goo.style.transition=''; }); });
+</script>
+</body>
+</html>
