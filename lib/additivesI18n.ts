@@ -1,13 +1,13 @@
 import type { SafetyRating } from "@/lib/enumbers";
+import { DESCRIPTION_NO } from "@/lib/additivesDescriptionsNo";
 
 /**
  * EN/NO localization for the additive SEO pages.
  *
- * Norwegian is the priority market, so all fixed strings (categories, safety
- * labels, notes, headings, FAQ) are hand-translated. The 339 one-line English
- * descriptions are machine-translated with a domain-tuned phrase dictionary in
- * translateDescription(); they should be reviewed by a native speaker, but read
- * cleanly for the common patterns in this dataset.
+ * Norwegian is the priority market, so ALL strings are hand-translated:
+ * categories, safety labels, notes, headings, FAQ, and every one of the 273
+ * unique additive descriptions (see additivesDescriptionsNo.ts). The phrase
+ * dictionary below is only a fallback for any description not in that map.
  */
 
 export type Lang = "en" | "no";
@@ -122,38 +122,19 @@ const PHRASES: Array<[RegExp, string]> = [
 ];
 
 /**
- * Best-effort Norwegian rendering of an English additive description. Falls back
- * to leaving untranslated fragments in place, which is acceptable for less
- * common additives. High-traffic additives get hand-written NO copy via
- * DESCRIPTION_NO below, which always takes priority.
+ * Norwegian rendering of an English additive description. Every unique
+ * description in the dataset has a hand-written translation in DESCRIPTION_NO
+ * (keyed by the exact English text). The phrase dictionary is only a safety net
+ * for any future description added to the DB before its translation.
  */
-export function translateDescription(description: string, lang: Lang, code?: string): string {
+export function translateDescription(description: string, lang: Lang, _code?: string): string {
   if (lang === "en") return description;
-  if (code && DESCRIPTION_NO[code]) return DESCRIPTION_NO[code];
+  const exact = DESCRIPTION_NO[description];
+  if (exact) return exact;
   let out = description;
   for (const [re, sub] of PHRASES) out = out.replace(re, sub);
   return out;
 }
-
-// Hand-written Norwegian for the most-searched additives. Extend freely.
-const DESCRIPTION_NO: Record<string, string> = {
-  E102: "Syntetisk gult fargestoff (tartrazin), kan gi hyperaktivitet hos barn",
-  E120: "Rødt fargestoff utvunnet fra insekter, ikke vegansk",
-  E211: "Konserveringsmiddel (natriumbenzoat), knyttet til hyperaktivitet; unngå sammen med vitamin C",
-  E250: "Konserveringsmiddel i bearbeidet kjøtt (natriumnitritt), knyttet til kreftrisiko",
-  E251: "Konserveringsmiddel (natriumnitrat) brukt i spekemat og bearbeidet kjøtt",
-  E621: "Smaksforsterker (MSG, mononatriumglutamat); noen rapporterer følsomhet",
-  E627: "Smaksforsterker (dinatriumguanylat), unngå ved følsomhet for MSG",
-  E951: "Kunstig søtningsstoff (aspartam), omdiskutert; ikke egnet ved PKU",
-  E950: "Kunstig søtningsstoff (acesulfam K), sikkerheten er omdiskutert",
-  E955: "Kunstig søtningsstoff (sukralose), kan påvirke tarmfloraen",
-  E471: "Emulgator (mono- og diglyserider), ofte utvunnet fra animalsk fett",
-  E407: "Fortykningsmiddel fra tang (karragenan), kan gi fordøyelsesplager",
-  E300: "Antioksidant (vitamin C), naturlig og gunstig",
-  E330: "Naturlig syre (sitronsyre) som finnes i sitrusfrukter",
-  E322: "Emulgator (lecitin) fra soya eller egg, regnes generelt som trygt",
-  E100: "Naturlig gult pigment fra gurkemeie (kurkumin)",
-};
 
 // ── Page copy (headings, intros, FAQ) ─────────────────────────────────────────
 export const COPY = {
