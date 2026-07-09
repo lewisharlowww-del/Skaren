@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 const guestLinks = [
   { href: "/login", label: "Log in" },
   { href: "/auth", label: "Create account" },
+  { href: "/additives", label: "E-numbers" },
   { href: "/support", label: "Support" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
@@ -16,6 +17,7 @@ const guestLinks = [
 
 const authedLinks = [
   { href: "/account", label: "Account" },
+  { href: "/additives", label: "E-numbers" },
   { href: "/support", label: "Support" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },

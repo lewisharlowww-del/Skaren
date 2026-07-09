@@ -10,8 +10,12 @@ import "./globals.css";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.skaren.app"),
   applicationName: "Skaren",
-  title: "Skaren",
+  title: {
+    default: "Skaren",
+    template: "%s | Skaren",
+  },
   description: "Scan smarter. Live cleaner.",
   manifest: "/manifest.webmanifest?v=4",
   appleWebApp: {
