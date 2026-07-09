@@ -158,12 +158,33 @@ export default function AboutPage() {
           </p>
         </section>
 
+        <section className="mt-6 rounded-2xl border p-5 sm:p-7" style={{ borderColor: "#e8e0d4" }}>
+          <h2 className="text-[18px] font-bold" style={{ color: "#2d4a26" }}>
+            E-numbers &amp; food additives
+          </h2>
+          <p className="mt-2 max-w-3xl text-[14px] leading-6" style={{ color: "#5a4a38" }}>
+            Look up any E-number to see its name, category, safety rating, and
+            what it means on a food label. Browse the full reference in{" "}
+            <Link href="/additives" className="font-semibold underline" style={{ color: "#2d4a26" }}>
+              English
+            </Link>{" "}
+            or{" "}
+            <Link href="/tilsetningsstoffer" className="font-semibold underline" style={{ color: "#2d4a26" }}>
+              Norwegian
+            </Link>
+            .
+          </p>
+        </section>
+
         <footer
           className="mt-12 flex flex-col gap-4 border-t pt-6 text-[13px] sm:flex-row sm:items-center sm:justify-between"
           style={{ borderColor: "#e8e0d4", color: "#7f7466" }}
         >
           <p>© 2026 Skaren</p>
           <nav className="flex flex-wrap gap-x-5 gap-y-3" aria-label="Legal">
+            <Link href="/additives" className="font-semibold" style={{ color: "#2d4a26" }}>
+              E-numbers
+            </Link>
             <Link href="/privacy" className="font-semibold" style={{ color: "#2d4a26" }}>
               Privacy
             </Link>
