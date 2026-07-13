@@ -407,7 +407,7 @@ export default function PricingPage() {
         </button>
 
         {/* Guideline 3.1.2 disclosure: exact plan, charge, auto-renew + cancel */}
-        <p className="mt-2.5 px-1.5 text-center text-[10.5px] leading-relaxed text-[#9a8e7e]">
+        <p className="mt-2.5 px-1.5 text-center text-[10.5px] leading-relaxed text-[#786c5c]">
           {isNo ? "Du valgte " : "You selected "}
           <b className="text-[#2d4a26]">{planLabel(selectedPlan)}</b>
           {": "}

@@ -17,7 +17,7 @@ const OPTIONS: {
     label: "Light",
     sub: "Always light",
     icon: <Sun size={18} />,
-    preview: { bg: "#f7f2ea", card: "#ffffff", text: "#2d4a26", sub: "#9a8e7e", accent: "#2d4a26" },
+    preview: { bg: "#f7f2ea", card: "#ffffff", text: "#2d4a26", sub: "#786c5c", accent: "#2d4a26" },
   },
   {
     value: "dark",

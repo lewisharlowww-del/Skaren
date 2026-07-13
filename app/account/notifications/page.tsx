@@ -87,7 +87,7 @@ function NotifRow({
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[14px] font-bold text-[#2d4a26]">{label}</p>
-        <p className="text-[12px] text-[#9a8e7e] mt-0.5 leading-snug">{description}</p>
+        <p className="text-[12px] text-[#786c5c] mt-0.5 leading-snug">{description}</p>
       </div>
       <button
         role="switch"
@@ -242,7 +242,7 @@ export default function NotificationsPage() {
             >
               Notifications
             </h1>
-            <p className="text-[12px] text-[#9a8e7e]">Reminders &amp; tips</p>
+            <p className="text-[12px] text-[#786c5c]">Reminders &amp; tips</p>
           </div>
         </div>
 
@@ -251,7 +251,7 @@ export default function NotificationsPage() {
           <div className="mx-4 rounded-2xl bg-white border border-[#e0d8cc] p-5 text-center">
             <BellOff size={32} className="mx-auto mb-3 text-[#c0b8a8]" />
             <p className="text-[14px] font-bold text-[#2d4a26]">Not supported</p>
-            <p className="text-[12px] text-[#9a8e7e] mt-1">
+            <p className="text-[12px] text-[#786c5c] mt-1">
               Your browser doesn&apos;t support push notifications. Try Chrome or Safari on iOS 16.4+.
             </p>
           </div>
@@ -280,7 +280,7 @@ export default function NotificationsPage() {
               </div>
               <div className="flex-1">
                 <p className="text-[14px] font-bold text-[#2d4a26]">Push notifications</p>
-                <p className="text-[12px] text-[#9a8e7e] mt-0.5">
+                <p className="text-[12px] text-[#786c5c] mt-0.5">
                   {isActive ? "Enabled — you'll get reminders" : "Off — tap to enable"}
                 </p>
               </div>
@@ -308,7 +308,7 @@ export default function NotificationsPage() {
         {/* Individual preferences — only shown when active */}
         {isActive && (
           <div className="mx-4 rounded-2xl bg-white border border-[#e0d8cc] overflow-hidden divide-y divide-[#f0ebe0]">
-            <p className="px-4 pt-4 pb-2 text-[10px] font-bold uppercase text-[#9a8e7e] tracking-widest">
+            <p className="px-4 pt-4 pb-2 text-[10px] font-bold uppercase text-[#786c5c] tracking-widest">
               What to send
             </p>
 

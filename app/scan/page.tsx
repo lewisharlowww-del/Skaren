@@ -219,7 +219,7 @@ export default function ScanPage() {
       <AnimatePresence>
         {loading ? <ScanLoadingOverlay barcode={barcode} scanSuccess={scanSuccess} saved={savedToHistory} /> : null}
       </AnimatePresence>
-      <div className={`flex h-screen flex-col ${useNativeScanner ? "sk-native-cam-host bg-transparent" : "bg-[#f7f2ea]"}`}>
+      <main className={`flex h-screen flex-col ${useNativeScanner ? "sk-native-cam-host bg-transparent" : "bg-[#f7f2ea]"}`}>
         {/* Scanner panel */}
         <div
           className={`relative overflow-hidden ${useNativeScanner ? "sk-native-cam-host" : ""}`}
@@ -279,7 +279,7 @@ export default function ScanPage() {
           {/* Divider */}
           <div className="mb-4 flex items-center gap-3">
             <div className="h-px flex-1 bg-[#e7ddcf]" />
-            <span className="type-section-label text-[#9a8e7e]">{t('scan_enter_manually', lang)}</span>
+            <span className="type-section-label text-[#786c5c]">{t('scan_enter_manually', lang)}</span>
             <div className="h-px flex-1 bg-[#e7ddcf]" />
           </div>
           <form onSubmit={handleAnalyze} className="space-y-3">
@@ -320,7 +320,7 @@ export default function ScanPage() {
           {/* Search products row — premium feature */}
           <div className="mt-5 flex items-center gap-3">
             <div className="h-px flex-1 bg-[#e7ddcf]" />
-            <span className="type-section-label text-[#9a8e7e]">{t('scan_or_explore', lang)}</span>
+            <span className="type-section-label text-[#786c5c]">{t('scan_or_explore', lang)}</span>
             <div className="h-px flex-1 bg-[#e7ddcf]" />
           </div>
           <Link
@@ -341,7 +341,7 @@ export default function ScanPage() {
                   />
                 ) : null}
               </p>
-              <p className="mt-0.5 text-[12px] text-[#9a8e7e]">{isPremium ? t('scan_find_without_scanning', lang) : t('pro_feature', lang)}</p>
+              <p className="mt-0.5 text-[12px] text-[#786c5c]">{isPremium ? t('scan_find_without_scanning', lang) : t('pro_feature', lang)}</p>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b0a090" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 18l6-6-6-6"/>
@@ -356,7 +356,7 @@ export default function ScanPage() {
                 {t('scan_signed_in', lang)}
               </span>
             ) : (
-              <p className="text-center text-[12px] text-[#9a8e7e]">
+              <p className="text-center text-[12px] text-[#786c5c]">
                 <Link href="/login?next=%2Fscan" className="font-bold text-[#2d4a26] underline underline-offset-2">
                   {t('scan_log_in', lang)}
                 </Link>
@@ -366,7 +366,7 @@ export default function ScanPage() {
             )}
           </div>
         </div>
-      </div>
+      </main>
     </>
   );
 }

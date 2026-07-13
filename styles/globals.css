@@ -246,9 +246,10 @@ html.dark .text-\[\#2d3028\] {
   color: #f0ece0 !important;
 }
 html.dark .text-\[\#9a8e7e\],
+html.dark .text-\[\#786c5c\],
 html.dark .text-\[\#b0a898\],
 html.dark .text-\[\#b0a090\] {
-  color: #6e6458 !important;
+  color: #a89d8f !important;
 }
 
 /* ── Bottom nav (legacy override kept for safety) ───────────────────────── */

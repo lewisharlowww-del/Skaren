@@ -157,7 +157,7 @@ function ScanRow({
         <p className="text-[14px] font-bold text-[#2d4a26] truncate leading-tight">
           {scan.product_name}
         </p>
-        <p className="text-[12px] text-[#9a8e7e] mt-0.5">
+        <p className="text-[12px] text-[#786c5c] mt-0.5">
           {scan.brand ?? scan.barcode}
         </p>
       </div>
@@ -337,7 +337,7 @@ export default function HistoryPage() {
             >
               {t('history_title', lang)}
             </h1>
-            <p className="text-[12px] text-[#9a8e7e] mt-0.5" style={{ fontFamily: "Manrope, sans-serif" }}>
+            <p className="text-[12px] text-[#786c5c] mt-0.5" style={{ fontFamily: "Manrope, sans-serif" }}>
               {monthlyCount > 0
                 ? `${monthlyCount} ${lang === 'no' ? 'produktvisninger denne måneden' : 'product views this month'}`
                 : lang === 'no'
@@ -388,7 +388,7 @@ export default function HistoryPage() {
               className={`px-4 py-1.5 rounded-full text-[13px] font-semibold border transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeFilter === key
                   ? 'bg-[#2d4a26] text-[#dceedd] border-[#2d4a26]'
-                  : 'bg-white text-[#9a8e7e] border-[#e0d8cc]'
+                  : 'bg-white text-[#786c5c] border-[#e0d8cc]'
               }`}
             >
               {t(translationKey, lang)}
@@ -418,7 +418,7 @@ export default function HistoryPage() {
               <p className="text-[15px] font-bold text-[#2d4a26]">
                 {lang === 'no' ? 'Ingen produktvisninger funnet' : 'No product views found'}
               </p>
-              <p className="text-[13px] text-[#9a8e7e] max-w-[240px]">
+              <p className="text-[13px] text-[#786c5c] max-w-[240px]">
                 {activeFilter === 'all'
                   ? lang === 'no'
                     ? 'Skann eller søk etter produkter for å bygge historikken.'

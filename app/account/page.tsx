@@ -657,7 +657,7 @@ export default function AccountPage() {
       >
         {/* Page title */}
         <div className="px-4 pb-5 pt-1">
-          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#9a8e7e]">
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#786c5c]">
             Profile & preferences
           </p>
           <h1
@@ -1027,7 +1027,7 @@ export default function AccountPage() {
           <SectionLabel label={t('account_title', lang)} />
           <div className="overflow-hidden rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}>
             <SettingsRow
-              icon={<LogOut className="h-4 w-4 text-[#9a8e7e] dark:text-[#8a8070]" />}
+              icon={<LogOut className="h-4 w-4 text-[#786c5c] dark:text-[#8a8070]" />}
               iconBg="#f0ebe0"
               iconBgDark="var(--sk-dark-surface)"
               label={t('account_sign_out', lang)}
