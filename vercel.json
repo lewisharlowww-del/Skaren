@@ -1,12 +1,1 @@
-{
-  "crons": [
-    {
-      "path": "/api/push/send?type=streak",
-      "schedule": "0 20 * * *"
-    },
-    {
-      "path": "/api/push/send?type=weekly",
-      "schedule": "0 9 * * 0"
-    }
-  ]
-}
+{}

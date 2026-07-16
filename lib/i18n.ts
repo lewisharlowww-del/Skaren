@@ -111,8 +111,6 @@ export const translations = {
     // Account page
     account_title: 'Konto',
     account_preferences: 'Innstillinger',
-    account_notifications: 'Varsler',
-    account_notifications_sub: 'Påminnelser og tips',
     account_language: 'Språk',
     account_language_sub: 'Norsk (Bokmål)',
     account_appearance: 'Utseende',
@@ -220,10 +218,6 @@ export const translations = {
     scan_error_not_found: 'Vi fant ikke dette produktet. Prøv en annen strekkode eller sjekk at nummeret er riktig.',
     scan_error_generic: 'Noe gikk galt. Prøv igjen.',
     // Account page buttons
-    account_notif_enable: 'Aktiver',
-    account_notif_turn_off: 'Slå av',
-    account_notif_enabled: 'Aktivert',
-    account_notif_off: 'Av — trykk for å aktivere',
     account_theme_light: 'Lys',
     account_theme_dark: 'Mørk',
     account_export_csv: 'Last ned CSV',
@@ -387,8 +381,6 @@ export const translations = {
     // Account page
     account_title: 'Account',
     account_preferences: 'Preferences',
-    account_notifications: 'Notifications',
-    account_notifications_sub: 'Reminders & tips',
     account_language: 'Language',
     account_language_sub: 'English',
     account_appearance: 'Appearance',
@@ -496,10 +488,6 @@ export const translations = {
     scan_error_not_found: 'We couldn\'t find this product. Try another barcode or check the number is correct.',
     scan_error_generic: 'Something went wrong. Please try again.',
     // Account page buttons
-    account_notif_enable: 'Enable',
-    account_notif_turn_off: 'Turn off',
-    account_notif_enabled: 'Enabled',
-    account_notif_off: 'Off — tap to enable',
     account_theme_light: 'Light',
     account_theme_dark: 'Dark',
     account_export_csv: 'Download CSV',

@@ -4,9 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  BarChart3,
-  Bell,
-  BellOff,
   Check,
   ChevronRight,
   Crown,
@@ -37,48 +34,6 @@ import { getCachedPremiumStatus, getUserPremiumStatus } from "@/lib/premium";
 import { getCache, setCache } from "@/lib/clientCache";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { signOutEverywhere } from "@/lib/auth";
-
-// ── Push notification helpers ─────────────────────────────────────────────────
-
-const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
-
-async function getPushToken(): Promise<string | null> {
-  if (!supabase) return null;
-  const { data } = await supabase.auth.getSession();
-  return data.session?.access_token ?? null;
-}
-
-function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(base64);
-  const arr = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-  return arr.buffer;
-}
-
-async function getOrCreateSub(): Promise<PushSubscription | null> {
-  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return null;
-  const reg = await navigator.serviceWorker.ready;
-  const existing = await reg.pushManager.getSubscription();
-  if (existing) return existing;
-  if (!VAPID_PUBLIC) return null;
-  return reg.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
-  });
-}
-
-async function callPushApi(body: Record<string, unknown>): Promise<boolean> {
-  const token = await getPushToken();
-  if (!token) return false;
-  const res = await fetch("/api/push/subscribe", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify(body),
-  });
-  return res.ok;
-}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -421,7 +376,6 @@ export default function AccountPage() {
   const { lang, setLang } = useLang();
   const { preference: themePref, setPreference: setThemePref } = useTheme();
   const [langOpen, setLangOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [badgesOpen, setBadgesOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -439,14 +393,6 @@ export default function AccountPage() {
   const [exportLoading, setExportLoading] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-
-  // Notification state
-  type PermState = "default" | "granted" | "denied" | "unsupported";
-  const [permState, setPermState] = useState<PermState>("default");
-  const [pushSub, setPushSub] = useState<PushSubscription | null>(null);
-  const [streakNotif, setStreakNotif] = useState(true);
-  const [weeklyNotif, setWeeklyNotif] = useState(true);
-  const [notifSaving, setNotifSaving] = useState(false);
   // Stable ref to router — prevents the effect from re-running when router
   // identity changes (which was causing double loadUser calls).
   const routerRef = useRef(router);
@@ -575,70 +521,6 @@ export default function AccountPage() {
     }
   }
 
-  // Init push notification state when panel opens
-  useEffect(() => {
-    if (!notifOpen) return;
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      setPermState("unsupported"); return;
-    }
-    const perm = Notification.permission;
-    if (perm === "denied") { setPermState("denied"); return; }
-    navigator.serviceWorker.ready.then(async (reg) => {
-      const existing = await reg.pushManager.getSubscription();
-      if (existing) {
-        setPushSub(existing);
-        setPermState("granted");
-        const token = await getPushToken();
-        if (token) {
-          const res = await fetch("/api/push/subscribe", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ action: "get", endpoint: existing.endpoint }),
-          }).catch(() => null);
-          if (res?.ok) {
-            const data = await res.json() as { streak_enabled?: boolean; weekly_enabled?: boolean };
-            if (data.streak_enabled !== undefined) setStreakNotif(data.streak_enabled);
-            if (data.weekly_enabled !== undefined) setWeeklyNotif(data.weekly_enabled);
-          }
-        }
-      }
-    });
-  }, [notifOpen]);
-
-  async function enableNotifications() {
-    setNotifSaving(true);
-    try {
-      const perm = await Notification.requestPermission();
-      if (perm !== "granted") { setPermState("denied"); return; }
-      const sub = await getOrCreateSub();
-      if (!sub) return;
-      const ok = await callPushApi({ action: "subscribe", ...sub.toJSON(), streak_enabled: streakNotif, weekly_enabled: weeklyNotif });
-      if (ok) { setPushSub(sub); setPermState("granted"); }
-    } finally { setNotifSaving(false); }
-  }
-
-  async function disableNotifications() {
-    if (!pushSub) return;
-    setNotifSaving(true);
-    try {
-      await callPushApi({ action: "unsubscribe", endpoint: pushSub.endpoint });
-      await pushSub.unsubscribe();
-      setPushSub(null);
-      setPermState("default");
-    } finally { setNotifSaving(false); }
-  }
-
-  async function toggleNotifPref(key: "streak" | "weekly", value: boolean) {
-    if (key === "streak") setStreakNotif(value); else setWeeklyNotif(value);
-    if (!pushSub) return;
-    await callPushApi({
-      action: "update",
-      endpoint: pushSub.endpoint,
-      streak_enabled: key === "streak" ? value : streakNotif,
-      weekly_enabled: key === "weekly" ? value : weeklyNotif,
-    });
-  }
-
   if (loading) return <SkarenLoader message="Loading account" />
 
   const locale = lang === 'no' ? 'nb' : 'en';
@@ -689,105 +571,6 @@ export default function AccountPage() {
           {/* ── Preferences ── */}
           <SectionLabel label={t('account_preferences', lang)} />
           <div className="mb-4 overflow-hidden rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}>
-            {/* Notifications accordion */}
-            <div>
-              <button
-                type="button"
-                onClick={() => setNotifOpen((o) => !o)}
-                className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors"
-              >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
-                  <Bell className="h-4 w-4 text-[#2d4a26] dark:text-[#6abf58]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{t('account_notifications', lang)}</p>
-                  <p className="mt-0.5 text-[11px] truncate" style={{ color: "var(--sk-text-muted)" }}>{t('account_notifications_sub', lang)}</p>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: notifOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
-              </button>
-              {notifOpen && (
-                <div style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
-                  {permState === "unsupported" && (
-                    <div className="px-5 py-4 flex items-center gap-3">
-                      <BellOff className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-muted)" }} />
-                      <p className="text-[13px]" style={{ color: "var(--sk-text-muted)" }}>Not supported in this browser</p>
-                    </div>
-                  )}
-                  {permState === "denied" && (
-                    <div className="px-5 py-4">
-                      <p className="text-[13px] font-semibold" style={{ color: "var(--sk-status-danger)" }}>Notifications blocked</p>
-                      <p className="text-[11px] mt-1" style={{ color: "var(--sk-text-muted)" }}>Allow notifications in your browser settings to re-enable.</p>
-                    </div>
-                  )}
-                  {(permState === "default" || permState === "granted") && (
-                    <div>
-                      <div className="flex items-center gap-3.5 px-5 py-3">
-                        <div className="flex-1">
-                          <p className="text-[13px] font-semibold" style={{ color: "var(--sk-text-primary)" }}>Push notifications</p>
-                          <p className="text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{permState === "granted" && pushSub ? t('account_notif_enabled', lang) : t('account_notif_off', lang)}</p>
-                        </div>
-                        {permState === "granted" && pushSub ? (
-                          <button
-                            disabled={notifSaving}
-                            onClick={disableNotifications}
-                            className="text-[12px] font-semibold rounded-lg px-3 py-1.5 disabled:opacity-50"
-                            style={{ color: "var(--sk-status-danger)", border: "1px solid var(--sk-border-red)" }}
-                          >{t('account_notif_turn_off', lang)}</button>
-                        ) : (
-                          <button
-                            disabled={notifSaving}
-                            onClick={enableNotifications}
-                            className="text-[12px] font-semibold text-white rounded-lg px-3 py-1.5 disabled:opacity-50"
-                            style={{ background: "var(--sk-brand-forest)" }}
-                          >{notifSaving ? "..." : t('account_notif_enable', lang)}</button>
-                        )}
-                      </div>
-                      {permState === "granted" && pushSub && (
-                        <>
-                          <div className="mx-5 h-px" style={{ background: "var(--sk-border-muted)" }} />
-                          {/* Streak toggle */}
-                          <div className="flex items-center gap-3.5 px-5 py-3">
-                            <Flame className="h-4 w-4 shrink-0 text-orange-500" />
-                            <div className="flex-1">
-                              <p className="text-[13px] font-semibold" style={{ color: "var(--sk-text-primary)" }}>Streak reminder</p>
-                              <p className="text-[11px]" style={{ color: "var(--sk-text-muted)" }}>Daily nudge at 8 pm if you haven&apos;t scanned</p>
-                            </div>
-                            <button
-                              role="switch"
-                              aria-checked={streakNotif}
-                              onClick={() => void toggleNotifPref("streak", !streakNotif)}
-                              className="relative w-10 h-5 rounded-full transition-colors flex-shrink-0"
-                              style={{ background: streakNotif ? "var(--sk-brand-forest)" : "var(--sk-border-default)" }}
-                            >
-                              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${streakNotif ? "translate-x-5" : "translate-x-0"}`} />
-                            </button>
-                          </div>
-                          <div className="mx-5 h-px" style={{ background: "var(--sk-border-muted)" }} />
-                          {/* Weekly toggle */}
-                          <div className="flex items-center gap-3.5 px-5 py-3">
-                            <BarChart3 className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-green)" }} />
-                            <div className="flex-1">
-                              <p className="text-[13px] font-semibold" style={{ color: "var(--sk-text-primary)" }}>Weekly summary</p>
-                              <p className="text-[11px]" style={{ color: "var(--sk-text-muted)" }}>Sunday overview of your week&apos;s scans</p>
-                            </div>
-                            <button
-                              role="switch"
-                              aria-checked={weeklyNotif}
-                              onClick={() => void toggleNotifPref("weekly", !weeklyNotif)}
-                              className="relative w-10 h-5 rounded-full transition-colors flex-shrink-0"
-                              style={{ background: weeklyNotif ? "var(--sk-brand-forest)" : "var(--sk-border-default)" }}
-                            >
-                              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${weeklyNotif ? "translate-x-5" : "translate-x-0"}`} />
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            <Divider />
             {/* Language inline picker */}
             <div>
               <button
