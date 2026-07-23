@@ -142,35 +142,62 @@ export async function POST(request: Request) {
       hasNokkelhull: hasNokkelhullLabel(product.labels)
     };
     const imageData = getVerifiedDisplayImage(productWithGrades);
+
+    // Resolve the authenticated user + premium status once. Reused below for both
+    // AI gating and history saving so we only hit Supabase a single time.
+    let authedUserId: string | null = null;
+    let isPremium = false;
+    if (token) {
+      try {
+        const admin = getSupabaseAdmin();
+        if (admin) {
+          const { data: userData } = await admin.auth.getUser(token);
+          if (userData.user) {
+            authedUserId = userData.user.id;
+            const { data: profile } = await admin
+              .from("profiles")
+              .select("is_premium")
+              .eq("id", authedUserId)
+              .single();
+            isPremium = Boolean((profile as { is_premium?: boolean } | null)?.is_premium);
+          }
+        }
+      } catch (authErr) {
+        console.error("[Scan] Auth/premium resolve failed (non-fatal):", authErr);
+      }
+    }
+
+    // AI insights are a premium feature. Serve the cache to everyone (it costs
+    // nothing), but only spend an OpenAI call to *generate* fresh insights for
+    // premium users. Free users get an empty array and see the upgrade nudge.
     const cachedAi = await getCachedAiAnalysis(productWithGrades.barcode).catch((error) => {
       console.error("[Scan] AI cache error:", error);
       return null;
     });
-    const aiSummary = cachedAi?.aiSummary ?? await generateAiSummary(productWithGrades).catch((error) => {
-      console.error("[Scan] AI summary error:", error);
-      return [];
-    });
 
-    if (!cachedAi && aiSummary.length > 0) {
-      await saveCachedAiAnalysis({ barcode: productWithGrades.barcode, aiSummary }).catch((error) => {
-        console.error("[Scan] AI cache save error:", error);
+    let aiSummary = cachedAi?.aiSummary ?? [];
+
+    if (!cachedAi && isPremium) {
+      aiSummary = await generateAiSummary(productWithGrades).catch((error) => {
+        console.error("[Scan] AI summary error:", error);
+        return [];
       });
+
+      if (aiSummary.length > 0) {
+        await saveCachedAiAnalysis({ barcode: productWithGrades.barcode, aiSummary }).catch((error) => {
+          console.error("[Scan] AI cache save error:", error);
+        });
+      }
     }
 
     // Save scan to history server-side — completely non-blocking, never fails the scan
     let savedToHistory = false;
     try {
-      if (token) {
-        const admin = getSupabaseAdmin();
-        if (admin) {
-          const { data: userData } = await admin.auth.getUser(token);
-          if (userData.user) {
-            savedToHistory = await saveScanToHistory(
-              { ...productWithGrades, ...imageData, aiSummary } as ProductResult,
-              userData.user.id
-            );
-          }
-        }
+      if (authedUserId) {
+        savedToHistory = await saveScanToHistory(
+          { ...productWithGrades, ...imageData, aiSummary } as ProductResult,
+          authedUserId
+        );
       }
     } catch (saveErr) {
       console.error("[Scan] History save failed (non-fatal):", saveErr);

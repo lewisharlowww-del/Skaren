@@ -79,9 +79,23 @@ export default function ProductPage({ params }: ProductPageProps) {
         return;
       }
 
+      // Send the auth token so the server can generate premium-only AI insights
+      // for Pro users and save this view to history.
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      try {
+        if (supabase) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData.session?.access_token) {
+            headers["Authorization"] = `Bearer ${sessionData.session.access_token}`;
+          }
+        }
+      } catch {
+        // No session available — proceed unauthenticated (free tier).
+      }
+
       const response = await fetch("/api/scan", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ barcode: params.barcode })
       });
       const data = (await response.json()) as { product?: ProductResult; error?: string; code?: string };
