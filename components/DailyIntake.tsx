@@ -58,14 +58,14 @@ function percentTextColour(percent: number): string {
 
 export function DailyIntake({ nutrition, lang = 'no' }: DailyIntakeProps) {
   const rows = [
-    { key: "calories", label: "Calories", reference: DAILY_REFERENCE.calories, data: findAmount(nutrition, ["energy", "energi", "calories", "calorie", "kcal", "kj"], [], ["kcal"]) },
-    { key: "fat", label: "Fat", reference: DAILY_REFERENCE.fat, data: findAmount(nutrition, ["fat", "fett"], ["saturated", "mettede", "mettet"]) },
-    { key: "saturatedFat", label: "Saturated fat", reference: DAILY_REFERENCE.saturatedFat, data: findAmount(nutrition, ["saturated", "mettede", "mettet"]) },
-    { key: "carbohydrates", label: "Carbs", reference: DAILY_REFERENCE.carbohydrates, data: findAmount(nutrition, ["carbohydrate", "karbohydrat"]) },
-    { key: "sugars", label: "Sugars", reference: DAILY_REFERENCE.sugars, data: findAmount(nutrition, ["sugars", "sugar", "sukker", "sukkerarter"]) },
-    { key: "protein", label: "Protein", reference: DAILY_REFERENCE.protein, data: findAmount(nutrition, ["protein", "proteins"]) },
-    { key: "salt", label: "Salt", reference: DAILY_REFERENCE.salt, data: findAmount(nutrition, ["salt"]) },
-    { key: "fiber", label: "Fiber", reference: DAILY_REFERENCE.fiber, data: findAmount(nutrition, ["fiber", "fibre", "kostfiber"]) }
+    { key: "calories", label: t('nutrition_calories', lang), reference: DAILY_REFERENCE.calories, data: findAmount(nutrition, ["energy", "energi", "calories", "calorie", "kcal", "kj"], [], ["kcal"]) },
+    { key: "fat", label: t('nutrition_fat', lang), reference: DAILY_REFERENCE.fat, data: findAmount(nutrition, ["fat", "fett"], ["saturated", "mettede", "mettet"]) },
+    { key: "saturatedFat", label: t('nutrition_saturated_fat', lang), reference: DAILY_REFERENCE.saturatedFat, data: findAmount(nutrition, ["saturated", "mettede", "mettet"]) },
+    { key: "carbohydrates", label: t('nutrition_carbs', lang), reference: DAILY_REFERENCE.carbohydrates, data: findAmount(nutrition, ["carbohydrate", "karbohydrat"]) },
+    { key: "sugars", label: t('nutrition_sugars', lang), reference: DAILY_REFERENCE.sugars, data: findAmount(nutrition, ["sugars", "sugar", "sukker", "sukkerarter"]) },
+    { key: "protein", label: t('nutrition_protein', lang), reference: DAILY_REFERENCE.protein, data: findAmount(nutrition, ["protein", "proteins"]) },
+    { key: "salt", label: t('nutrition_salt', lang), reference: DAILY_REFERENCE.salt, data: findAmount(nutrition, ["salt"]) },
+    { key: "fiber", label: t('nutrition_fiber', lang), reference: DAILY_REFERENCE.fiber, data: findAmount(nutrition, ["fiber", "fibre", "kostfiber"]) }
   ]
     .filter((row): row is { key: string; label: string; reference: number; data: { amount: number; unit: string } } => Boolean(row.data))
     .map((row) => ({
