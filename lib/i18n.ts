@@ -273,6 +273,18 @@ export const translations = {
     search_locked_subtitle: 'Finn norske dagligvareprodukter ved navn uten å skanne en strekkode.',
     search_view_pro: 'Se Pro',
     search_back_to_scan: 'Tilbake til skanning',
+    // Onboarding
+    onboarding_step: 'Steg',
+    onboarding_of: 'av',
+    onboarding_next: 'Neste',
+    onboarding_finish: 'Fullfør',
+    onboarding_saving: 'Lagrer...',
+    onboarding_slide1_title: 'Skann på sekunder',
+    onboarding_slide1_text: 'Bruk kameraet eller skriv inn en strekkode for å hente ekte norske produktdata.',
+    onboarding_slide2_title: 'Les karakteren',
+    onboarding_slide2_text: 'Skaren viser tydelige A–E-karakterer, næringsinnhold, allergener og ingredienser.',
+    onboarding_slide3_title: 'Lagre det som betyr noe',
+    onboarding_slide3_text: 'Opprett en konto for historikk og støtt Skaren for å låse opp dypere innsikt.',
   },
   en: {
     // Navigation
@@ -543,6 +555,18 @@ export const translations = {
     search_locked_subtitle: 'Find Norwegian grocery products by name without scanning a barcode.',
     search_view_pro: 'View Pro',
     search_back_to_scan: 'Back to scan',
+    // Onboarding
+    onboarding_step: 'Step',
+    onboarding_of: 'of',
+    onboarding_next: 'Next',
+    onboarding_finish: 'Finish',
+    onboarding_saving: 'Saving...',
+    onboarding_slide1_title: 'Scan in seconds',
+    onboarding_slide1_text: 'Use your camera or type a barcode to pull real Norwegian product data.',
+    onboarding_slide2_title: 'Read the grade',
+    onboarding_slide2_text: 'Skaren shows clear A-E grades, nutrition facts, allergens, and ingredients.',
+    onboarding_slide3_title: 'Save what matters',
+    onboarding_slide3_text: 'Create an account for history and support Skaren to unlock deeper insights.',
   },
 } as const
 
