@@ -11,6 +11,7 @@ export function SkarenLoader({ message = 'Loading' }: { message?: string }) {
   }, [])
   return (
     <div
+      className="sk-loader-screen"
       style={{
         height: '100dvh',
         background: '#faf7f2',

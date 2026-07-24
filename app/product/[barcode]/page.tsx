@@ -237,7 +237,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
             {/* Top bar — matches the real report (back arrow + status pill) */}
             <div
-              className="sticky top-0 z-40 flex items-center justify-between px-4 pb-2"
+              className="sk-product-topbar sticky top-0 z-40 flex items-center justify-between px-4 pb-2"
               style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))", background: "rgba(250,247,242,0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
             >
               <Link

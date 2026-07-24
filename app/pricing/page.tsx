@@ -193,7 +193,7 @@ export default function PricingPage() {
   if (purchaseSuccess) {
     return (
       <main
-        className="relative mx-auto flex w-full max-w-[430px] flex-col items-center justify-center px-6 text-center sm:max-w-2xl"
+      className="sk-pricing-bg relative mx-auto flex w-full max-w-[430px] flex-col items-center justify-center px-6 text-center sm:max-w-2xl"
         style={{ background: "#f5f0e8", minHeight: "100dvh", paddingTop: "calc(env(safe-area-inset-top) + 20px)" }}
       >
         <div className="relative mb-6 grid h-24 w-24 place-items-center rounded-full bg-[#2d4a26]">
@@ -239,7 +239,7 @@ export default function PricingPage() {
 
   return (
     <main
-      className="relative mx-auto flex w-full max-w-[430px] flex-col px-5 sm:max-w-md"
+      className="sk-pricing-bg relative mx-auto flex w-full max-w-[430px] flex-col px-5 sm:max-w-md"
       style={{
         background: "#f5f0e8",
         minHeight: "100dvh",

@@ -326,6 +326,84 @@ html.dark .border-\[\#2d4a26\] {
   border-color: #3a6030 !important;
 }
 
+/* ══ DARK-MODE FIXES (2026-07) ═══════════════════════════════════════════
+   Tailwind does not reliably generate arbitrary-hex + opacity classes under
+   the `dark:` variant (e.g. dark:bg-[#242018]/96), so several surfaces stayed
+   light in dark mode. These explicit html.dark overrides pin them correctly. */
+
+/* Bottom navigation bar — the component uses bg-white/95 (not /90), so the
+   legacy override above missed it and the nav rendered cream in dark mode. */
+html.dark nav.bg-white\/95 {
+  background-color: rgba(36, 32, 24, 0.96) !important;
+  border-color: rgba(46, 42, 36, 0.5) !important;
+}
+
+/* Product page sticky header bar (inline rgba cream) — targeted via a helper
+   class added on the element. */
+html.dark .sk-product-topbar {
+  background: rgba(26, 23, 20, 0.94) !important;
+}
+
+/* Full-screen loading splash (SkarenLoader) — inline #faf7f2 background. */
+html.dark .sk-loader-screen {
+  background: #1a1714 !important;
+}
+
+/* Pricing page: loading-state heading + assorted hardcoded hex text/surfaces
+   that were not in the earlier text override list. */
+html.dark .text-\[\#1A2410\],
+html.dark .text-\[\#1a2410\],
+html.dark .text-\[\#1e1e18\],
+html.dark .text-\[\#243f24\] {
+  color: #f0ece0 !important;
+}
+html.dark .text-\[\#7a6e5e\],
+html.dark .text-\[\#786858\],
+html.dark .text-\[\#786c5c\] {
+  color: #a89d8f !important;
+}
+html.dark .text-\[\#1A5C3A\],
+html.dark .text-\[\#4a8c5c\] {
+  color: #6abf58 !important;
+}
+/* Pricing "nøyaktig" accent + back link stay legible on dark. */
+html.dark .text-\[\#2d4a26\] {
+  color: #6abf58 !important;
+}
+/* Pricing promo pill (bg-[#f6ecd2]) */
+html.dark .bg-\[\#f6ecd2\] {
+  background-color: #2a2416 !important;
+}
+html.dark .text-\[\#b8923e\] {
+  color: #c8a840 !important;
+}
+
+/* Pricing page root uses an inline #f5f0e8 background; pin it dark. */
+html.dark .sk-pricing-bg {
+  background: #1a1714 !important;
+}
+/* Pricing plan cards / selected surfaces (bg-[#fbfdfa]) */
+html.dark .bg-\[\#fbfdfa\] {
+  background-color: #242018 !important;
+}
+/* Pricing feature-tint chips (bg-[#eaf3de]) already covered above, and
+   muted plan borders. */
+html.dark .border-\[\#cdc6b8\] {
+  border-color: #3a352c !important;
+}
+
+/* Product page skeleton loader (inline .sk2 uses #ece6dc + white sweep). */
+html.dark .sk2 {
+  background: #2a261e !important;
+}
+html.dark .sk2::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent) !important;
+}
+
+/* Account page "Konto" heading uses the green token which is too dark on
+   black — the token itself already lightens in dark mode, but the page sets
+   it via an inline hex in some spots. Covered by the text override above. */
+
 
 /* ── Safe-area top padding (Dynamic Island / notch) ─────────────────────── */
 .pt-safe {
