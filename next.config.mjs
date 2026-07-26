@@ -12,6 +12,29 @@ const createNextConfig = (phase) => ({
         source: "/",
         destination: "/scan",
         permanent: false
+      },
+      // The E-number / additive SEO pages now live on the marketing site
+      // (www.skaren.app). Permanently redirect the old apex URLs there so
+      // Google consolidates all ranking on www instead of seeing duplicates.
+      {
+        source: "/tilsetningsstoffer",
+        destination: "https://www.skaren.app/tilsetningsstoffer",
+        permanent: true
+      },
+      {
+        source: "/tilsetningsstoffer/:code",
+        destination: "https://www.skaren.app/tilsetningsstoffer/:code",
+        permanent: true
+      },
+      {
+        source: "/additives",
+        destination: "https://www.skaren.app/tilsetningsstoffer",
+        permanent: true
+      },
+      {
+        source: "/additives/:code",
+        destination: "https://www.skaren.app/tilsetningsstoffer/:code",
+        permanent: true
       }
     ];
   },

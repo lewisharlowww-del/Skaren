@@ -6,10 +6,13 @@ import { usePathname } from "next/navigation";
 import { SkarenWordmark } from "@/components/SkarenLogo";
 import { supabase } from "@/lib/supabase";
 
+// E-number pages now live on the marketing site (www.skaren.app).
+const ENUMBERS_URL = "https://www.skaren.app/tilsetningsstoffer";
+
 const guestLinks = [
   { href: "/login", label: "Log in" },
   { href: "/auth", label: "Create account" },
-  { href: "/additives", label: "E-numbers" },
+  { href: ENUMBERS_URL, label: "E-numbers", external: true },
   { href: "/support", label: "Support" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
@@ -17,7 +20,7 @@ const guestLinks = [
 
 const authedLinks = [
   { href: "/account", label: "Account" },
-  { href: "/additives", label: "E-numbers" },
+  { href: ENUMBERS_URL, label: "E-numbers", external: true },
   { href: "/support", label: "Support" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
@@ -49,11 +52,17 @@ export function AppFooter() {
           </p>
         </div>
         <nav className="flex flex-wrap gap-3 font-bold text-forest">
-          {links.map((link) => (
-            <Link key={link.href} href={link.href} className="min-h-11 rounded-full bg-leaf-50 px-4 py-3 transition hover:bg-leaf-100">
-              {link.label}
-            </Link>
-          ))}
+          {links.map((link) =>
+            "external" in link && link.external ? (
+              <a key={link.href} href={link.href} className="min-h-11 rounded-full bg-leaf-50 px-4 py-3 transition hover:bg-leaf-100">
+                {link.label}
+              </a>
+            ) : (
+              <Link key={link.href} href={link.href} className="min-h-11 rounded-full bg-leaf-50 px-4 py-3 transition hover:bg-leaf-100">
+                {link.label}
+              </Link>
+            )
+          )}
         </nav>
       </div>
     </footer>

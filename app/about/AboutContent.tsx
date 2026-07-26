@@ -152,13 +152,9 @@ export function AboutContent() {
           </h2>
           <p className="mt-2 max-w-3xl text-[14px] leading-6" style={{ color: "#5a4a38" }}>
             {no ? "Slå opp et hvilket som helst E-nummer for å se navn, kategori, sikkerhetsvurdering og hva det betyr på en matvareetikett. Bla gjennom hele oppslagsverket på " : "Look up any E-number to see its name, category, safety rating, and what it means on a food label. Browse the full reference in "}
-            <Link href="/additives" className="font-semibold underline" style={{ color: "#2d4a26" }}>
-              {no ? "engelsk" : "English"}
-            </Link>{" "}
-            {no ? "eller" : "or"}{" "}
-            <Link href="/tilsetningsstoffer" className="font-semibold underline" style={{ color: "#2d4a26" }}>
-              {no ? "norsk" : "Norwegian"}
-            </Link>
+            <a href="https://www.skaren.app/tilsetningsstoffer" className="font-semibold underline" style={{ color: "#2d4a26" }}>
+              skaren.app/tilsetningsstoffer
+            </a>
             .
           </p>
         </section>
@@ -169,9 +165,9 @@ export function AboutContent() {
         >
           <p>© 2026 Skaren</p>
           <nav className="flex flex-wrap gap-x-5 gap-y-3" aria-label={no ? "Juridisk" : "Legal"}>
-            <Link href="/additives" className="font-semibold" style={{ color: "#2d4a26" }}>
+            <a href="https://www.skaren.app/tilsetningsstoffer" className="font-semibold" style={{ color: "#2d4a26" }}>
               {no ? "E-numre" : "E-numbers"}
-            </Link>
+            </a>
             <Link href="/privacy" className="font-semibold" style={{ color: "#2d4a26" }}>
               {no ? "Personvern" : "Privacy"}
             </Link>
