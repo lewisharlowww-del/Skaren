@@ -28,12 +28,12 @@ const createNextConfig = (phase) => ({
       },
       {
         source: "/additives",
-        destination: "https://www.skaren.app/tilsetningsstoffer",
+        destination: "https://www.skaren.app/additives",
         permanent: true
       },
       {
         source: "/additives/:code",
-        destination: "https://www.skaren.app/tilsetningsstoffer/:code",
+        destination: "https://www.skaren.app/additives/:code",
         permanent: true
       }
     ];
