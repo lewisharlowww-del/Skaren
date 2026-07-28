@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Check, Leaf, ShieldAlert, ShieldCheck } from "lucide-react";
 import { getSafetyColours } from "@/lib/enumbers";
+import { AdditivPrevalenceWidget } from "@/components/AdditivePrevalenceWidget";
 import {
   additiveIntro,
   getRelatedAdditives,
@@ -103,6 +104,9 @@ export function AdditiveDetail({
             <p className="font-semibold">{notes}</p>
           </div>
         )}
+
+        {/* Prevalence widget */}
+        <AdditivPrevalenceWidget code={entry.code} />
 
         {/* FAQ-style content blocks — great for search snippets */}
         <section className="mt-10 space-y-6">

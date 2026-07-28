@@ -1,0 +1,25 @@
+#!/bin/bash
+# EcoScan design-reference capture helper.
+# Usage:  ./snap            -> pick a region/window to screenshot
+#         ./snap full       -> capture the whole screen
+# Saves PNGs into ./design-refs/ so the agent can read them.
+
+set -e
+DIR="$(cd "$(dirname "$0")" && pwd)/design-refs"
+mkdir -p "$DIR"
+TS="$(date +%Y%m%d-%H%M%S)"
+OUT="$DIR/ref-$TS.png"
+
+if [ "$1" = "full" ]; then
+  screencapture "$OUT"
+else
+  echo "Select an area (or press Space then click a window). Esc to cancel."
+  screencapture -i "$OUT"
+fi
+
+if [ -f "$OUT" ]; then
+  echo "Saved: $OUT"
+  echo "Now tell the agent: 'look at the new ref'"
+else
+  echo "Cancelled (no image saved)."
+fi

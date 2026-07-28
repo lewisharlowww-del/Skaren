@@ -1,0 +1,21 @@
+SKAREN — "WHAT'S NEW" / RELEASE NOTES (copy-paste into App Store Connect)
+=========================================================================
+App Store Connect > Apps > Skaren > [version] > "What's New in This Version"
+Paste one language into each localization.
+
+
+ENGLISH
+-------
+Faster, smoother navigation and behind-the-scenes improvements to help you scan and understand your food even quicker.
+
+
+NORWEGIAN
+---------
+Raskere og jevnere navigasjon, pluss forbedringer bak kulissene som hjelper deg å skanne og forstå maten din enda kjappere.
+
+
+=========================================================================
+NOTES:
+- "What's New" only shows for an app UPDATE (a new build). If you submit a
+  metadata-only change with the existing build, you may not need this field.
+- Keep it short and user-friendly. Users don't need the technical details.

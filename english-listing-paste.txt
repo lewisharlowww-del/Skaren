@@ -1,0 +1,55 @@
+SKAREN — ENGLISH APP STORE LISTING (copy-paste into App Store Connect)
+======================================================================
+App Store Connect > Apps > Skaren > [your version] > language: English (U.K.)
+or English (U.S.). Paste each field below. Watch the character limits.
+
+
+NAME / TITLE   (max 30 characters)   [29]
+-----------------------------------------
+Skaren: Food Additive Scanner
+
+
+SUBTITLE   (max 30 characters)   [29]
+-------------------------------------
+Check ingredients & nutrition
+
+
+KEYWORDS   (max 100 characters, comma-separated, NO spaces)   [94]
+-----------------------------------------------------------------
+barcode,grocery,health,scan,allergen,sugar,calories,vegan,additive,e-number,label,organic,diet
+
+
+PROMOTIONAL TEXT   (max 170 characters — updates instantly, no review)   [117]
+-----------------------------------------------------------------------------
+New: faster scanning and clearer health & eco grades. Know exactly what is in your food before it goes in the basket.
+
+
+DESCRIPTION   (paste as-is)
+---------------------------
+Skaren helps you make better food choices — one barcode scan at a time.
+
+Scan any food product and instantly understand what you're actually eating. Skaren analyses ingredients, additives, nutrition, and environmental impact — giving you simple grades that are easy to understand.
+
+HEALTH & ECO GRADES
+Get a quick A–E rating on both health content and environmental impact. No long lists to decipher — just clear, honest information.
+
+ADDITIVES & INGREDIENTS
+See exactly which additives a product contains and which ones to avoid. Skaren has a database of 300+ E-numbers with safety ratings.
+
+NOVA SCALE
+Understand how processed your food is with NOVA classification — from unprocessed natural food to ultra-processed products.
+
+SHOPPING LIST & HISTORY
+Build a healthier shopping list and track what you've scanned over time.
+
+NORWEGIAN PRODUCTS
+Optimised for the Norwegian market with up-to-date product data.
+
+Download Skaren and start eating smarter today.
+
+
+======================================================================
+AFTER PASTING:
+1. Save.
+2. Title / Subtitle / Keywords go live only AFTER Apple approves the update.
+3. Promotional Text goes live instantly on Save.

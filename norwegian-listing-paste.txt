@@ -1,0 +1,58 @@
+SKAREN — NORWEGIAN APP STORE LISTING (copy-paste into App Store Connect)
+========================================================================
+App Store Connect > Apps > Skaren > [your version] > language: Norwegian
+Paste each field below. Watch the character limits noted.
+
+
+NAME / TITLE   (max 30 characters)
+----------------------------------
+Skaren: Matscanner & E-nummer
+
+
+SUBTITLE   (max 30 characters)
+------------------------------
+Sjekk ingredienser & kosthold
+
+
+KEYWORDS   (max 100 characters, comma-separated, NO spaces)
+-----------------------------------------------------------
+strekkode,matvare,helse,skanne,allergen,sukker,kalorier,næring,vegan,tilsetning,sunn,e-stoff
+
+
+PROMOTIONAL TEXT   (max 170 characters — updates instantly, no review needed)
+-----------------------------------------------------------------------------
+Nytt: raskere scanning og tydeligere helse- og øko-karakterer. Finn ut hva du egentlig spiser før du legger det i handlekurven.
+
+
+DESCRIPTION   (paste as-is)
+---------------------------
+Skaren hjelper deg å ta bedre matvalg – ett strekkode-scan om gangen.
+
+Scan strekkoden på matvarer og få øyeblikkelig innsikt i hva du faktisk spiser. Skaren analyserer ingredienser, tilsetningsstoffer, næringsinnhold og miljøpåvirkning – og gir deg enkle karakterer som er lette å forstå.
+
+HELSE- & ØKO-KARAKTERER
+Få en rask A–E vurdering på både helseinnhold og miljøpåvirkning. Ingen lange lister å tyde – bare klar, ærlig informasjon.
+
+TILSETNINGSSTOFFER & INGREDIENSER
+Se hvilke tilsetningsstoffer produktet inneholder, og hvilke du bør unngå. Skaren har en database med over 300 E-numre med sikkerhetsvurderinger.
+
+NOVA-SKALA
+Forstå hvor bearbeidet maten er med NOVA-klassifisering – fra ubearbeidet naturmat til høyt bearbeidede produkter.
+
+HANDLELISTE & HISTORIKK
+Bygg en sunnere handleliste og se hva du har scannet over tid.
+
+NORSKE PRODUKTER
+Optimalisert for det norske markedet med oppdatert produktdata.
+
+Last ned Skaren og begynn å spise smartere i dag.
+
+
+========================================================================
+AFTER PASTING:
+1. Save.
+2. Title / Subtitle / Keywords go live only AFTER Apple approves the update
+   (Submit for Review, ~1–2 days).
+3. Promotional Text goes live instantly on Save (no review).
+4. Keep your Search Ads running meanwhile — they improve automatically once
+   the new listing is approved.

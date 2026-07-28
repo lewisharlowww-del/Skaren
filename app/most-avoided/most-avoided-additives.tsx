@@ -60,11 +60,11 @@ export default function MostAvoidedAdditivesPage({ data }: { data: Summary }) {
           <div className="flex items-start justify-between mb-8">
             <div>
               <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
-                What's Really in Norwegian Products?
+                What&apos;s Really in Norwegian Products?
               </h1>
               <p className="text-xl text-slate-600 max-w-2xl">
                 We analyzed {data.totalProductsAnalyzed.toLocaleString()} products from Norwegian grocery
-                stores. Here's what we found.
+                stores. Here&apos;s what we found.
               </p>
             </div>
             <div className="hidden md:block text-right">
@@ -150,7 +150,7 @@ export default function MostAvoidedAdditivesPage({ data }: { data: Summary }) {
                 <div>
                   <h3 className="font-semibold text-red-900 mb-2">Top Additives to Minimize</h3>
                   <p className="text-red-800 text-sm">
-                    These additives are rated as "avoid" and should be limited in your diet.
+                    These additives are rated as &quot;avoid&quot; and should be limited in your diet.
                   </p>
                 </div>
               </div>
@@ -198,8 +198,8 @@ export default function MostAvoidedAdditivesPage({ data }: { data: Summary }) {
                 <div>
                   <h3 className="font-semibold text-blue-900 mb-2">Most Common Additives</h3>
                   <p className="text-blue-800 text-sm">
-                    These E-numbers appear in the most Norwegian products. Many are safe, but it's
-                    good to know what you're consuming.
+                    These E-numbers appear in the most Norwegian products. Many are safe, but it&apos;s
+                    good to know what you&apos;re consuming.
                   </p>
                 </div>
               </div>

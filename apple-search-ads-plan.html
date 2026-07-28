@@ -1,0 +1,224 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Skaren — Apple Search Ads Plan</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:820px;margin:40px auto;padding:0 24px;color:#1a1714;line-height:1.55;background:#faf7f2}
+h1{font-size:30px;color:#14210d;border-bottom:3px solid #4a8c5c;padding-bottom:10px}
+h2{font-size:22px;color:#1c3a22;margin-top:34px}
+h3{font-size:17px;color:#2d4a26}
+code{background:#eee7db;padding:2px 6px;border-radius:5px;font-size:14px}
+pre{background:#14210d;color:#e8f0e0;padding:16px 18px;border-radius:12px;overflow-x:auto}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:16px 0}
+th,td{border:1px solid #d8cfc0;padding:9px 12px;text-align:left;font-size:14px}
+th{background:#e3efdf}
+blockquote{background:#edf4e9;border-left:4px solid #4a8c5c;margin:16px 0;padding:12px 18px;border-radius:0 10px 10px 0;color:#3a4a30;font-size:14px}
+.li{margin:4px 0}
+hr{border:none;border-top:1px solid #e0d8cc;margin:28px 0}
+</style></head><body><h1>Skaren — Apple Search Ads Plan (Norway)</h1>
+
+<p><strong>Product:</strong> Apple Search Ads <strong>Advanced</strong> (keyword-level control)</p>
+<p><strong>Budget:</strong> ~$5–10/day (~50–100 NOK/day). Start at <strong>$7/day</strong> total.</p>
+<p><strong>Goal:</strong> Installs (volume, at a sensible cost).</p>
+<p><strong>Geo:</strong> Norway only. <strong>Languages:</strong> Norwegian + English searches.</p>
+<p><strong>Model:</strong> Cost-Per-Tap (you pay per tap, not per install).</p>
+
+<blockquote>You cannot pre-set everything from one screen. ASA Advanced structures work as</blockquote>
+<blockquote><strong>Campaign → Ad Group → Keywords</strong>. Below is the exact structure to recreate.</blockquote>
+<blockquote>Bids are starting points in USD; adjust after the first week using the routine</blockquote>
+<blockquote>at the bottom. Apple shows suggested bids when you add keywords — if a</blockquote>
+<blockquote>suggestion is far from mine, trust Apple&#x27;s range and start near its low end.</blockquote>
+
+<hr>
+
+<h2>Account structure (4 campaigns)</h2>
+
+<p>Split budget so the reliable campaigns get most of it and Discovery mines new terms.</p>
+
+<table>
+<tr><th>Campaign</th><th>Purpose</th><th>Daily budget</th><th>Match types</th></tr>
+<tr><td>1. Brand</td><td>Catch people already searching &quot;skaren&quot;</td><td>$1</td><td>Exact</td></tr>
+<tr><td>2. Category (Generic)</td><td>Core intent: food scanner, additives</td><td>$3.5</td><td>Exact</td></tr>
+<tr><td>3. Competitor</td><td>People searching rival apps</td><td>$1.5</td><td>Exact</td></tr>
+<tr><td>4. Discovery</td><td>Find new keywords cheaply</td><td>$1</td><td>Broad + Search Match</td></tr>
+</table>
+
+<p>Total ≈ <strong>$7/day</strong>. Once you see which campaign converts cheapest, shift budget toward it (typically Category or Brand).</p>
+
+<hr>
+
+<h2>Campaign 1 — Brand  (budget $1/day)</h2>
+
+<p>Cheapest installs you&#x27;ll ever get. Defends your name from competitors bidding on it.</p>
+
+<p><strong>Ad Group: Brand — Exact</strong>  · starting bid <strong>$0.30–0.50</strong></p>
+<pre><code>
+skaren
+skaren app
+skaren scanner
+skaren mat
+</code></pre>
+
+<p>Negative keywords: none needed (it&#x27;s your own name).</p>
+
+<hr>
+
+<h2>Campaign 2 — Category / Generic  (budget $3.5/day) ← your main engine</h2>
+
+<p>This is where most spend and installs come from. Norwegian terms first (highest intent for your market), English second.</p>
+
+<p><strong>Ad Group: NO — Core Exact</strong>  · starting bid <strong>$0.60–0.90</strong></p>
+<pre><code>
+matscanner
+matvarescanner
+strekkode scanner
+skann mat
+tilsetningsstoffer
+e-nummer
+e nummer
+matvaresjekk
+sunn mat app
+ernæring app
+kosthold app
+matvare skanner
+sjekk mat
+</code></pre>
+
+<p><strong>Ad Group: NO — Additive intent Exact</strong>  · starting bid <strong>$0.50–0.80</strong></p>
+<pre><code>
+e-stoffer
+tilsetningsstoffer liste
+er e-nummer farlig
+usunn mat
+ultraprosessert mat
+</code></pre>
+
+<p><strong>Ad Group: EN — Core Exact</strong>  · starting bid <strong>$0.40–0.70</strong></p>
+<pre><code>
+food scanner
+barcode food scanner
+food additives
+e number scanner
+healthy food app
+nutrition scanner
+ingredient scanner
+</code></pre>
+
+<p><strong>Negative keywords (add at campaign level):</strong></p>
+<pre><code>
+recipe
+recipes
+oppskrift
+diet plan
+slankekur
+game
+free money
+barcode generator
+qr code
+</code></pre>
+
+<hr>
+
+<h2>Campaign 3 — Competitor  (budget $1.5/day)</h2>
+
+<p>Bid on rival app names so their searchers see you. Legal on ASA (you can target competitor *keywords*; you just can&#x27;t use their name in your ad text — ASA auto-generates ads from your listing anyway).</p>
+
+<p><strong>Ad Group: Competitors — Exact</strong>  · starting bid <strong>$0.40–0.70</strong></p>
+<pre><code>
+yuka
+yuka app
+frifor
+frifor app
+matvaresjekk app
+mat sjekk
+open food facts
+ernær
+</code></pre>
+
+<blockquote>Watch these closely. Competitor terms can be pricey and lower-converting.</blockquote>
+<blockquote>If cost-per-install runs high after a week, pause the worst offenders.</blockquote>
+
+<hr>
+
+<h2>Campaign 4 — Discovery  (budget $1/day)</h2>
+
+<p>Let Apple find keywords you haven&#x27;t thought of. This *feeds* your other campaigns.</p>
+
+<p><strong>Ad Group: Discovery — Broad</strong>  · starting bid <strong>$0.30–0.50</strong></p>
+<div class='li'>• Add your Category keywords again but set match type to <strong>Broad</strong>.</div>
+<div class='li'>• Turn <strong>Search Match = ON</strong> (Apple auto-matches your listing to relevant searches).</div>
+
+<p><strong>Add ALL your other campaigns&#x27; exact keywords here as negatives</strong> so Discovery</p>
+<p>only surfaces *new* terms:</p>
+<pre><code>
+(paste every exact keyword from campaigns 1–3 as negative exact)
+</code></pre>
+
+<p>Every week: pull the <strong>Search Terms report</strong>, find winning terms, and move them</p>
+<p>as new <strong>Exact</strong> keywords into Campaign 2. This is the growth loop.</p>
+
+<hr>
+
+<h2>Global settings (apply to every campaign)</h2>
+
+<div class='li'>• <strong>Countries/Regions:</strong> Norway only</div>
+<div class='li'>• <strong>Ad Scheduling:</strong> all day (start simple)</div>
+<div class='li'>• <strong>Audience → Customer type:</strong> &quot;All users&quot; first. Later test &quot;New users&quot; only</div>
+<p>  to avoid paying for people who already have the app.</p>
+<div class='li'>• <strong>Devices:</strong> iPhone (and iPad if your app supports it well)</div>
+<div class='li'>• <strong>Search Match:</strong> OFF for campaigns 1–3, ON only for Discovery</div>
+
+<hr>
+
+<h2>Week-by-week optimization routine</h2>
+
+<p><strong>Day 0 (launch):</strong> Set everything above. Spend will start slow — normal.</p>
+
+<p><strong>Every 2–3 days, check each keyword&#x27;s:</strong></p>
+<div class='li'>• <strong>Tap-Through Rate (TTR):</strong> low TTR (&lt;3%) = your listing/screenshots aren&#x27;t</div>
+<p>  compelling for that term, or the term is off-intent.</p>
+<div class='li'>• <strong>Conversion Rate (CR):</strong> taps → installs. &lt;30% CR on a keyword = weak match.</div>
+<div class='li'>• <strong>Cost-Per-Acquisition (CPA / avg CPA):</strong> your north star. This is $ per install.</div>
+
+<p><strong>Rules of thumb:</strong></p>
+<div class='li'>• Keyword getting installs cheaply (low CPA) → <strong>raise bid 15–20%</strong> to get more volume.</div>
+<div class='li'>• Keyword spending with <strong>0 installs after ~15–20 taps</strong> → <strong>cut bid 30%</strong> or pause.</div>
+<div class='li'>• Keyword with high taps, low CR → check the search term is actually relevant;</div>
+<p>  add negatives to block bad variants.</p>
+<div class='li'>• Pull the <strong>Search Terms report weekly</strong> → promote winners to Exact in Campaign 2,</div>
+<p>  add junk terms as negatives everywhere.</p>
+
+<p><strong>After 2 weeks:</strong> you&#x27;ll know your real CPA. Shift the daily budget toward the</p>
+<p>campaign with the lowest CPA (usually Brand + Category).</p>
+
+<hr>
+
+<h2>What &quot;good&quot; looks like in Norway (rough benchmarks)</h2>
+
+<div class='li'>• <strong>TTR:</strong> 3–7% is healthy for exact-match.</div>
+<div class='li'>• <strong>CR (tap→install):</strong> 40–60% for on-target keywords.</div>
+<div class='li'>• <strong>CPA:</strong> Brand often $0.30–1.00; Category $1–3; Competitor $2–5.</div>
+<div class='li'>• If Category CPA sits under ~$2–3 and those users convert to Pro, scale up.</div>
+
+<hr>
+
+<h2>Things to set up BEFORE you spend (they lift results a lot)</h2>
+
+<div class='li'>1. <strong>Custom Product Page / Creative Sets:</strong> ASA can show different screenshots</div>
+<p>   per keyword theme. At minimum, make sure your default screenshots lead with</p>
+<p>   the strongest benefit (we discussed the hero screenshot).</p>
+<div class='li'>2. <strong>Localized listing:</strong> your Norwegian App Store text should be live (the</div>
+<p>   optimized title/subtitle/keywords from app-store-listing.md). ASA quality and</p>
+<p>   relevance draw from your listing.</p>
+<div class='li'>3. <strong>In-app rating prompt:</strong> already added — more ratings = higher store</div>
+<p>   conversion = cheaper installs.</p>
+<div class='li'>4. <strong>Apple Search Ads Attribution / analytics:</strong> connect so you can see which</div>
+<p>   keywords drive not just installs but *Pro conversions* later.</p>
+
+<hr>
+
+<h2>TL;DR to launch today</h2>
+<div class='li'>1. Create 4 campaigns above, Norway only, $7/day total.</div>
+<div class='li'>2. Paste the keyword lists into each ad group with the starting bids.</div>
+<div class='li'>3. Add the negative keywords.</div>
+<div class='li'>4. Turn Search Match ON only for Discovery.</div>
+<div class='li'>5. Check every 2–3 days; promote winners, cut zeros; pull Search Terms weekly.</div>
+</body></html>

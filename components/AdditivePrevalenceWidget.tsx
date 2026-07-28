@@ -50,15 +50,15 @@ export function AdditivPrevalenceWidget({ code }: PrevalenceProps) {
             <p className={`text-sm mt-3 ${isMostCommon ? 'text-amber-700' : 'text-blue-700'}`}>
               {isMostCommon ? (
                 <>
-                  <span className="font-semibold">⭐ This is one of the top 5 most common additives</span> found in Norwegian grocery stores. You'll find it in everyday products like instant noodles, sauces, and seasoning mixes.
+                  <span className="font-semibold">⭐ This is one of the top 5 most common additives</span> found in Norwegian grocery stores. You&apos;ll find it in everyday products like instant noodles, sauces, and seasoning mixes.
                 </>
               ) : isCommon ? (
                 <>
-                  <span className="font-semibold">This additive appears regularly</span> in Norwegian products, especially in certain categories like {code === 'E250' || code === 'E251' ? 'processed meats' : 'packaged foods'}.
+                  <span className="font-semibold">This additive appears regularly</span> in Norwegian products, especially in certain categories like {code === 'E250' || code === 'E251' ? 'processed meats' : 'packaged foods'}..
                 </>
               ) : (
                 <>
-                  <span className="font-semibold">This is a less common additive</span> in Norwegian products. You'll mostly find it in specialized or imported foods.
+                  <span className="font-semibold">This is a less common additive</span> in Norwegian products. You&apos;ll mostly find it in specialized or imported foods.
                 </>
               )}
             </p>

@@ -1,0 +1,35 @@
+SKAREN — APPLE SEARCH ADS KEYWORDS (comma-separated, ready to paste)
+=====================================================================
+Each block below is ONE ad group. Copy the line under it and paste into
+Apple Search Ads. Match type is noted. All campaigns: Norway only, Search
+Match OFF except Discovery.
+
+
+CAMPAIGN 1 — BRAND   (budget $1/day)
+------------------------------------
+Ad Group: Brand-Exact   |  bid $0.40  |  match: EXACT
+skaren, skaren app, skaren scanner, skaren mat
+
+
+CAMPAIGN 2 — CATEGORY   (budget $3.50/day)  ← main
+--------------------------------------------------
+Ad Group: NO-Core-Exact   |  bid $0.70  |  match: EXACT
+matscanner, matvarescanner, strekkode scanner, skann mat, tilsetningsstoffer, e-nummer, e nummer, matvaresjekk, sunn mat app, ernæring app, kosthold app, sjekk mat
+
+Ad Group: EN-Core-Exact   |  bid $0.55  |  match: EXACT
+food scanner, barcode food scanner, food additives, e number scanner, healthy food app, nutrition scanner, ingredient scanner
+
+Campaign Negative Keywords   |  match: EXACT
+recipe, oppskrift, slankekur, game, qr code, barcode generator
+
+
+CAMPAIGN 3 — COMPETITOR   (budget $1.50/day)
+--------------------------------------------
+Ad Group: Competitors-Exact   |  bid $0.55  |  match: EXACT
+yuka, yuka app, frifor, frifor app, matvaresjekk app, mat sjekk, open food facts
+
+
+CAMPAIGN 4 — DISCOVERY   (budget $1/day)   Search Match: ON
+-----------------------------------------------------------
+Ad Group: Discovery-Broad   |  bid $0.40  |  match: BROAD
+matscanner, tilsetningsstoffer, food scanner, food additives, sunn mat

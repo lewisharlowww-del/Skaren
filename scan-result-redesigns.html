@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Skaren · Scan Result — Refined Concepts</title>
+<style>
+  :root{
+    --forest:#2d4a26; --leaf:#4a8c5c; --mist:#faf7f2; --mist-2:#f4efe7; --card:#ffffff;
+    --a-bg:#eaf5ec; --a-bd:#cfe9d3; --a-tx:#2f6b3a;
+    --b-bg:#eef6f0; --b-bd:#cadfce; --b-tx:#3f7a52;
+    --c-bg:#f8f4e6; --c-bd:#e4dcc0; --c-tx:#8a7320;
+    --d-bg:#fbefe6; --d-bd:#f0d3bd; --d-tx:#b0561f;
+    --e-bg:#fbecec; --e-bd:#f0c8c8; --e-tx:#a02a1c;
+    --bd:#ece5da; --hair:#f0eae0;
+    --ink:#1a1a15; --ink-2:#5b5344; --muted:#8b8271; --faint:#a49b88;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    font-family:-apple-system,'SF Pro Text','SF Pro Display','Segoe UI',system-ui,sans-serif;
+    background:#0e0f0d;
+    background-image:radial-gradient(1200px 700px at 50% -10%, #1d241b 0%, #0e0f0d 55%);
+    color:#eef0ea; padding:56px 24px 100px; min-height:100vh;
+  }
+  .intro{max-width:1200px;margin:0 auto 52px;text-align:center;}
+  .kicker{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+    color:#8fd47a;background:rgba(106,191,88,.1);border:1px solid rgba(106,191,88,.22);
+    padding:7px 15px;border-radius:999px;margin-bottom:22px;}
+  .intro h1{font-size:34px;font-weight:700;letter-spacing:-0.03em;line-height:1.1;margin-bottom:14px;
+    font-family:-apple-system,'SF Pro Display',system-ui,sans-serif;}
+  .intro p{color:#a7b0a0;font-size:16px;line-height:1.65;max-width:600px;margin:0 auto;font-weight:400;}
+
+  .rail{display:flex;flex-wrap:wrap;gap:56px 48px;justify-content:center;max-width:1280px;margin:0 auto;}
+  .item{width:360px;}
+  .caption{margin-bottom:22px;}
+  .caption .idx{font-size:13px;font-weight:700;color:#6abf58;letter-spacing:.02em;}
+  .caption h2{font-size:22px;font-weight:700;letter-spacing:-0.02em;color:#fff;margin-top:4px;
+    font-family:-apple-system,'SF Pro Display',system-ui,sans-serif;}
+  .caption p{color:#98a191;font-size:14px;line-height:1.6;margin-top:8px;font-weight:400;}
+
+  /* device */
+  .device{width:360px;height:760px;background:#111;border-radius:52px;padding:11px;
+    box-shadow:0 50px 90px -30px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.06), inset 0 0 0 2px #000;
+    position:relative;}
+  .screen{width:100%;height:100%;border-radius:42px;overflow:hidden;background:var(--mist);position:relative;
+    display:flex;flex-direction:column;}
+  .dyn{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:104px;height:30px;background:#000;
+    border-radius:999px;z-index:60;}
+  .statusbar{height:52px;flex-shrink:0;display:flex;align-items:flex-end;justify-content:space-between;
+    padding:0 26px 8px;font-size:14px;font-weight:600;color:var(--ink);}
+  .statusbar .r{display:flex;gap:6px;align-items:center;font-size:12px;}
+  .body{flex:1;overflow-y:auto;overflow-x:hidden;}
+  .body::-webkit-scrollbar{width:0;}
+
+  /* nav */
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:6px 20px 4px;}
+  .nav .cir{width:38px;height:38px;border-radius:50%;background:rgba(20,18,14,.05);display:grid;place-items:center;
+    color:var(--forest);border:none;cursor:pointer;font-size:17px;}
+  .nav .ttl{font-size:15px;font-weight:600;color:var(--ink);}
+
+  /* dock */
+  .dock{flex-shrink:0;padding:12px 20px calc(14px + 8px);background:rgba(255,255,255,.72);
+    backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-top:1px solid rgba(0,0,0,.05);display:flex;gap:12px;}
+  .pill{flex:1;border:none;cursor:pointer;border-radius:16px;padding:15px;font-size:15px;font-weight:600;
+    font-family:inherit;letter-spacing:-0.01em;}
+  .pill.sec{background:var(--mist-2);color:var(--forest);}
+  .pill.pri{flex:1.5;background:var(--forest);color:#f3f7ef;box-shadow:0 8px 20px -8px rgba(45,74,38,.6);}
+
+  .lbl{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+  .row-lbl{display:flex;align-items:center;justify-content:space-between;}
+  .grade-ring{border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .prod-emoji{font-size:52px;line-height:1;}
+  .tap{font-size:13px;color:var(--muted);}
+
+  .footnote{text-align:center;color:#7f8a76;font-size:14px;margin-top:60px;line-height:1.6;}
+  .footnote b{color:#cdd6c4;font-weight:600;}
+</style>
+</head>
+<body>
+  <div class="intro">
+    <div class="kicker">Scan Result · Refined</div>
+    <h1>Three App-Store-quality directions</h1>
+    <p>Real iPhone proportions, SF Pro type, an 8-point spacing rhythm, and a single focal point per screen. Restrained color, generous whitespace.</p>
+  </div>
+
+  <div class="rail">
+
+    <!-- ═══════════ A · CALM FOCUS ═══════════ -->
+    <div class="item">
+      <div class="caption">
+        <div class="idx">Direction A</div>
+        <h2>Calm Focus</h2>
+        <p>One hero verdict, oceans of whitespace. The grade is the star; everything else recedes. Feels premium and effortless.</p>
+      </div>
+      <div class="device"><div class="dyn"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="r" style="letter-spacing:1px;opacity:.85;">◦◦◦ 5G ▪</span></div>
+        <div class="body">
+          <div class="nav">
+            <button class="cir">‹</button>
+            <span class="ttl"></span>
+            <button class="cir" style="font-size:15px;">i</button>
+          </div>
+
+          <!-- hero -->
+          <div style="padding:20px 28px 8px;text-align:center;">
+            <div style="width:104px;height:104px;border-radius:30px;background:#fff;margin:0 auto 24px;
+              display:grid;place-items:center;box-shadow:0 12px 30px -12px rgba(45,40,31,.25);border:1px solid var(--hair);">
+              <span class="prod-emoji">🥛</span>
+            </div>
+            <h1 style="font-size:26px;font-weight:700;letter-spacing:-0.03em;color:var(--ink);line-height:1.12;
+              font-family:-apple-system,'SF Pro Display',sans-serif;">Helmelk</h1>
+            <p style="font-size:15px;color:var(--muted);margin-top:6px;font-weight:400;">Tine · 1 L</p>
+          </div>
+
+          <!-- big grade -->
+          <div style="padding:28px 28px 8px;display:flex;flex-direction:column;align-items:center;">
+            <div class="grade-ring" style="width:168px;height:168px;border:8px solid var(--b-bd);background:var(--b-bg);">
+              <span style="font-size:76px;font-weight:700;color:var(--b-tx);line-height:.9;letter-spacing:-0.04em;
+                font-family:-apple-system,'SF Pro Display',sans-serif;">B</span>
+            </div>
+            <p style="font-size:19px;font-weight:600;color:var(--ink);margin-top:22px;letter-spacing:-0.01em;">Good nutrition</p>
+            <p style="font-size:14px;color:var(--muted);margin-top:6px;text-align:center;line-height:1.5;max-width:230px;">
+              Balanced macros with naturally occurring sugars.</p>
+          </div>
+
+          <!-- secondary: eco + a couple facts, quiet -->
+          <div style="padding:30px 24px 26px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;
+              background:#fff;border-radius:20px;border:1px solid var(--hair);">
+              <div style="display:flex;align-items:center;gap:13px;">
+                <div style="width:40px;height:40px;border-radius:12px;background:var(--a-bg);display:grid;place-items:center;
+                  font-size:16px;font-weight:700;color:var(--a-tx);border:1px solid var(--a-bd);">A</div>
+                <div>
+                  <p style="font-size:15px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Eco-Score</p>
+                  <p style="font-size:13px;color:var(--muted);margin-top:1px;">Low environmental impact</p>
+                </div>
+              </div>
+              <span style="color:var(--faint);font-size:15px;">›</span>
+            </div>
+
+            <div style="display:flex;gap:12px;margin-top:12px;">
+              <div style="flex:1;background:#fff;border:1px solid var(--hair);border-radius:20px;padding:16px 18px;">
+                <p style="font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;
+                  font-family:-apple-system,'SF Pro Display',sans-serif;">64</p>
+                <p style="font-size:13px;color:var(--muted);margin-top:2px;">kcal · 100 ml</p>
+              </div>
+              <div style="flex:1;background:#fff;border:1px solid var(--hair);border-radius:20px;padding:16px 18px;">
+                <p style="font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;
+                  font-family:-apple-system,'SF Pro Display',sans-serif;">3.4</p>
+                <p style="font-size:13px;color:var(--muted);margin-top:2px;">g protein</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="dock">
+          <button class="pill sec">Scan</button>
+          <button class="pill pri">Add to list</button>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ═══════════ B · LARGE TITLE / SECTIONS ═══════════ -->
+    <div class="item">
+      <div class="caption">
+        <div class="idx">Direction B</div>
+        <h2>Native Sections</h2>
+        <p>iOS large-title header that collapses on scroll, grouped inset cards, clear section rhythm. The most "at home" on iPhone.</p>
+      </div>
+      <div class="device"><div class="dyn"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="r" style="letter-spacing:1px;opacity:.85;">◦◦◦ 5G ▪</span></div>
+        <div class="body">
+          <div class="nav">
+            <button class="cir">‹</button>
+            <span class="ttl">Scan result</span>
+            <button class="cir" style="font-size:16px;">↗</button>
+          </div>
+
+          <!-- large title header -->
+          <div style="padding:8px 24px 20px;">
+            <div style="display:flex;align-items:center;gap:16px;">
+              <div style="width:66px;height:66px;border-radius:20px;background:#fff;display:grid;place-items:center;
+                border:1px solid var(--hair);flex-shrink:0;box-shadow:0 8px 20px -12px rgba(45,40,31,.2);">
+                <span style="font-size:34px;">🥛</span></div>
+              <div style="min-width:0;">
+                <h1 style="font-size:28px;font-weight:700;letter-spacing:-0.03em;color:var(--ink);line-height:1.05;
+                  font-family:-apple-system,'SF Pro Display',sans-serif;">Helmelk</h1>
+                <p style="font-size:15px;color:var(--muted);margin-top:4px;">Tine · 1 L</p>
+              </div>
+            </div>
+            <span style="display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-size:13px;font-weight:600;
+              color:var(--a-tx);background:var(--a-bg);border:1px solid var(--a-bd);padding:6px 12px;border-radius:999px;">
+              ✓ Verified store data</span>
+          </div>
+
+          <!-- grades section -->
+          <div style="padding:0 20px;">
+            <p class="lbl" style="padding:8px 6px 10px;">Grades</p>
+            <div style="background:#fff;border-radius:22px;border:1px solid var(--hair);overflow:hidden;">
+              <div style="display:flex;align-items:center;gap:16px;padding:18px 20px;border-bottom:1px solid var(--hair);">
+                <div class="grade-ring" style="width:60px;height:60px;border:4px solid var(--b-bd);background:var(--b-bg);flex-shrink:0;">
+                  <span style="font-size:26px;font-weight:700;color:var(--b-tx);letter-spacing:-0.03em;font-family:'SF Pro Display',sans-serif;">B</span></div>
+                <div style="flex:1;">
+                  <p style="font-size:16px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Health</p>
+                  <p style="font-size:13.5px;color:var(--muted);margin-top:2px;">Good nutrition</p>
+                </div>
+                <span style="color:var(--faint);">›</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:16px;padding:18px 20px;">
+                <div class="grade-ring" style="width:60px;height:60px;border:4px solid var(--a-bd);background:var(--a-bg);flex-shrink:0;">
+                  <span style="font-size:26px;font-weight:700;color:var(--a-tx);letter-spacing:-0.03em;font-family:'SF Pro Display',sans-serif;">A</span></div>
+                <div style="flex:1;">
+                  <p style="font-size:16px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Eco</p>
+                  <p style="font-size:13.5px;color:var(--muted);margin-top:2px;">Low environmental impact</p>
+                </div>
+                <span style="color:var(--faint);">›</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- nutrition section -->
+          <div style="padding:0 20px 24px;">
+            <p class="lbl" style="padding:20px 6px 10px;">Nutrition · per 100 ml</p>
+            <div style="background:#fff;border-radius:22px;border:1px solid var(--hair);overflow:hidden;">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid var(--hair);">
+                <span style="font-size:15px;color:var(--ink);">Energy</span><span style="font-size:15px;font-weight:600;color:var(--ink);">64 kcal</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid var(--hair);">
+                <span style="font-size:15px;color:var(--ink);">Fat</span><span style="font-size:15px;font-weight:600;color:var(--b-tx);">3.5 g</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid var(--hair);">
+                <span style="font-size:15px;color:var(--ink);">Sugar</span><span style="font-size:15px;font-weight:600;color:var(--c-tx);">4.8 g</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;">
+                <span style="font-size:15px;color:var(--ink);">Protein</span><span style="font-size:15px;font-weight:600;color:var(--a-tx);">3.4 g</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="dock">
+          <button class="pill sec">Scan</button>
+          <button class="pill pri">Add to list</button>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ═══════════ C · IMMERSIVE HEADER ═══════════ -->
+    <div class="item">
+      <div class="caption">
+        <div class="idx">Direction C</div>
+        <h2>Immersive Header</h2>
+        <p>A full-bleed tinted header carries the product and verdict; content floats up on a rounded sheet. Cinematic, brand-forward.</p>
+      </div>
+      <div class="device"><div class="dyn"></div><div class="screen">
+        <div class="body" style="background:var(--mist);">
+          <!-- tinted immersive header -->
+          <div style="background:linear-gradient(180deg,#31502a 0%,#294524 100%);padding:52px 24px 78px;position:relative;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <button class="cir" style="background:rgba(255,255,255,.14);color:#fff;">‹</button>
+              <button class="cir" style="background:rgba(255,255,255,.14);color:#fff;font-size:15px;">i</button>
+            </div>
+            <div style="text-align:center;margin-top:20px;">
+              <div style="width:96px;height:96px;border-radius:26px;background:rgba(255,255,255,.96);margin:0 auto 18px;
+                display:grid;place-items:center;box-shadow:0 16px 34px -14px rgba(0,0,0,.5);">
+                <span style="font-size:48px;">🥛</span></div>
+              <h1 style="font-size:27px;font-weight:700;letter-spacing:-0.03em;color:#fff;line-height:1.1;
+                font-family:'SF Pro Display',sans-serif;">Helmelk</h1>
+              <p style="font-size:14px;color:rgba(255,255,255,.66);margin-top:5px;letter-spacing:.01em;">TINE · 1 L</p>
+            </div>
+          </div>
+
+          <!-- floating sheet -->
+          <div style="background:var(--mist);border-radius:28px 28px 0 0;margin-top:-56px;position:relative;padding:26px 22px 24px;">
+            <!-- verdict card overlapping -->
+            <div style="background:#fff;border-radius:24px;padding:20px;box-shadow:0 18px 40px -20px rgba(45,40,31,.28);
+              border:1px solid var(--hair);display:flex;gap:16px;">
+              <div class="grade-ring" style="width:76px;height:76px;border:5px solid var(--b-bd);background:var(--b-bg);flex-shrink:0;">
+                <span style="font-size:34px;font-weight:700;color:var(--b-tx);letter-spacing:-0.03em;font-family:'SF Pro Display',sans-serif;">B</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+                <p style="font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);">Overall</p>
+                <p style="font-size:19px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;margin-top:3px;">Good choice</p>
+                <div style="display:flex;gap:6px;margin-top:8px;">
+                  <span style="font-size:12px;font-weight:600;color:var(--a-tx);background:var(--a-bg);border:1px solid var(--a-bd);padding:3px 9px;border-radius:999px;">Eco A</span>
+                  <span style="font-size:12px;font-weight:600;color:var(--a-tx);background:var(--a-bg);border:1px solid var(--a-bd);padding:3px 9px;border-radius:999px;">Unprocessed</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- facts -->
+            <p class="lbl" style="padding:22px 4px 12px;">Per 100 ml</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div style="background:#fff;border:1px solid var(--hair);border-radius:20px;padding:17px 18px;">
+                <p style="font-size:25px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;font-family:'SF Pro Display',sans-serif;">64</p>
+                <p style="font-size:13px;color:var(--muted);margin-top:3px;">Energy · kcal</p></div>
+              <div style="background:#fff;border:1px solid var(--hair);border-radius:20px;padding:17px 18px;">
+                <p style="font-size:25px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;font-family:'SF Pro Display',sans-serif;">3.5<span style="font-size:14px;color:var(--muted);font-weight:600;"> g</span></p>
+                <p style="font-size:13px;color:var(--muted);margin-top:3px;">Fat</p></div>
+              <div style="background:#fff;border:1px solid var(--hair);border-radius:20px;padding:17px 18px;">
+                <p style="font-size:25px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;font-family:'SF Pro Display',sans-serif;">4.8<span style="font-size:14px;color:var(--muted);font-weight:600;"> g</span></p>
+                <p style="font-size:13px;color:var(--muted);margin-top:3px;">Sugar</p></div>
+              <div style="background:#fff;border:1px solid var(--hair);border-radius:20px;padding:17px 18px;">
+                <p style="font-size:25px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;font-family:'SF Pro Display',sans-serif;">3.4<span style="font-size:14px;color:var(--muted);font-weight:600;"> g</span></p>
+                <p style="font-size:13px;color:var(--muted);margin-top:3px;">Protein</p></div>
+            </div>
+          </div>
+        </div>
+        <div class="dock">
+          <button class="pill sec">Scan</button>
+          <button class="pill pri">Add to list</button>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+
+  <p class="footnote">
+    Pick a direction, or say <b>"A hero + B sections"</b> to combine. I'll build the winner into the real product page,<br/>
+    including dark mode, the premium-gated sections, and the scroll-collapse animation.
+  </p>
+</body>
+</html>
