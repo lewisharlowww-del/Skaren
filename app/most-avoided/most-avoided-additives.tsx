@@ -44,13 +44,67 @@ const safetyIcons = {
 };
 
 const safetyLabels = {
-  safe: 'Safe',
-  moderate: 'Moderate',
-  avoid: 'Avoid',
+  safe: 'Trygt',
+  moderate: 'Moderat',
+  avoid: 'Unngå',
 };
 
-export default function MostAvoidedAdditivesPage({ data }: { data: Summary }) {
+const translations = {
+  en: {
+    title: 'What\'s Really in Norwegian Products?',
+    subtitle: 'We analyzed',
+    subtitle2: 'products from Norwegian grocery stores. Here\'s what we found.',
+    unique: 'unique E-numbers found',
+    safe: 'Safe',
+    safeDesc: 'additives are safe',
+    moderate: 'Moderate',
+    moderateDesc: 'to be aware of',
+    avoid: 'Avoid',
+    avoidDesc: 'to minimize',
+    insightsTab: '💡 Key Insights',
+    avoidTab: '❌ Most Problematic',
+    commonTab: '📊 Most Common',
+    topAvoid: 'Top Additives to Minimize',
+    topAvoidDesc: 'These additives are rated as "avoid" and should be limited in your diet.',
+    whyAvoid: 'Why avoid:',
+    learnMore: 'Learn more',
+    mostCommon: 'Most Common Additives',
+    mostCommonDesc: 'These E-numbers appear in the most Norwegian products. Many are safe, but it\'s good to know what you\'re consuming.',
+    download: 'Download Skaren & Start Scanning',
+    downloadDesc: 'See which E-numbers are in your products instantly. Get personalized recommendations based on your health preferences.',
+    downloadIOS: 'Download iOS App',
+    waitlistAndroid: 'Join Android Waitlist',
+  },
+  no: {
+    title: 'Hva er egentlig i norske produkter?',
+    subtitle: 'Vi analyserte',
+    subtitle2: 'produkter fra norske dagligvarebutikker. Her er hva vi fant.',
+    unique: 'unike E-numre funnet',
+    safe: 'Trygt',
+    safeDesc: 'tilsetningsstoffer er trygge',
+    moderate: 'Moderat',
+    moderateDesc: 'å være klar over',
+    avoid: 'Unngå',
+    avoidDesc: 'å minimere',
+    insightsTab: '💡 Viktige innsikter',
+    avoidTab: '❌ Mest problematisk',
+    commonTab: '📊 Mest vanlig',
+    topAvoid: 'Topp tilsetningsstoffer å minimere',
+    topAvoidDesc: 'Disse tilsetningsstoffene er vurdert som "unngå" og bør begrenses i kostholdet ditt.',
+    whyAvoid: 'Hvorfor unngå:',
+    learnMore: 'Les mer',
+    mostCommon: 'Mest vanlige tilsetningsstoffer',
+    mostCommonDesc: 'Disse E-numrene forekommer i de fleste norske produkter. Mange er trygge, men det er greit å vite hva du spiser.',
+    download: 'Last ned Skaren og begynn å skanne',
+    downloadDesc: 'Se hvilke E-numre som er i produktene dine med en gang. Få personlige anbefalinger basert på dine helseprefranser.',
+    downloadIOS: 'Last ned iOS-app',
+    waitlistAndroid: 'Bli med på Android-ventelisten',
+  },
+};
+
+export default function MostAvoidedAdditivesPage({ data, lang = 'en' }: { data: Summary; lang?: 'en' | 'no' }) {
   const [activeTab, setActiveTab] = useState<'insights' | 'toavoid' | 'common'>('insights');
+  const t = translations[lang];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -60,16 +114,15 @@ export default function MostAvoidedAdditivesPage({ data }: { data: Summary }) {
           <div className="flex items-start justify-between mb-8">
             <div>
               <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
-                What&apos;s Really in Norwegian Products?
+                {t.title}
               </h1>
               <p className="text-xl text-slate-600 max-w-2xl">
-                We analyzed {data.totalProductsAnalyzed.toLocaleString()} products from Norwegian grocery
-                stores. Here&apos;s what we found.
+                {t.subtitle} {data.totalProductsAnalyzed.toLocaleString()} {t.subtitle2}
               </p>
             </div>
             <div className="hidden md:block text-right">
               <div className="text-4xl font-bold text-blue-600">{data.uniqueAdditivesFound}</div>
-              <div className="text-sm text-slate-600">unique E-numbers found</div>
+              <div className="text-sm text-slate-600">{t.unique}</div>
             </div>
           </div>
 
@@ -78,28 +131,28 @@ export default function MostAvoidedAdditivesPage({ data }: { data: Summary }) {
             <div className={`p-4 rounded-lg border ${safetyColors.safe}`}>
               <div className="flex items-center gap-2 mb-2">
                 {safetyIcons.safe}
-                <span className="font-semibold text-green-900">Safe</span>
+                <span className="font-semibold text-green-900">{t.safe}</span>
               </div>
               <div className="text-2xl font-bold text-green-700">{data.stats.safe}</div>
-              <div className="text-sm text-green-600">additives are safe</div>
+              <div className="text-sm text-green-600">{t.safeDesc}</div>
             </div>
 
             <div className={`p-4 rounded-lg border ${safetyColors.moderate}`}>
               <div className="flex items-center gap-2 mb-2">
                 {safetyIcons.moderate}
-                <span className="font-semibold text-amber-900">Moderate</span>
+                <span className="font-semibold text-amber-900">{t.moderate}</span>
               </div>
               <div className="text-2xl font-bold text-amber-700">{data.stats.moderate}</div>
-              <div className="text-sm text-amber-600">to be aware of</div>
+              <div className="text-sm text-amber-600">{t.moderateDesc}</div>
             </div>
 
             <div className={`p-4 rounded-lg border ${safetyColors.avoid}`}>
               <div className="flex items-center gap-2 mb-2">
                 {safetyIcons.avoid}
-                <span className="font-semibold text-red-900">Avoid</span>
+                <span className="font-semibold text-red-900">{t.avoid}</span>
               </div>
               <div className="text-2xl font-bold text-red-700">{data.stats.avoid}</div>
-              <div className="text-sm text-red-600">to minimize</div>
+              <div className="text-sm text-red-600">{t.avoidDesc}</div>
             </div>
           </div>
         </div>
@@ -119,9 +172,9 @@ export default function MostAvoidedAdditivesPage({ data }: { data: Summary }) {
                   : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
-              {tab === 'insights' && '💡 Key Insights'}
-              {tab === 'toavoid' && '❌ Most Problematic'}
-              {tab === 'common' && '📊 Most Common'}
+              {tab === 'insights' && t.insightsTab}
+              {tab === 'toavoid' && t.avoidTab}
+              {tab === 'common' && t.commonTab}
             </button>
           ))}
         </div>
@@ -148,9 +201,9 @@ export default function MostAvoidedAdditivesPage({ data }: { data: Summary }) {
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-6 h-6 text-red-600 mt-1 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold text-red-900 mb-2">Top Additives to Minimize</h3>
+                  <h3 className="font-semibold text-red-900 mb-2">{t.topAvoid}</h3>
                   <p className="text-red-800 text-sm">
-                    These additives are rated as &quot;avoid&quot; and should be limited in your diet.
+                    {t.topAvoidDesc}
                   </p>
                 </div>
               </div>
@@ -171,17 +224,17 @@ export default function MostAvoidedAdditivesPage({ data }: { data: Summary }) {
                     <div className="text-right">
                       <div className="text-2xl font-bold text-red-600">{additive.percentage}%</div>
                       <div className="text-xs text-slate-500">
-                        {additive.count.toLocaleString()} products
+                        {additive.count.toLocaleString()} produkter
                       </div>
                     </div>
                   </div>
                   {additive.why && (
                     <p className="text-sm text-red-700 bg-red-50 p-3 rounded">
-                      <span className="font-semibold">Why avoid:</span> {additive.why}
+                      <span className="font-semibold">{t.whyAvoid}</span> {additive.why}
                     </p>
                   )}
                   <div className="flex items-center justify-end mt-3 text-blue-600 text-sm font-medium">
-                    Learn more <ChevronRight className="w-4 h-4 ml-1" />
+                    {t.learnMore} <ChevronRight className="w-4 h-4 ml-1" />
                   </div>
                 </div>
               </Link>
@@ -196,10 +249,9 @@ export default function MostAvoidedAdditivesPage({ data }: { data: Summary }) {
               <div className="flex items-start gap-3">
                 <TrendingUp className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold text-blue-900 mb-2">Most Common Additives</h3>
+                  <h3 className="font-semibold text-blue-900 mb-2">{t.mostCommon}</h3>
                   <p className="text-blue-800 text-sm">
-                    These E-numbers appear in the most Norwegian products. Many are safe, but it&apos;s
-                    good to know what you&apos;re consuming.
+                    {t.mostCommonDesc}
                   </p>
                 </div>
               </div>
@@ -233,12 +285,12 @@ export default function MostAvoidedAdditivesPage({ data }: { data: Summary }) {
                     <div className="text-right">
                       <div className="text-2xl font-bold text-blue-600">{additive.percentage}%</div>
                       <div className="text-xs text-slate-500">
-                        {additive.count.toLocaleString()} products
+                        {additive.count.toLocaleString()} produkter
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center justify-end text-blue-600 text-sm font-medium">
-                    Learn more <ChevronRight className="w-4 h-4 ml-1" />
+                    {t.learnMore} <ChevronRight className="w-4 h-4 ml-1" />
                   </div>
                 </div>
               </Link>
@@ -248,19 +300,18 @@ export default function MostAvoidedAdditivesPage({ data }: { data: Summary }) {
 
         {/* CTA Section */}
         <div className="mt-16 bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-12 text-center text-white">
-          <h2 className="text-3xl font-bold mb-4">Download Skaren & Start Scanning</h2>
+          <h2 className="text-3xl font-bold mb-4">{t.download}</h2>
           <p className="text-blue-100 mb-8 max-w-2xl mx-auto">
-            See which E-numbers are in your products instantly. Get personalized recommendations based
-            on your health preferences.
+            {t.downloadDesc}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="https://apps.apple.com/no/app/skaren/id1234567890">
+            <Link href="https://apps.apple.com/no/app/skaren/id6779550646">
               <button className="bg-white text-blue-600 font-semibold px-8 py-3 rounded-lg hover:bg-blue-50 transition">
-                Download iOS App
+                {t.downloadIOS}
               </button>
             </Link>
             <button className="bg-blue-500 text-white font-semibold px-8 py-3 rounded-lg hover:bg-blue-400 transition">
-              Join Android Waitlist
+              {t.waitlistAndroid}
             </button>
           </div>
         </div>

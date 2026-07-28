@@ -13,5 +13,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <MostAvoidedAdditivesPage data={summaryData as any} />;
+  return <MostAvoidedAdditivesPage data={summaryData as any} lang="en" />;
 }
