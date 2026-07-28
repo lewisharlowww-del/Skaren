@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { CapacitorDeepLink } from "@/components/CapacitorDeepLink";
 import { PwaShell } from "@/components/PwaShell";
 import { RevenueCatInitializer } from "@/components/RevenueCatInitializer";
@@ -70,6 +71,7 @@ export default function RootLayout({
             <RevenueCatInitializer />
             <PwaShell />
             {children}
+            <SpeedInsights />
           </LanguageProvider>
         </ThemeProvider>
       </body>
