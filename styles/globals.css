@@ -1,60 +1,76 @@
 :root {
-  --sk-brand-forest: #2d4a26;
-  --sk-brand-leaf: #4a8c5c;
-  --sk-brand-mist: #faf7f2;
-  --sk-brand-mist-dark: #ede7dc;
-  --sk-brand-mist-card: #f0ebe2;
+  /* ── D1 "The Shelf" palette ──────────────────────────────────────────────
+     ONE green (#33684A) replaces the forest/leaf pair everywhere. Leaf
+     survives only as Merk's limb colour (--sk-merk-limb), never as UI.
+     Caution is clay (#C0603C); red is reserved for allergens + destructive
+     actions. Surfaces sit on warm paper, pure white only for lifted cards. */
+  --sk-brand-forest: #33684A;
+  --sk-brand-leaf: #33684A;
+  --sk-brand-mist: #F6F3EC;
+  --sk-brand-mist-dark: #EDE7D8;
+  --sk-brand-mist-card: #F0EBDD;
 
-  --sk-grade-a-bg: #eaf5ec;
-  --sk-grade-a-border: #c8e8cc;
-  --sk-grade-a-text: #2d4a26;
-  --sk-grade-b-bg: #f0f8f2;
-  --sk-grade-b-border: #c0ddc8;
-  --sk-grade-b-text: #4a8c5c;
-  --sk-grade-c-bg: #f8f6e8;
-  --sk-grade-c-border: #ddd8b0;
-  --sk-grade-c-text: #8a7a30;
-  --sk-grade-d-bg: #fdf0e8;
-  --sk-grade-d-border: #f0cdb8;
-  --sk-grade-d-text: #b85c2a;
-  --sk-grade-e-bg: #fdf0f0;
-  --sk-grade-e-border: #f0c8c8;
-  --sk-grade-e-text: #9a2a1a;
+  /* Illustration only — never for UI, borders or text */
+  --sk-merk-limb: #1E4B3A;
+  --sk-merk-body: #F7F4EC;
+  --sk-merk-highlight: #8FBF9F;
+
+  --sk-grade-a-bg: #E4EEE7;
+  --sk-grade-a-border: #C6DCCC;
+  --sk-grade-a-text: #33684A;
+  --sk-grade-b-bg: #EAF1EA;
+  --sk-grade-b-border: #CFE0D2;
+  --sk-grade-b-text: #33684A;
+  --sk-grade-c-bg: #F5F0DF;
+  --sk-grade-c-border: #E6DCBE;
+  --sk-grade-c-text: #9C7A2C;
+  --sk-grade-d-bg: #F7EBE2;
+  --sk-grade-d-border: #EAD5C6;
+  --sk-grade-d-text: #9C7A2C;
+  --sk-grade-e-bg: #F6E7E0;
+  --sk-grade-e-border: #E8CFC3;
+  --sk-grade-e-text: #C0603C;
 
   --sk-surface-white: #ffffff;
-  --sk-surface-card: #fafaf8;
-  --sk-surface-card-green: #f8fdf8;
-  --sk-surface-card-amber: #fdf7f3;
-  --sk-surface-card-red: #fdf8f4;
-  --sk-surface-insight: #f8faf6;
+  --sk-surface-card: #ffffff;
+  --sk-surface-card-green: #F3F7F3;
+  --sk-surface-card-amber: #FBF6EE;
+  --sk-surface-card-red: #FCF6F3;
+  --sk-surface-insight: #F0EBDD;
 
-  --sk-border-default: #e8e0d4;
-  --sk-border-green: #d8eddc;
-  --sk-border-amber: #f0ddd0;
-  --sk-border-red: #f0d8c8;
-  --sk-border-muted: #f0e8dc;
+  --sk-border-default: #E6E0D0;
+  --sk-border-green: #BFD5C6;
+  --sk-border-amber: #E6D2C6;
+  --sk-border-red: #E6D2C6;
+  --sk-border-muted: #F3EEE2;
 
-  --sk-text-primary: #1e1e18;
-  --sk-text-secondary: #5a4a38;
-  --sk-text-muted: #786858;
-  --sk-text-faint: #8a7a68;
-  --sk-text-green: #2d4a26;
-  --sk-text-amber: #b85c2a;
-  --sk-text-red: #9a2a1a;
-  --sk-text-on-dark: #f5f0e8;
-  --sk-text-on-dark-muted: rgba(245, 240, 232, 0.45);
+  --sk-text-primary: #201D15;
+  --sk-text-secondary: #5C5546;
+  --sk-text-muted: #948B76;
+  --sk-text-faint: #B4AB98;
+  --sk-text-green: #33684A;
+  --sk-text-amber: #9C7A2C;
+  --sk-text-red: #C0603C;
+  --sk-text-on-dark: #F6F3EC;
+  --sk-text-on-dark-muted: rgba(246, 243, 236, 0.55);
 
-  --sk-status-positive: #2d4a26;
-  --sk-status-warning: #b85c2a;
-  --sk-status-danger: #9a2a1a;
-  --sk-status-neutral: #8a7a68;
+  --sk-status-positive: #33684A;
+  --sk-status-warning: #C0603C;   /* clay — "worth watching", not alarm */
+  --sk-status-danger: #9A3A28;    /* allergens + destructive only */
+  --sk-status-neutral: #948B76;
 
-  --sk-radius-sm: 10px;
-  --sk-radius-md: 12px;
-  --sk-radius-lg: 16px;
-  --sk-radius-xl: 24px;
-  --sk-radius-pill: 20px;
+  /* Score bands — one ladder, used identically across screens */
+  --sk-score-good: #33684A;   /* >= 60 */
+  --sk-score-mid: #9C7A2C;    /* 40–59 */
+  --sk-score-weak: #C0603C;   /* < 40  */
+
+  --sk-radius-sm: 12px;
+  --sk-radius-md: 16px;
+  --sk-radius-lg: 18px;
+  --sk-radius-xl: 22px;
+  --sk-radius-pill: 999px;
   --sk-radius-full: 9999px;
+  --sk-radius-phone: 44px;
 
   --sk-space-xs: 4px;
   --sk-space-sm: 8px;
@@ -63,29 +79,37 @@
   --sk-space-xl: 20px;
   --sk-space-xxl: 24px;
 
-  --sk-font-ui: var(--font-manrope), sans-serif;
-  --sk-font-brand: "Satoshi", var(--font-manrope), sans-serif;
-  --sk-type-display-xl: 48px;
-  --sk-type-display-lg: 36px;
-  --sk-type-h1: 28px;
-  --sk-type-h2: 24px;
-  --sk-type-h3: 18px;
-  --sk-type-body-lg: 16px;
+  --sk-font-ui: var(--font-dm-sans), system-ui, sans-serif;
+  --sk-font-brand: var(--font-familjen), var(--font-dm-sans), sans-serif;
+  --sk-font-data: var(--font-jetbrains), ui-monospace, monospace;
+  --sk-type-display-xl: 44px;
+  --sk-type-display-lg: 32px;
+  --sk-type-h1: 24px;
+  --sk-type-h2: 20px;
+  --sk-type-h3: 17px;
+  --sk-type-body-lg: 15px;
   --sk-type-body: 14px;
   --sk-type-body-sm: 13px;
-  --sk-type-caption: 11px;
-  --sk-type-label: 11px;
+  --sk-type-caption: 12px;
+  --sk-type-label: 10px;
   --sk-weight-light: 300;
   --sk-weight-regular: 400;
   --sk-weight-medium: 500;
   --sk-weight-semibold: 600;
   --sk-weight-bold: 700;
   --sk-weight-extrabold: 800;
+  /* Display headings are weight 600, never 700+ — Familjen reads heavy above. */
+  --sk-weight-display: 600;
+  --sk-weight-body: 400;
+  --sk-weight-emphasis: 600;
   --sk-tracking-brand: 0.18em;
   --sk-tracking-section: 0.12em;
+  --sk-tracking-label: 0.15em;
   --sk-tracking-caption: 0.06em;
   --sk-tracking-tight: -0.03em;
   --sk-tracking-tighter: -0.04em;
+
+  --sk-min-tap: 44px;   /* nothing interactive below this */
 }
 
 .sk-bg-mist { background-color: var(--sk-brand-mist); }

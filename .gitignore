@@ -7,3 +7,5 @@ node_modules
 *.log
 .vercel
 android/.idea/
+.redesign-shots/
+.pw-tmp/

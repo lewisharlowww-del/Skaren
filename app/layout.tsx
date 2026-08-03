@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Familjen_Grotesk, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { CapacitorDeepLink } from "@/components/CapacitorDeepLink";
 import { PwaShell } from "@/components/PwaShell";
@@ -9,6 +10,29 @@ import { ThemeProvider } from "@/lib/theme-context";
 import { colors } from "@/styles/tokens";
 import "./globals.css";
 import "@/styles/globals.css";
+
+// D1 "The Shelf" typography — three roles, no exceptions.
+// Familjen Grotesk: display headings only (weight 600, never 700+).
+// DM Sans: all body and UI text.
+// JetBrains Mono: uppercase tracked labels, E-numbers, tabular figures.
+const familjen = Familjen_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-familjen",
+  display: "swap",
+});
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-dm-sans",
+  display: "swap",
+});
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-jetbrains",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.skaren.app"),
@@ -60,7 +84,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="no" suppressHydrationWarning>
+    <html lang="no" className={`${familjen.variable} ${dmSans.variable} ${jetbrains.variable}`} suppressHydrationWarning>
       <head>
         <ThemeScript />
       </head>
