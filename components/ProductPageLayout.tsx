@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronRight, Crown, Info, ListPlus } from "lucide-react";
 import { DailyIntake } from "@/components/DailyIntake";
 import { Additives } from "@/components/Additives";
+import { Merk, type MerkExpression } from "@/components/Merk";
 import { getGradeLabel } from "@/components/ScoreBadge";
 import { useShoppingList } from "@/hooks/useShoppingList";
 import { hasEcoData } from "@/lib/ecoscore";
@@ -127,6 +128,33 @@ function getGradeSummary(
   return (kind === "health" ? health : eco)[grade][lang === "no" ? 1 : 0];
 }
 
+// Merk's one-line verdict — a single voice, category-aware where we can be.
+// Expression + words move together (see the mascot bible): confident/happy for
+// strong products, thinking for the middle, concern for weak ones. Never angry.
+function getMerkVerdict(
+  grade: GradeLetter | null,
+  lang: "en" | "no"
+): { expression: MerkExpression; text: string } {
+  const no = lang === "no";
+  if (!grade) {
+    return {
+      expression: "unsure",
+      text: no
+        ? "Jeg mangler nok data til å gi en score her ennå."
+        : "I don't have enough data to score this one yet.",
+    };
+  }
+  const map: Record<GradeLetter, { expression: MerkExpression; en: string; no: string }> = {
+    A: { expression: "confident", en: "One of the better choices on its shelf.", no: "Et av de bedre valgene i hylla." },
+    B: { expression: "happy", en: "A solid pick — little here worth worrying about.", no: "Et solid valg — lite her å bekymre seg for." },
+    C: { expression: "thinking", en: "Middle of the shelf. Fine now and then.", no: "Midt på hylla. Grei av og til." },
+    D: { expression: "curious", en: "Worth a closer look before it becomes a habit.", no: "Verdt en nærmere titt før det blir en vane." },
+    E: { expression: "concern", en: "There are better options next to this one.", no: "Det finnes bedre alternativer ved siden av." },
+  };
+  const m = map[grade];
+  return { expression: m.expression, text: no ? m.no : m.en };
+}
+
 function getTypedInsightTone(type: ProductInsight["type"]) {
   if (type === "positive") {
     return { icon: CheckCircle2, bg: "var(--sk-grade-a-bg)", border: "var(--sk-grade-a-border)", text: "var(--sk-grade-a-text)" };
@@ -243,6 +271,7 @@ export function ProductPageLayout({
   const hasOfficialEcoData = hasEcoData(product);
   const ecoGrade = hasOfficialEcoData ? product.ecoGradeLetter ?? getEcoGrade(product) : null;
   const healthGrade = hasNutritionSignal(product) ? product.healthGrade : null;
+  const merkVerdict = getMerkVerdict(healthGrade, lang);
   const nutritionRows = getNutritionRows(product);
   const ingredients = visibleIngredients(product);
 
@@ -591,6 +620,30 @@ export function ProductPageLayout({
         ) : null}
       </section>
 
+      {/* ── MERK'S VERDICT — one voice, right under the grades ───────────── */}
+      <section className="mx-4 mt-3">
+        <div
+          className="flex items-center gap-3 rounded-2xl px-4 py-3.5"
+          style={{ background: "var(--sk-surface-insight)", border: `0.5px solid ${CARD_BORDER}` }}
+        >
+          <div style={{ flexShrink: 0 }}>
+            <Merk expression={merkVerdict.expression} size={52} aria-label="Merk" />
+          </div>
+          <p
+            style={{
+              flex: 1,
+              minWidth: 0,
+              fontSize: 14,
+              lineHeight: 1.45,
+              fontStyle: "italic",
+              color: "var(--sk-text-secondary)",
+            }}
+          >
+            {merkVerdict.text}
+          </p>
+        </div>
+      </section>
+
       {/* ── SCROLLABLE CONTENT ──────────────────────────────────────────── */}
       <div
         className="px-4 pb-4 pt-1"
@@ -694,6 +747,17 @@ export function ProductPageLayout({
           )}
         </div>
 
+        {/* 3b. ADDITIVES — the marketing spearhead sits high, right under the
+              verdict and above nutrition. */}
+        <div className="mb-4 flex flex-col gap-2.5">
+          <SectionLabel>{t('product_additives', lang)}</SectionLabel>
+          {isPremium ? (
+            <Additives additives={allAdditives} lang={lang} />
+          ) : (
+            <PremiumNudge label={t('product_additives', lang)} lang={lang} />
+          )}
+        </div>
+
         {/* 4. NUTRITION PER 100G */}
         {nutritionRows.length > 0 && (
           <div className="mb-4 flex flex-col gap-2.5">
@@ -725,36 +789,7 @@ export function ProductPageLayout({
           )}
         </div>
 
-        {/* 6. ADDITIVES */}
-        <div className="mb-4 flex flex-col gap-2.5">
-          <SectionLabel>{t('product_additives', lang)}</SectionLabel>
-          {isPremium ? (
-            <Additives additives={allAdditives} lang={lang} />
-          ) : (
-            <PremiumNudge label={t('product_additives', lang)} lang={lang} />
-          )}
-        </div>
-
-        {/* 7. KEY INSIGHTS — premium only */}
-        {isPremium && insights.length > 0 && (
-          <div className="mb-4 flex flex-col gap-2.5">
-            <SectionLabel>{t('product_key_insights', lang)}</SectionLabel>
-            {insights.map((insight) => {
-              const tone = getTypedInsightTone(insight.type);
-              const Icon = tone.icon;
-              return (
-                <div
-                  key={insight.text}
-                  className="flex items-start gap-3 rounded-2xl border px-4 py-3.5"
-                  style={{ background: tone.bg, borderColor: tone.border, color: tone.text }}
-                >
-                  <Icon className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                  <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.5 }}>{insight.text}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {/* 6. KEY INSIGHTS — removed: the verdict now carries a single voice. */}
 
         {/* 8. INGREDIENTS — free for all users */}
         {ingredients != null && (
