@@ -17,14 +17,14 @@ const OPTIONS: {
     label: "Light",
     sub: "Always light",
     icon: <Sun size={18} />,
-    preview: { bg: "#f7f2ea", card: "#ffffff", text: "#2d4a26", sub: "#786c5c", accent: "#2d4a26" },
+    preview: { bg: "#F6F3EC", card: "#ffffff", text: "#33684A", sub: "#948B76", accent: "#33684A" },
   },
   {
     value: "dark",
     label: "Dark",
     sub: "Always dark",
     icon: <Moon size={18} />,
-    preview: { bg: "#1a1714", card: "#242018", text: "#f0ece0", sub: "#6e6458", accent: "#6abf58" },
+    preview: { bg: "#1a1714", card: "#242018", text: "#f0ece0", sub: "#6e6458", accent: "#6FA97F" },
   },
 ];
 
@@ -62,7 +62,7 @@ export default function AppearancePage() {
   return (
     <div
       className="min-h-screen"
-      style={{ background: "var(--sk-brand-mist)", fontFamily: "Manrope, sans-serif" }}
+      style={{ background: "var(--sk-brand-mist)", fontFamily: "var(--font-dm-sans), sans-serif" }}
     >
       <BottomNav />
       <main className="mx-auto min-h-screen w-full max-w-[430px] pb-32 pt-4">
@@ -78,7 +78,7 @@ export default function AppearancePage() {
           <div>
             <h1
               className="text-[22px] font-black tracking-tight"
-              style={{ fontFamily: "Satoshi, sans-serif", color: "var(--sk-text-green)" }}
+              style={{ fontFamily: "var(--font-familjen), sans-serif", color: "var(--sk-text-green)" }}
             >
               Appearance
             </h1>

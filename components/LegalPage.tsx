@@ -40,7 +40,7 @@ export function LegalPage({
   const displaySections = no ? sectionsNo : sections;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "var(--sk-brand-mist, #faf7f2)" }}>
+    <div className="min-h-screen" style={{ backgroundColor: "var(--sk-brand-mist, #F6F3EC)" }}>
 
       {/* Sticky header */}
       <header

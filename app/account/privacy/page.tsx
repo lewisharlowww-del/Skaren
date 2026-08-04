@@ -335,7 +335,7 @@ export default function PrivacyPage() {
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--sk-brand-mist)", fontFamily: "Manrope, sans-serif" }}>
+    <div className="min-h-screen" style={{ background: "var(--sk-brand-mist)", fontFamily: "var(--font-dm-sans), sans-serif" }}>
       <BottomNav />
       <main className="mx-auto min-h-screen w-full max-w-[430px] pb-32 pt-4">
 
@@ -351,7 +351,7 @@ export default function PrivacyPage() {
           <div>
             <h1
               className="text-[22px] font-black tracking-tight"
-              style={{ fontFamily: "Satoshi, sans-serif", color: "var(--sk-text-green)" }}
+              style={{ fontFamily: "var(--font-familjen), sans-serif", color: "var(--sk-text-green)" }}
             >
               {no ? "Personvern og juridisk" : "Privacy & Legal"}
             </h1>

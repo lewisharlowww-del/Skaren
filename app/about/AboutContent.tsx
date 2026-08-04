@@ -24,11 +24,11 @@ export function AboutContent() {
   return (
     <div
       className="min-h-screen"
-      style={{ background: "#f5f0e8", color: "#1e1e18", colorScheme: "light" }}
+      style={{ background: "#F6F3EC", color: "#201D15", colorScheme: "light" }}
     >
       <header
         className="border-b"
-        style={{ borderColor: "#e8e0d4", background: "rgba(255,255,255,0.82)" }}
+        style={{ borderColor: "#E6E0D0", background: "rgba(255,255,255,0.82)" }}
       >
         <div className="mx-auto flex min-h-[76px] w-full max-w-5xl items-center justify-between px-5 sm:px-8">
           <Link href="/about" className="flex items-center gap-3" aria-label="Skaren home">
@@ -43,8 +43,8 @@ export function AboutContent() {
             <span
               className="text-[18px] font-medium uppercase"
               style={{
-                color: "#2d4a26",
-                fontFamily: "Satoshi, var(--font-manrope), sans-serif",
+                color: "#33684A",
+                fontFamily: "var(--font-familjen), var(--font-dm-sans), sans-serif",
                 letterSpacing: "0.18em",
               }}
             >
@@ -55,7 +55,7 @@ export function AboutContent() {
           <Link
             href="/scan"
             className="inline-flex min-h-11 items-center gap-2 rounded-full px-5 text-[14px] font-bold text-white"
-            style={{ background: "#1e1e18" }}
+            style={{ background: "#201D15" }}
           >
             <ScanBarcode className="h-4 w-4" />
             {no ? "Åpne appen" : "Open app"}
@@ -67,15 +67,15 @@ export function AboutContent() {
         <section className="max-w-3xl">
           <p
             className="text-[11px] font-semibold uppercase"
-            style={{ color: "#5a4a38", letterSpacing: "0.12em" }}
+            style={{ color: "#5C5546", letterSpacing: "0.12em" }}
           >
             {no ? "Norsk dagligvareintelligens" : "Norwegian grocery intelligence"}
           </p>
           <h1
             className="mt-4 max-w-[760px] text-[40px] font-medium leading-[1.08] sm:text-[56px]"
             style={{
-              color: "#1e1e18",
-              fontFamily: "Satoshi, var(--font-manrope), sans-serif",
+              color: "#201D15",
+              fontFamily: "var(--font-familjen), var(--font-dm-sans), sans-serif",
               letterSpacing: "-0.04em",
             }}
           >
@@ -83,7 +83,7 @@ export function AboutContent() {
           </h1>
           <p
             className="mt-6 max-w-2xl text-[17px] font-medium leading-8 sm:text-[18px]"
-            style={{ color: "#5a4a38" }}
+            style={{ color: "#5C5546" }}
           >
             {no
               ? "Skaren hjelper norske forbrukere med å skanne strekkoder eller søke etter produkter og forstå hva som er inni før de tar et valg."
@@ -94,7 +94,7 @@ export function AboutContent() {
             <Link
               href="/scan"
               className="inline-flex min-h-12 items-center gap-2 rounded-2xl px-6 text-[15px] font-bold text-white"
-              style={{ background: "#2d4a26" }}
+              style={{ background: "#33684A" }}
             >
               {no ? "Prøv Skaren" : "Try Skaren"}
               <ArrowRight className="h-4 w-4" />
@@ -102,7 +102,7 @@ export function AboutContent() {
             <Link
               href="/privacy"
               className="inline-flex min-h-12 items-center rounded-2xl border px-6 text-[15px] font-bold"
-              style={{ background: "#ffffff", borderColor: "#e8e0d4", color: "#2d4a26" }}
+              style={{ background: "#ffffff", borderColor: "#E6E0D0", color: "#33684A" }}
             >
               {no ? "Personvernerklæring" : "Privacy policy"}
             </Link>
@@ -114,7 +114,7 @@ export function AboutContent() {
             <article
               key={item.title}
               className="rounded-2xl border p-5 sm:p-6"
-              style={{ background: "#ffffff", borderColor: "#e8e0d4" }}
+              style={{ background: "#ffffff", borderColor: "#E6E0D0" }}
             >
               <span
                 className="text-[11px] font-semibold"
@@ -122,10 +122,10 @@ export function AboutContent() {
               >
                 0{index + 1}
               </span>
-              <h2 className="mt-5 text-[18px] font-bold" style={{ color: "#1e1e18" }}>
+              <h2 className="mt-5 text-[18px] font-bold" style={{ color: "#201D15" }}>
                 {item.title}
               </h2>
-              <p className="mt-2 text-[14px] leading-6" style={{ color: "#5a4a38" }}>
+              <p className="mt-2 text-[14px] leading-6" style={{ color: "#5C5546" }}>
                 {item.text}
               </p>
             </article>
@@ -136,23 +136,23 @@ export function AboutContent() {
           className="mt-6 rounded-2xl border p-5 sm:p-7"
           style={{ background: "#edf4e9", borderColor: "#d8eddc" }}
         >
-          <h2 className="text-[18px] font-bold" style={{ color: "#2d4a26" }}>
+          <h2 className="text-[18px] font-bold" style={{ color: "#33684A" }}>
             {no ? "Tydelig informasjon, ikke medisinske råd" : "Clear information, not medical advice"}
           </h2>
-          <p className="mt-2 max-w-3xl text-[14px] leading-6" style={{ color: "#5a4a38" }}>
+          <p className="mt-2 max-w-3xl text-[14px] leading-6" style={{ color: "#5C5546" }}>
             {no
               ? "Produktrapporter samler tilgjengelig næringsinnhold, bearbeiding, allergener, tilsetningsstoffer, ingredienser og miljøinformasjon på ett sted. Skaren støtter hverdagsvalg og erstatter ikke profesjonell medisinsk eller ernæringsmessig veiledning."
               : "Product reports bring available nutrition, processing, allergens, additives, ingredients, and environmental information into one place. Skaren supports everyday decisions and does not replace professional medical or nutritional guidance."}
           </p>
         </section>
 
-        <section className="mt-6 rounded-2xl border p-5 sm:p-7" style={{ borderColor: "#e8e0d4" }}>
-          <h2 className="text-[18px] font-bold" style={{ color: "#2d4a26" }}>
+        <section className="mt-6 rounded-2xl border p-5 sm:p-7" style={{ borderColor: "#E6E0D0" }}>
+          <h2 className="text-[18px] font-bold" style={{ color: "#33684A" }}>
             {no ? "E-numre og tilsetningsstoffer" : "E-numbers & food additives"}
           </h2>
-          <p className="mt-2 max-w-3xl text-[14px] leading-6" style={{ color: "#5a4a38" }}>
+          <p className="mt-2 max-w-3xl text-[14px] leading-6" style={{ color: "#5C5546" }}>
             {no ? "Slå opp et hvilket som helst E-nummer for å se navn, kategori, sikkerhetsvurdering og hva det betyr på en matvareetikett. Bla gjennom hele oppslagsverket på " : "Look up any E-number to see its name, category, safety rating, and what it means on a food label. Browse the full reference in "}
-            <a href="https://www.skaren.app/tilsetningsstoffer" className="font-semibold underline" style={{ color: "#2d4a26" }}>
+            <a href="https://www.skaren.app/tilsetningsstoffer" className="font-semibold underline" style={{ color: "#33684A" }}>
               skaren.app/tilsetningsstoffer
             </a>
             .
@@ -161,20 +161,20 @@ export function AboutContent() {
 
         <footer
           className="mt-12 flex flex-col gap-4 border-t pt-6 text-[13px] sm:flex-row sm:items-center sm:justify-between"
-          style={{ borderColor: "#e8e0d4", color: "#7f7466" }}
+          style={{ borderColor: "#E6E0D0", color: "#948B76" }}
         >
           <p>© 2026 Skaren</p>
           <nav className="flex flex-wrap gap-x-5 gap-y-3" aria-label={no ? "Juridisk" : "Legal"}>
-            <a href="https://www.skaren.app/tilsetningsstoffer" className="font-semibold" style={{ color: "#2d4a26" }}>
+            <a href="https://www.skaren.app/tilsetningsstoffer" className="font-semibold" style={{ color: "#33684A" }}>
               {no ? "E-numre" : "E-numbers"}
             </a>
-            <Link href="/privacy" className="font-semibold" style={{ color: "#2d4a26" }}>
+            <Link href="/privacy" className="font-semibold" style={{ color: "#33684A" }}>
               {no ? "Personvern" : "Privacy"}
             </Link>
-            <Link href="/terms" className="font-semibold" style={{ color: "#2d4a26" }}>
+            <Link href="/terms" className="font-semibold" style={{ color: "#33684A" }}>
               {no ? "Vilkår" : "Terms"}
             </Link>
-            <Link href="/support" className="font-semibold" style={{ color: "#2d4a26" }}>
+            <Link href="/support" className="font-semibold" style={{ color: "#33684A" }}>
               {no ? "Support" : "Support"}
             </Link>
           </nav>

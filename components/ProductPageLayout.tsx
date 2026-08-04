@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronRight, Crown, Info, ListPlus } from "lucide-react";
-import { DailyIntake } from "@/components/DailyIntake";
+import { NutritionTable } from "@/components/NutritionTable";
 import { Additives } from "@/components/Additives";
 import { Merk, type MerkExpression } from "@/components/Merk";
 import { getGradeLabel } from "@/components/ScoreBadge";
@@ -406,7 +406,7 @@ export function ProductPageLayout({
         <div ref={compactHeaderRef} style={{ opacity: 0, display: "flex", alignItems: "center", gap: 6, position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", willChange: "opacity" }}>
           <span
             className="truncate max-w-[160px]"
-            style={{ color: "var(--sk-text-primary)", fontSize: 13, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}
+            style={{ color: "var(--sk-text-primary)", fontSize: 13, fontWeight: 700, fontFamily: "var(--font-dm-sans), sans-serif" }}
           >
             {product.name}
           </span>
@@ -421,7 +421,7 @@ export function ProductPageLayout({
             </span>
           ) : null}
         </div>
-        <span ref={scanResultRef} style={{ opacity: 1, color: MUTED, fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", willChange: "opacity" }}>
+        <span ref={scanResultRef} style={{ opacity: 1, color: MUTED, fontFamily: "var(--font-dm-sans), sans-serif", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", willChange: "opacity" }}>
           {t('scan_result', lang)}
         </span>
         <div className="h-10 w-10" aria-hidden="true" />
@@ -492,7 +492,7 @@ export function ProductPageLayout({
                 fontSize: 15,
                 fontWeight: 800,
                 color: "var(--sk-text-primary)",
-                fontFamily: "Satoshi, sans-serif",
+                fontFamily: "var(--font-familjen), sans-serif",
                 lineHeight: 1.25,
                 display: "-webkit-box",
                 WebkitLineClamp: 2,
@@ -554,7 +554,7 @@ export function ProductPageLayout({
           <div className="grid grid-cols-2">
             <div className="flex flex-col items-center gap-2 px-4 py-4">
               <div style={{ width: 72, height: 72, borderRadius: "50%", border: `2.5px solid ${getGradeBorder(healthGrade)}`, background: getGradeBackground(healthGrade), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3 }}>
-                <span className="type-grade" style={{ fontSize: 24, color: getColor(healthGrade), fontFamily: "Manrope, sans-serif" }}>
+                <span className="type-grade" style={{ fontSize: 24, color: getColor(healthGrade), fontFamily: "var(--font-dm-sans), sans-serif" }}>
                   {healthGrade ?? "–"}
                 </span>
                 {healthGrade ? (
@@ -579,7 +579,7 @@ export function ProductPageLayout({
               }}
             >
               <div style={{ width: 72, height: 72, borderRadius: "50%", border: hasOfficialEcoData ? `2.5px solid ${getGradeBorder(ecoGrade)}` : `2px dashed ${CARD_BORDER}`, background: hasOfficialEcoData ? getGradeBackground(ecoGrade) : CARD_BG, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3 }}>
-                <span className="type-grade" style={{ fontSize: 24, color: hasOfficialEcoData ? getColor(ecoGrade) : MUTED, fontFamily: "Manrope, sans-serif" }}>
+                <span className="type-grade" style={{ fontSize: 24, color: hasOfficialEcoData ? getColor(ecoGrade) : MUTED, fontFamily: "var(--font-dm-sans), sans-serif" }}>
                   {ecoGrade ?? "–"}
                 </span>
                 {ecoGrade ? (
@@ -758,36 +758,34 @@ export function ProductPageLayout({
           )}
         </div>
 
-        {/* 4. NUTRITION PER 100G */}
+        {/* 4. NUTRITION — one merged section: grams as printed (left) +
+              share of your day (right). Premium unlocks the % column. */}
         {nutritionRows.length > 0 && (
           <div className="mb-4 flex flex-col gap-2.5">
             <SectionLabel>{t('product_nutrition', lang)}</SectionLabel>
-            <div style={{ background: CARD_BG, borderRadius: 16, border: `0.5px solid ${CARD_BORDER}`, overflow: "hidden" }}>
-              {nutritionRows.map((row, index) => (
-                <div
-                  key={row.label}
-                  className="flex min-h-12 items-center justify-between px-4 py-3"
-                  style={index < nutritionRows.length - 1 ? { borderBottom: `1px solid ${CARD_BORDER}` } : undefined}
-                >
-                  <span className="type-body-sm" style={{ fontWeight: 600, color: "var(--sk-text-primary)" }}>{row.label}</span>
-                  <span className={`type-body-sm rounded-full px-3 py-1 font-bold ${row.tone}`}>
-                    {row.displayAmount}
-                  </span>
+            {isPremium ? (
+              <NutritionTable product={product} nutrition={product.kassalappNutrition} lang={lang} />
+            ) : (
+              <>
+                <div style={{ background: CARD_BG, borderRadius: 16, border: `0.5px solid ${CARD_BORDER}`, overflow: "hidden" }}>
+                  {nutritionRows.map((row, index) => (
+                    <div
+                      key={row.label}
+                      className="flex min-h-12 items-center justify-between px-4 py-3"
+                      style={index < nutritionRows.length - 1 ? { borderBottom: `1px solid ${CARD_BORDER}` } : undefined}
+                    >
+                      <span className="type-body-sm" style={{ fontWeight: 600, color: "var(--sk-text-primary)" }}>{row.label}</span>
+                      <span style={{ fontFamily: "var(--sk-font-data)", fontSize: 13, color: "var(--sk-text-primary)", fontVariantNumeric: "tabular-nums" }}>
+                        {row.displayAmount}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+                <PremiumNudge label={t('product_daily_impact', lang)} lang={lang} />
+              </>
+            )}
           </div>
         )}
-
-        {/* 5. DAILY IMPACT */}
-        <div className="mb-4 flex flex-col gap-2.5">
-          <SectionLabel>{t('product_daily_impact', lang)}</SectionLabel>
-          {isPremium ? (
-            <DailyIntake nutrition={product.kassalappNutrition} lang={lang} />
-          ) : (
-            <PremiumNudge label={t('product_daily_impact', lang)} lang={lang} />
-          )}
-        </div>
 
         {/* 6. KEY INSIGHTS — removed: the verdict now carries a single voice. */}
 

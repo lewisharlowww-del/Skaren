@@ -123,7 +123,7 @@ function BadgeTile({ badge, lang }: { badge: BadgeResult; lang: Language }) {
         textAlign: "center",
         lineHeight: 1.3,
         color: earned ? "var(--sk-text-primary)" : "var(--sk-text-muted)",
-        fontFamily: "Manrope, sans-serif",
+        fontFamily: "var(--font-dm-sans), sans-serif",
         maxWidth: 64,
       }}>
         {t(badge.nameKey as Parameters<typeof t>[0], lang)}
@@ -133,10 +133,10 @@ function BadgeTile({ badge, lang }: { badge: BadgeResult; lang: Language }) {
       {"progress" in badge && badge.progress !== undefined ? (
         <div style={{ width: 52 }}>
           <div style={{ background: "var(--sk-border-muted)", borderRadius: 99, height: 3, overflow: "hidden" }}>
-            <div style={{ height: 3, borderRadius: 99, background: "var(--sk-brand-forest,#2d4a26)", width: `${Math.round(badge.progress * 100)}%` }} />
+            <div style={{ height: 3, borderRadius: 99, background: "var(--sk-brand-forest,#33684A)", width: `${Math.round(badge.progress * 100)}%` }} />
           </div>
           {badge.progressLabel && (
-            <p style={{ fontSize: 9, color: "var(--sk-text-faint)", textAlign: "center", marginTop: 3, lineHeight: 1, fontFamily: "Manrope, sans-serif" }}>
+            <p style={{ fontSize: 9, color: "var(--sk-text-faint)", textAlign: "center", marginTop: 3, lineHeight: 1, fontFamily: "var(--font-dm-sans), sans-serif" }}>
               {badge.progressLabel}
             </p>
           )}
@@ -147,7 +147,7 @@ function BadgeTile({ badge, lang }: { badge: BadgeResult; lang: Language }) {
           color: earned ? s.iconColor : "var(--sk-text-faint)",
           textAlign: "center",
           lineHeight: 1,
-          fontFamily: "Manrope, sans-serif",
+          fontFamily: "var(--font-dm-sans), sans-serif",
           fontWeight: earned ? 700 : 400,
         }}>
           {earned ? t("badge_earned_label", lang) : t("badge_locked_label", lang)}
@@ -164,7 +164,7 @@ export function BadgesSection({ badges, lang = "en" }: { badges: BadgeResult[]; 
   const earned = earnedCount(badges);
 
   return (
-    <div style={{ fontFamily: "Manrope, sans-serif" }}>
+    <div style={{ fontFamily: "var(--font-dm-sans), sans-serif" }}>
       {/* Earned count pill */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
         <span style={{
@@ -187,7 +187,7 @@ export function BadgesSection({ badges, lang = "en" }: { badges: BadgeResult[]; 
 
         return (
           <div key={cat.id} style={{
-            background: "var(--sk-brand-mist, #f5f0e8)",
+            background: "var(--sk-brand-mist, #F6F3EC)",
             border: "1px solid var(--sk-border-muted)",
             borderRadius: 14,
             marginBottom: 10,

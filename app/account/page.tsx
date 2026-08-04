@@ -114,10 +114,10 @@ function ProfileCard({
 
   return (
     <section
-      className="relative mb-5 overflow-hidden rounded-2xl border px-5 py-5 text-[#f5f0e8]"
+      className="relative mb-5 overflow-hidden rounded-2xl border px-5 py-5 text-[#F6F3EC]"
       style={{
         background:
-          "radial-gradient(circle at 50% 34%, #52734b 0%, #3d6037 28%, #2d4a26 62%, #243d20 100%)",
+          "radial-gradient(circle at 50% 34%, #52734b 0%, #3d6037 28%, #33684A 62%, #243d20 100%)",
         borderColor: "#52734b",
         boxShadow: "0 18px 42px rgba(45, 74, 38, 0.14)",
       }}
@@ -156,7 +156,7 @@ function ProfileCard({
         <div className="min-w-0">
           <p
             className="truncate text-[24px] font-bold leading-tight text-white"
-            style={{ fontFamily: "Satoshi, sans-serif" }}
+            style={{ fontFamily: "var(--font-familjen), sans-serif" }}
           >
             {name}
           </p>
@@ -226,7 +226,7 @@ function ProCard({ isPremium, lang }: { isPremium: boolean; lang: Language }) {
 
 function SectionLabel({ label }: { label: string }) {
   return (
-    <p className="text-[11px] font-bold uppercase mb-2 px-1" style={{ color: "var(--sk-text-muted)", letterSpacing: "0.07em", fontFamily: "Manrope, sans-serif" }}>
+    <p className="text-[11px] font-bold uppercase mb-2 px-1" style={{ color: "var(--sk-text-muted)", letterSpacing: "0.07em", fontFamily: "var(--font-dm-sans), sans-serif" }}>
       {label}
     </p>
   );
@@ -328,7 +328,7 @@ function DeleteDialog({
               <X className="h-4 w-4" />
             </button>
           </div>
-          <h2 className="mt-3 text-[20px] font-black" style={{ fontFamily: "Satoshi, sans-serif", color: "var(--sk-status-danger)" }}>
+          <h2 className="mt-3 text-[20px] font-black" style={{ fontFamily: "var(--font-familjen), sans-serif", color: "var(--sk-status-danger)" }}>
             {t('account_delete_title', lang)}
           </h2>
           <p className="mt-1 text-[13px]" style={{ color: "var(--sk-text-secondary)" }}>
@@ -539,12 +539,12 @@ export default function AccountPage() {
       >
         {/* Page title */}
         <div className="px-4 pb-5 pt-1">
-          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#786c5c]">
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#948B76]">
             Profile & preferences
           </p>
           <h1
             className="text-[30px] font-bold leading-none text-[#243f24]"
-            style={{ fontFamily: "Satoshi, sans-serif" }}
+            style={{ fontFamily: "var(--font-familjen), sans-serif" }}
           >
             {t('account_title', lang)}
           </h1>
@@ -576,7 +576,7 @@ export default function AccountPage() {
               <button
                 type="button"
                 onClick={() => setLangOpen((o) => !o)}
-                className="flex w-full items-center gap-3.5 px-5 py-4 text-left active:bg-[#faf7f2] transition-colors"
+                className="flex w-full items-center gap-3.5 px-5 py-4 text-left active:bg-[#F6F3EC] transition-colors"
               >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-b-bg)" }}>
                   <Globe className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -705,7 +705,7 @@ export default function AccountPage() {
             <div>
               <button type="button" onClick={() => setExportOpen((o) => !o)} className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
-                  <Download className="h-4 w-4 text-[#2d4a26] dark:text-[#6abf58]" />
+                  <Download className="h-4 w-4 text-[#33684A] dark:text-[#6FA97F]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{t('account_export', lang)}</p>
@@ -810,8 +810,8 @@ export default function AccountPage() {
           <SectionLabel label={t('account_title', lang)} />
           <div className="overflow-hidden rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}>
             <SettingsRow
-              icon={<LogOut className="h-4 w-4 text-[#786c5c] dark:text-[#8a8070]" />}
-              iconBg="#f0ebe0"
+              icon={<LogOut className="h-4 w-4 text-[#948B76] dark:text-[#8a8070]" />}
+              iconBg="#F3EEE2"
               iconBgDark="var(--sk-dark-surface)"
               label={t('account_sign_out', lang)}
               subtitle={user?.email ?? ""}

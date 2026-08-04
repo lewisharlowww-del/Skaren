@@ -45,7 +45,7 @@ export default function OgImage() {
                 width: 52,
                 height: 52,
                 borderRadius: 14,
-                background: "#2d4a26",
+                background: "#33684A",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -64,7 +64,7 @@ export default function OgImage() {
           <div style={{ fontSize: 72, fontWeight: 900, color: "#ffffff", lineHeight: 1.05, letterSpacing: -2, marginBottom: 8 }}>
             Scan mat.
           </div>
-          <div style={{ fontSize: 72, fontWeight: 900, color: "#4a8c5c", lineHeight: 1.05, letterSpacing: -2, marginBottom: 28 }}>
+          <div style={{ fontSize: 72, fontWeight: 900, color: "#33684A", lineHeight: 1.05, letterSpacing: -2, marginBottom: 28 }}>
             Spis smartere.
           </div>
 
@@ -90,7 +90,7 @@ export default function OgImage() {
                   gap: 2,
                 }}
               >
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#4a8c5c", letterSpacing: 2 }}>{label}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#33684A", letterSpacing: 2 }}>{label}</span>
                 <span style={{ fontSize: 44, fontWeight: 900, color: "#c8f0c8", lineHeight: 1 }}>{val}</span>
               </div>
             ))}
@@ -104,7 +104,7 @@ export default function OgImage() {
             height: 500,
             borderRadius: 40,
             background: "#0a1208",
-            border: "2.5px solid #2d4a26",
+            border: "2.5px solid #33684A",
             display: "flex",
             flexDirection: "column",
             padding: "20px 16px",
@@ -133,7 +133,7 @@ export default function OgImage() {
               overflow: "hidden",
             }}
           >
-            <div style={{ position: "absolute", left: 0, right: 0, height: 2, background: "#4a8c5c", opacity: 0.9 }} />
+            <div style={{ position: "absolute", left: 0, right: 0, height: 2, background: "#33684A", opacity: 0.9 }} />
             {/* Corner marks */}
             {[["top:8px left:8px","top","left"],["top:8px right:8px","top","right"],["bottom:8px left:8px","bottom","left"],["bottom:8px right:8px","bottom","right"]].map(([pos]) => (
               <div key={pos} style={{ position: "absolute", width: 16, height: 16 }} />
@@ -146,7 +146,7 @@ export default function OgImage() {
               <div style={{ width: 32, height: 32, borderRadius: 8, background: "#1a3a18" }} />
               <div style={{ display: "flex", flexDirection: "column" }}>
                 <span style={{ fontSize: 12, fontWeight: 900, color: "#fff" }}>Havregryn 1kg</span>
-                <span style={{ fontSize: 10, color: "#4a8c5c" }}>Mills</span>
+                <span style={{ fontSize: 10, color: "#33684A" }}>Mills</span>
               </div>
             </div>
             <div style={{ display: "flex", gap: 6 }}>
@@ -160,7 +160,7 @@ export default function OgImage() {
 
           {/* AI insight */}
           <div style={{ background: "rgba(74,140,92,0.12)", borderRadius: 12, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 2 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: "#4a8c5c" }}>AI-INNSIKT</span>
+            <span style={{ fontSize: 9, fontWeight: 700, color: "#33684A" }}>AI-INNSIKT</span>
             <span style={{ fontSize: 10, color: "#86efac", lineHeight: 1.4 }}>NOVA 1 — ingen prosesserte ingredienser.</span>
           </div>
 

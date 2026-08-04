@@ -194,9 +194,9 @@ export default function PricingPage() {
     return (
       <main
       className="sk-pricing-bg relative mx-auto flex w-full max-w-[430px] flex-col items-center justify-center px-6 text-center sm:max-w-2xl"
-        style={{ background: "#f5f0e8", minHeight: "100dvh", paddingTop: "calc(env(safe-area-inset-top) + 20px)" }}
+        style={{ background: "#F6F3EC", minHeight: "100dvh", paddingTop: "calc(env(safe-area-inset-top) + 20px)" }}
       >
-        <div className="relative mb-6 grid h-24 w-24 place-items-center rounded-full bg-[#2d4a26]">
+        <div className="relative mb-6 grid h-24 w-24 place-items-center rounded-full bg-[#33684A]">
           <Sparkles className="absolute -right-1 -top-1 h-6 w-6 text-amber-300" />
           <Check className="h-12 w-12 text-white" strokeWidth={3} />
         </div>
@@ -218,7 +218,7 @@ export default function PricingPage() {
         <button
           type="button"
           onClick={() => router.replace("/scan")}
-          className="mt-9 flex h-13 w-full max-w-sm items-center justify-center gap-2 rounded-2xl bg-[#2d4a26] py-3.5 text-sm font-bold text-white"
+          className="mt-9 flex h-13 w-full max-w-sm items-center justify-center gap-2 rounded-2xl bg-[#33684A] py-3.5 text-sm font-bold text-white"
         >
           <Crown className="h-4 w-4" />
           {isNo ? "Begynn å skanne" : "Start scanning"}
@@ -241,7 +241,7 @@ export default function PricingPage() {
     <main
       className="sk-pricing-bg relative mx-auto flex w-full max-w-[430px] flex-col px-5 sm:max-w-md"
       style={{
-        background: "#f5f0e8",
+        background: "#F6F3EC",
         minHeight: "100dvh",
         paddingTop: "calc(env(safe-area-inset-top) + 16px)",
         paddingBottom: "calc(env(safe-area-inset-bottom) + 20px)",
@@ -249,7 +249,7 @@ export default function PricingPage() {
     >
       {/* Top bar: Back + Restore */}
       <div className="mb-4 flex items-center justify-between">
-        <Link href="/scan" className="inline-flex items-center gap-1.5 text-[15px] font-bold text-[#2d4a26]">
+        <Link href="/scan" className="inline-flex items-center gap-1.5 text-[15px] font-bold text-[#33684A]">
           <ArrowLeft className="h-[18px] w-[18px]" />
           {isNo ? "Tilbake" : "Back"}
         </Link>
@@ -257,7 +257,7 @@ export default function PricingPage() {
           type="button"
           onClick={() => void handleRestore()}
           disabled={pendingAction !== null}
-          className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#4a8c5c] disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#33684A] disabled:opacity-60"
         >
           {pendingAction === "restore" ? (
             <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
@@ -273,11 +273,11 @@ export default function PricingPage() {
         <span className="mb-2.5 inline-flex items-center gap-1.5 rounded-full bg-[#f6ecd2] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.13em] text-[#b8923e]">
           {isNo ? "Oppgrader til Pro" : "Upgrade to Pro"}
         </span>
-        <h1 className="text-[26px] font-black leading-[1.08] tracking-tight text-[#1e1e18]">
+        <h1 className="text-[26px] font-black leading-[1.08] tracking-tight text-[#201D15]">
           {isNo ? (
-            <>Vit <span className="text-[#2d4a26]">nøyaktig</span> hva<br />som er i maten din</>
+            <>Vit <span className="text-[#33684A]">nøyaktig</span> hva<br />som er i maten din</>
           ) : (
-            <>Know <span className="text-[#2d4a26]">exactly</span> what&apos;s<br />in your food</>
+            <>Know <span className="text-[#33684A]">exactly</span> what&apos;s<br />in your food</>
           )}
         </h1>
         <p className="mx-auto mt-2 max-w-[280px] text-[13.5px] font-medium leading-snug text-[#786858]">
@@ -292,11 +292,11 @@ export default function PricingPage() {
         {(isNo ? proFeatures.no : proFeatures.en).map((f, i, arr) => (
           <div
             key={f}
-            className={`flex items-center gap-3 py-2.5 text-[13.5px] font-semibold leading-tight text-[#1e1e18] ${
+            className={`flex items-center gap-3 py-2.5 text-[13.5px] font-semibold leading-tight text-[#201D15] ${
               i < arr.length - 1 ? "border-b border-black/[0.08]" : ""
             }`}
           >
-            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-[#eaf3de] text-[#2d4a26]">
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-[#E4EEE7] text-[#33684A]">
               <Check className="h-3.5 w-3.5" strokeWidth={3} />
             </span>
             <span className="min-w-0 flex-1">{f}</span>
@@ -306,10 +306,10 @@ export default function PricingPage() {
 
       {/* Plan picker label */}
       <div className="mb-2.5 flex items-center justify-between">
-        <p className="text-[12.5px] font-extrabold text-[#1e1e18]">
+        <p className="text-[12.5px] font-extrabold text-[#201D15]">
           {isNo ? "Velg plan" : "Choose your plan"}
         </p>
-        <span className="rounded-full bg-[#eaf3de] px-2.5 py-1 text-[11px] font-bold text-[#4a8c5c]">
+        <span className="rounded-full bg-[#E4EEE7] px-2.5 py-1 text-[11px] font-bold text-[#33684A]">
           {isNo ? "7 dager gratis" : "7 days free"}
         </span>
       </div>
@@ -322,25 +322,25 @@ export default function PricingPage() {
           onClick={() => setSelectedPlan("monthly")}
           className={`relative flex items-center gap-3 rounded-2xl border-[1.5px] bg-white p-3.5 text-left transition ${
             selectedPlan === "monthly"
-              ? "border-[#2d4a26] bg-[#fbfdfa] shadow-[0_10px_26px_rgba(45,74,38,0.12)]"
+              ? "border-[#33684A] bg-[#fbfdfa] shadow-[0_10px_26px_rgba(45,74,38,0.12)]"
               : "border-black/[0.13]"
           }`}
         >
           <span
             className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${
-              selectedPlan === "monthly" ? "border-[#2d4a26] bg-[#2d4a26]" : "border-[#cdc6b8]"
+              selectedPlan === "monthly" ? "border-[#33684A] bg-[#33684A]" : "border-[#cdc6b8]"
             }`}
           >
             {selectedPlan === "monthly" && <span className="h-[7px] w-[7px] rounded-full bg-white" />}
           </span>
           <span className="flex-1">
-            <span className="block text-[15px] font-extrabold text-[#1e1e18]">{planLabel("monthly")}</span>
+            <span className="block text-[15px] font-extrabold text-[#201D15]">{planLabel("monthly")}</span>
             <span className="mt-0.5 block text-[12px] font-medium text-[#786858]">
               {isNo ? `Belastes ${monthlyPrice} hver måned` : `Billed ${monthlyPrice} every month`}
             </span>
           </span>
           <span className="text-right">
-            <span className="block text-[17px] font-black tracking-tight text-[#1e1e18]">{monthlyPrice}</span>
+            <span className="block text-[17px] font-black tracking-tight text-[#201D15]">{monthlyPrice}</span>
             <span className="mt-0.5 block text-[11px] font-semibold text-[#8a7a68]">
               {isNo ? "per måned" : "per month"}
             </span>
@@ -353,28 +353,28 @@ export default function PricingPage() {
           onClick={() => setSelectedPlan("yearly")}
           className={`relative flex items-center gap-3 rounded-2xl border-[1.5px] bg-white p-3.5 text-left transition ${
             selectedPlan === "yearly"
-              ? "border-[#2d4a26] bg-[#fbfdfa] shadow-[0_10px_26px_rgba(45,74,38,0.12)]"
+              ? "border-[#33684A] bg-[#fbfdfa] shadow-[0_10px_26px_rgba(45,74,38,0.12)]"
               : "border-black/[0.13]"
           }`}
         >
-          <span className="absolute -top-[9px] right-3.5 rounded-md bg-[#2d4a26] px-2.5 py-1 text-[9px] font-extrabold tracking-[0.06em] text-[#d8f0d2]">
+          <span className="absolute -top-[9px] right-3.5 rounded-md bg-[#33684A] px-2.5 py-1 text-[9px] font-extrabold tracking-[0.06em] text-[#d8f0d2]">
             {isNo ? "SPAR 17%" : "SAVE 17%"}
           </span>
           <span
             className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${
-              selectedPlan === "yearly" ? "border-[#2d4a26] bg-[#2d4a26]" : "border-[#cdc6b8]"
+              selectedPlan === "yearly" ? "border-[#33684A] bg-[#33684A]" : "border-[#cdc6b8]"
             }`}
           >
             {selectedPlan === "yearly" && <span className="h-[7px] w-[7px] rounded-full bg-white" />}
           </span>
           <span className="flex-1">
-            <span className="block text-[15px] font-extrabold text-[#1e1e18]">{planLabel("yearly")}</span>
+            <span className="block text-[15px] font-extrabold text-[#201D15]">{planLabel("yearly")}</span>
             <span className="mt-0.5 block text-[12px] font-medium text-[#786858]">
               {isNo ? `Belastes ${yearlyPrice} én gang i året` : `Billed ${yearlyPrice} once a year`}
             </span>
           </span>
           <span className="text-right">
-            <span className="block text-[17px] font-black tracking-tight text-[#1e1e18]">{yearlyPrice}</span>
+            <span className="block text-[17px] font-black tracking-tight text-[#201D15]">{yearlyPrice}</span>
             {yearlyPerMonth && (
               <span className="mt-0.5 block text-[11px] font-semibold text-[#8a7a68]">
                 {isNo ? `≈ ${yearlyPerMonth}/mnd` : `≈ ${yearlyPerMonth}/mo`}
@@ -385,7 +385,7 @@ export default function PricingPage() {
       </div>
 
       {/* Trial reassurance */}
-      <div className="mb-auto flex items-center justify-center gap-1.5 text-[12px] font-bold text-[#4a8c5c]">
+      <div className="mb-auto flex items-center justify-center gap-1.5 text-[12px] font-bold text-[#33684A]">
         <Check className="h-3.5 w-3.5" strokeWidth={3} />
         {isNo ? "Gratis i 7 dager · ingenting belastes i dag" : "Free for 7 days · nothing charged today"}
       </div>
@@ -396,7 +396,7 @@ export default function PricingPage() {
           type="button"
           onClick={() => void handlePurchase()}
           disabled={pendingAction !== null}
-          className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#2d4a26] text-[16px] font-extrabold text-white shadow-[0_12px_28px_rgba(45,74,38,0.30)] transition active:scale-[0.985] disabled:opacity-60"
+          className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#33684A] text-[16px] font-extrabold text-white shadow-[0_12px_28px_rgba(45,74,38,0.30)] transition active:scale-[0.985] disabled:opacity-60"
         >
           {pendingAction === "purchase" ? (
             <LoaderCircle className="h-[18px] w-[18px] animate-spin" />
@@ -407,14 +407,14 @@ export default function PricingPage() {
         </button>
 
         {/* Guideline 3.1.2 disclosure: exact plan, charge, auto-renew + cancel */}
-        <p className="mt-2.5 px-1.5 text-center text-[10.5px] leading-relaxed text-[#786c5c]">
+        <p className="mt-2.5 px-1.5 text-center text-[10.5px] leading-relaxed text-[#948B76]">
           {isNo ? "Du valgte " : "You selected "}
-          <b className="text-[#2d4a26]">{planLabel(selectedPlan)}</b>
+          <b className="text-[#33684A]">{planLabel(selectedPlan)}</b>
           {": "}
           {renewalTerms}{" "}
-          <Link href="/terms" className="font-bold text-[#2d4a26]">{isNo ? "Vilkår" : "Terms"}</Link>
+          <Link href="/terms" className="font-bold text-[#33684A]">{isNo ? "Vilkår" : "Terms"}</Link>
           {" · "}
-          <Link href="/privacy" className="font-bold text-[#2d4a26]">{isNo ? "Personvern" : "Privacy"}</Link>
+          <Link href="/privacy" className="font-bold text-[#33684A]">{isNo ? "Personvern" : "Privacy"}</Link>
         </p>
 
         <Link
@@ -434,7 +434,7 @@ export default function PricingPage() {
           role="status"
           className={`fixed bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-2xl px-5 py-3 text-sm font-bold shadow-lg transition-all ${
             toast.type === "success"
-              ? "bg-[#2d4a26] text-[#c8f0c8]"
+              ? "bg-[#33684A] text-[#c8f0c8]"
               : "bg-rose-600 text-white"
           }`}
         >

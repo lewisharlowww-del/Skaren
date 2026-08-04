@@ -30,7 +30,7 @@ export function SkarenMark({ className = "" }: SkarenMarkProps) {
 export function SkarenWordmark({ className = "" }: { className?: string }) {
   return (
     <svg className={`h-[1em] w-auto ${className}`} viewBox="0 0 238 70" fill="none" role="img" aria-label="Skaren">
-      <text x="0" y="53" fontFamily="Satoshi, Arial, sans-serif" fontSize="50" fontWeight="500" letterSpacing="8">
+      <text x="0" y="53" fontFamily="var(--font-familjen), Arial, sans-serif" fontSize="50" fontWeight="500" letterSpacing="8">
         <tspan fill="var(--sk-brand-forest)">SKA</tspan>
         <tspan fill="var(--sk-brand-leaf)">REN</tspan>
       </text>
