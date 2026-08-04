@@ -1,119 +1,107 @@
 "use client";
 
 import {
-  Award,
-  Crown,
-  Eye,
-  Flame,
-  Heart,
-  Leaf,
-  Moon,
-  Package,
-  ScanBarcode,
-  Search,
-  ShieldCheck,
-  ShoppingCart,
-  Star,
-  Target,
-  Trophy,
-  Zap,
-  type LucideIcon,
-} from "lucide-react";
-
-import {
   BADGE_CATEGORIES,
+  type BadgeCategory,
   type BadgeId,
   type BadgeResult,
   earnedCount,
 } from "@/lib/badges";
 import { t, type Language } from "@/lib/i18n";
 
-// ── Icon + color config per badge ─────────────────────────────────────────────
+/**
+ * Badge motifs — one per category, per the redesign:
+ *   "Scanning badges gain barcode bars per tier, streaks climb like steps,
+ *    health collects A's, additives carry the magnifier."
+ * Earned badges are printed in the category ink; locked ones are the same
+ * motif in pencil grey. No random lucide icons.
+ */
+type MotifKind = "barcode" | "steps" | "grade" | "magnifier" | "mark";
 
-type BadgeStyle = {
-  Icon: LucideIcon;
-  iconColor: string;
-  iconColorLocked: string;
-  bg: string;
-  bgLocked: string;
-  border: string;
-  borderLocked: string;
+function categoryMotif(category: BadgeCategory, id: BadgeId): MotifKind {
+  if (category === "scanning") return "barcode";
+  if (category === "streak") return "steps";
+  if (category === "health") return "grade";
+  if (category === "additives") return "magnifier";
+  // special: Legend is a scan milestone (barcode); Pioneer is the label mark.
+  return id === "legend" ? "barcode" : "mark";
+}
+
+// One colour per category — the "one category colour" rule.
+const CATEGORY_COLOUR: Record<BadgeCategory, { ink: string; tint: string; border: string }> = {
+  scanning:  { ink: "var(--sk-brand-forest)", tint: "var(--sk-grade-a-bg)", border: "var(--sk-grade-a-border)" },
+  streak:    { ink: "var(--sk-score-mid)",    tint: "var(--sk-grade-c-bg)", border: "var(--sk-grade-c-border)" },
+  health:    { ink: "var(--sk-brand-forest)", tint: "var(--sk-grade-a-bg)", border: "var(--sk-grade-a-border)" },
+  additives: { ink: "#185FA5",                tint: "#E3F0FB",              border: "#A8CFEE" },
+  special:   { ink: "var(--sk-text-primary)", tint: "var(--sk-brand-mist-card)", border: "var(--sk-border-default)" },
 };
 
-const BADGE_STYLES: Record<BadgeId, BadgeStyle> = {
-  first_scan:     { Icon: ScanBarcode,  iconColor: "#2d7a2d", iconColorLocked: "#b0a898", bg: "#e8f4e0", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#b8dda8", borderLocked: "var(--sk-border-muted)" },
-  scan_10:        { Icon: Package,      iconColor: "#2d7a2d", iconColorLocked: "#b0a898", bg: "#e8f4e0", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#b8dda8", borderLocked: "var(--sk-border-muted)" },
-  scan_25:        { Icon: ShoppingCart, iconColor: "#2d7a2d", iconColorLocked: "#b0a898", bg: "#e8f4e0", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#b8dda8", borderLocked: "var(--sk-border-muted)" },
-  scan_50:        { Icon: Star,         iconColor: "#2d7a2d", iconColorLocked: "#b0a898", bg: "#e8f4e0", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#b8dda8", borderLocked: "var(--sk-border-muted)" },
-  scan_100:       { Icon: Target,       iconColor: "#0f6e56", iconColorLocked: "#b0a898", bg: "#e0f4ee", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#9dddc6", borderLocked: "var(--sk-border-muted)" },
-  streak_3:       { Icon: Flame,        iconColor: "#b55a00", iconColorLocked: "#b0a898", bg: "#fef3dc", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#f5cc7a", borderLocked: "var(--sk-border-muted)" },
-  streak_7:       { Icon: Zap,          iconColor: "#b55a00", iconColorLocked: "#b0a898", bg: "#fef3dc", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#f5cc7a", borderLocked: "var(--sk-border-muted)" },
-  streak_30:      { Icon: Moon,         iconColor: "#b55a00", iconColorLocked: "#b0a898", bg: "#fef3dc", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#f5cc7a", borderLocked: "var(--sk-border-muted)" },
-  streak_100:     { Icon: Crown,        iconColor: "#534ab7", iconColorLocked: "#b0a898", bg: "#eeedfe", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#c4baf8", borderLocked: "var(--sk-border-muted)" },
-  grade_a_1:      { Icon: Leaf,         iconColor: "#0f6e56", iconColorLocked: "#b0a898", bg: "#e0f4ee", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#9dddc6", borderLocked: "var(--sk-border-muted)" },
-  grade_a_5:      { Icon: Award,        iconColor: "#0f6e56", iconColorLocked: "#b0a898", bg: "#e0f4ee", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#9dddc6", borderLocked: "var(--sk-border-muted)" },
-  grade_a_10:     { Icon: Heart,        iconColor: "#0f6e56", iconColorLocked: "#b0a898", bg: "#e0f4ee", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#9dddc6", borderLocked: "var(--sk-border-muted)" },
-  additive_aware: { Icon: Eye,          iconColor: "#185fa5", iconColorLocked: "#b0a898", bg: "#e3f0fb", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#a8cfee", borderLocked: "var(--sk-border-muted)" },
-  label_reader:   { Icon: Search,       iconColor: "#185fa5", iconColorLocked: "#b0a898", bg: "#e3f0fb", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#a8cfee", borderLocked: "var(--sk-border-muted)" },
-  avoid_expert:   { Icon: ShieldCheck,  iconColor: "#993c1d", iconColorLocked: "#b0a898", bg: "#faece7", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#f0997b", borderLocked: "var(--sk-border-muted)" },
-  pioneer:        { Icon: Leaf,         iconColor: "#534ab7", iconColorLocked: "#b0a898", bg: "#eeedfe", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#c4baf8", borderLocked: "var(--sk-border-muted)" },
-  legend:         { Icon: Trophy,       iconColor: "#534ab7", iconColorLocked: "#b0a898", bg: "#eeedfe", bgLocked: "var(--sk-surface-raised,#f0ece0)", border: "#c4baf8", borderLocked: "var(--sk-border-muted)" },
-};
+function Motif({ kind, colour, size = 22 }: { kind: MotifKind; colour: string; size?: number }) {
+  const s = size;
+  if (kind === "barcode" || kind === "steps") {
+    // Barcode bars; for "steps" they climb left→right like a staircase.
+    const heights = kind === "steps" ? [0.4, 0.6, 0.8, 1] : [0.7, 1, 0.5, 0.9, 0.6];
+    const barW = kind === "steps" ? 3 : 2.4;
+    return (
+      <span style={{ display: "inline-flex", alignItems: "flex-end", gap: 2, height: s }} aria-hidden>
+        {heights.map((h, i) => (
+          <span key={i} style={{ width: barW, height: `${h * 100}%`, background: colour, borderRadius: 0.5 }} />
+        ))}
+      </span>
+    );
+  }
+  if (kind === "grade") {
+    return (
+      <span
+        aria-hidden
+        style={{ fontFamily: "var(--sk-font-brand)", fontSize: s * 0.95, fontWeight: 600, lineHeight: 1, color: colour, letterSpacing: "-0.03em" }}
+      >
+        A
+      </span>
+    );
+  }
+  if (kind === "magnifier") {
+    return (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" aria-hidden>
+        <circle cx="10.5" cy="10.5" r="6.5" stroke={colour} strokeWidth="2" />
+        <path d="M15.5 15.5L21 21" stroke={colour} strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  // mark — a folded-corner label / diamond, Merk's silhouette.
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M6 3.5h8.5L19 8v12.5H6z" fill={colour} />
+      <path d="M14.5 3.5L19 8h-4.5z" fill="rgba(255,255,255,0.35)" />
+    </svg>
+  );
+}
 
 // ── Single badge tile ─────────────────────────────────────────────────────────
 
 function BadgeTile({ badge, lang }: { badge: BadgeResult; lang: Language }) {
-  const s = BADGE_STYLES[badge.id as BadgeId];
   const earned = badge.earned;
+  const cat = CATEGORY_COLOUR[badge.category];
+  const kind = categoryMotif(badge.category, badge.id as BadgeId);
+  const ink = earned ? cat.ink : "var(--sk-text-faint)";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}>
-
-      {/* Icon box */}
-      <div style={{ position: "relative" }}>
-        <div
-          style={{
-            width: 52,
-            height: 52,
-            borderRadius: 14,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: earned ? s.bg : s.bgLocked,
-            border: `1.5px solid ${earned ? s.border : s.borderLocked}`,
-            opacity: earned ? 1 : 0.5,
-          }}
-        >
-          <s.Icon
-            size={22}
-            style={{ color: earned ? s.iconColor : s.iconColorLocked }}
-            strokeWidth={1.8}
-          />
-        </div>
-
-        {/* Lock pip */}
-        {!earned && (
-          <div
-            style={{
-              position: "absolute",
-              bottom: -4,
-              right: -4,
-              width: 16,
-              height: 16,
-              borderRadius: "50%",
-              background: "var(--sk-surface-white, #fff)",
-              border: "1px solid var(--sk-border-default)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <svg width="8" height="8" viewBox="0 0 10 12" fill="none">
-              <rect x="1" y="5" width="8" height="6" rx="1.5" fill="#b0a898"/>
-              <path d="M3 5V3.5a2 2 0 014 0V5" stroke="#b0a898" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-          </div>
-        )}
+      {/* Icon box — soft rounded square, category tint when earned, pencil grey when locked. */}
+      <div
+        style={{
+          width: 52,
+          height: 52,
+          borderRadius: 14,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: earned ? cat.tint : "var(--sk-brand-mist-card)",
+          border: earned ? `1.5px solid ${cat.border}` : "1.5px dashed var(--sk-border-default)",
+          opacity: earned ? 1 : 0.7,
+        }}
+      >
+        <Motif kind={kind} colour={ink} />
       </div>
 
       {/* Name */}
@@ -123,7 +111,7 @@ function BadgeTile({ badge, lang }: { badge: BadgeResult; lang: Language }) {
         textAlign: "center",
         lineHeight: 1.3,
         color: earned ? "var(--sk-text-primary)" : "var(--sk-text-muted)",
-        fontFamily: "var(--font-dm-sans), sans-serif",
+        fontFamily: "var(--sk-font-ui)",
         maxWidth: 64,
       }}>
         {t(badge.nameKey as Parameters<typeof t>[0], lang)}
@@ -133,10 +121,10 @@ function BadgeTile({ badge, lang }: { badge: BadgeResult; lang: Language }) {
       {"progress" in badge && badge.progress !== undefined ? (
         <div style={{ width: 52 }}>
           <div style={{ background: "var(--sk-border-muted)", borderRadius: 99, height: 3, overflow: "hidden" }}>
-            <div style={{ height: 3, borderRadius: 99, background: "var(--sk-brand-forest,#33684A)", width: `${Math.round(badge.progress * 100)}%` }} />
+            <div style={{ height: 3, borderRadius: 99, background: cat.ink, width: `${Math.round(badge.progress * 100)}%` }} />
           </div>
           {badge.progressLabel && (
-            <p style={{ fontSize: 9, color: "var(--sk-text-faint)", textAlign: "center", marginTop: 3, lineHeight: 1, fontFamily: "var(--font-dm-sans), sans-serif" }}>
+            <p style={{ fontSize: 9, color: "var(--sk-text-faint)", textAlign: "center", marginTop: 3, lineHeight: 1, fontFamily: "var(--sk-font-data)" }}>
               {badge.progressLabel}
             </p>
           )}
@@ -144,11 +132,13 @@ function BadgeTile({ badge, lang }: { badge: BadgeResult; lang: Language }) {
       ) : (
         <p style={{
           fontSize: 9,
-          color: earned ? s.iconColor : "var(--sk-text-faint)",
+          color: earned ? cat.ink : "var(--sk-text-faint)",
           textAlign: "center",
           lineHeight: 1,
-          fontFamily: "var(--font-dm-sans), sans-serif",
-          fontWeight: earned ? 700 : 400,
+          fontFamily: "var(--sk-font-data)",
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          fontWeight: earned ? 600 : 400,
         }}>
           {earned ? t("badge_earned_label", lang) : t("badge_locked_label", lang)}
         </p>
@@ -164,15 +154,15 @@ export function BadgesSection({ badges, lang = "en" }: { badges: BadgeResult[]; 
   const earned = earnedCount(badges);
 
   return (
-    <div style={{ fontFamily: "var(--font-dm-sans), sans-serif" }}>
+    <div style={{ fontFamily: "var(--sk-font-ui)" }}>
       {/* Earned count pill */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
         <span style={{
           fontSize: 11,
-          fontWeight: 700,
+          fontWeight: 600,
           color: "var(--sk-text-green)",
           background: "var(--sk-grade-a-bg)",
-          border: "1px solid var(--sk-grade-a-border, #b8dda8)",
+          border: "1px solid var(--sk-grade-a-border)",
           borderRadius: 99,
           padding: "3px 10px",
         }}>
@@ -187,17 +177,18 @@ export function BadgesSection({ badges, lang = "en" }: { badges: BadgeResult[]; 
 
         return (
           <div key={cat.id} style={{
-            background: "var(--sk-brand-mist, #F6F3EC)",
+            background: "var(--sk-brand-mist)",
             border: "1px solid var(--sk-border-muted)",
             borderRadius: 14,
             marginBottom: 10,
             padding: "14px 14px 18px",
           }}>
             <p style={{
+              fontFamily: "var(--sk-font-data)",
               fontSize: 10,
-              fontWeight: 700,
+              fontWeight: 400,
               textTransform: "uppercase",
-              letterSpacing: "0.1em",
+              letterSpacing: "0.12em",
               color: "var(--sk-text-muted)",
               marginBottom: 14,
             }}>
