@@ -42,7 +42,7 @@ export function AdditiveDetail({
   const SafetyIcon = safetyIcon(entry.safety);
 
   return (
-    <div className="min-h-screen bg-[#f7f2ea]">
+    <div className="min-h-screen bg-[#F6F3EC]">
       <div className="mx-auto max-w-2xl px-5 pb-24 pt-8">
         <Link
           href={indexHref}

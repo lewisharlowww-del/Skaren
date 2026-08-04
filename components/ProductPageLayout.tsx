@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronRight, Crown, Info, ListPlus } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronRight, Crown, Info, ListPlus } from "lucide-react";
 import { NutritionTable } from "@/components/NutritionTable";
 import { Additives } from "@/components/Additives";
 import { Merk, type MerkExpression } from "@/components/Merk";
@@ -155,23 +155,6 @@ function getMerkVerdict(
   return { expression: m.expression, text: no ? m.no : m.en };
 }
 
-function getTypedInsightTone(type: ProductInsight["type"]) {
-  if (type === "positive") {
-    return { icon: CheckCircle2, bg: "var(--sk-grade-a-bg)", border: "var(--sk-grade-a-border)", text: "var(--sk-grade-a-text)" };
-  }
-  if (type === "warning") {
-    return { icon: AlertTriangle, bg: "var(--sk-grade-e-bg)", border: "var(--sk-grade-e-border)", text: "var(--sk-grade-e-text)" };
-  }
-  return { icon: Info, bg: PAGE_BG, border: CARD_BORDER, text: "var(--sk-text-secondary)" };
-}
-
-function polishInsightText(text: string) {
-  return text
-    .replace(/\bmentioned\b/gi, "found")
-    .replace(/\bseems\b/gi, "is")
-    .replace(/\bappears\b/gi, "is");
-}
-
 function getShoppingCategory(product: ProductResult) {
   const text = `${product.categories} ${product.kassalappCategories.join(" ")}`.toLowerCase();
   if (/(milk|dairy|cheese|yogurt|melk|ost|yoghurt)/.test(text)) return "Dairy";
@@ -281,14 +264,6 @@ export function ProductPageLayout({
     rawAdditives.length > 0
       ? rawAdditives
       : extractAdditivesFromIngredients(ingredients ?? "");
-  const quickFacts = nutritionRows.slice(0, 4);
-  const insights = getKeyInsights(product)
-    .map((insight) => ({ ...insight, text: polishInsightText(insight.text) }))
-    .filter((insight) => {
-      const text = insight.text.toLowerCase();
-      return !text.includes("limited eco data") && !text.includes("eco score is missing") && !text.includes("weak eco score");
-    })
-    .slice(0, 3);
   useEffect(() => {
     const element = scrollRef.current;
     if (!element) return;

@@ -23,7 +23,7 @@ const familjen = Familjen_Grotesk({
 });
 const dmSans = DM_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
   variable: "--font-dm-sans",
   display: "swap",
 });
@@ -88,7 +88,7 @@ export default function RootLayout({
       <head>
         <ThemeScript />
       </head>
-      <body className="min-h-screen antialiased bg-[#f7f2ea] dark:bg-[#1a1714]" suppressHydrationWarning>
+      <body className="min-h-screen antialiased bg-[#F6F3EC] dark:bg-[#1a1714]" suppressHydrationWarning>
         <ThemeProvider>
           <LanguageProvider>
             <CapacitorDeepLink />
