@@ -423,10 +423,10 @@ export function getSafetyLabel(safety: SafetyRating): string {
 export function getSafetyColours(safety: SafetyRating): { bg: string; text: string; border: string } {
   switch (safety) {
     case 'safe':
-      return { bg: 'bg-[#eaf3de]', text: 'text-[#2d4a26]', border: 'border-[#c8e6b0]' }
+      return { bg: 'bg-[var(--sk-grade-a-bg)]', text: 'text-[var(--sk-grade-a-text)]', border: 'border-[var(--sk-grade-a-border)]' }
     case 'moderate':
-      return { bg: 'bg-[#faeeda]', text: 'text-[#8c6200]', border: 'border-[#f0d090]' }
+      return { bg: 'bg-[var(--sk-grade-c-bg)]', text: 'text-[var(--sk-grade-c-text)]', border: 'border-[var(--sk-grade-c-border)]' }
     case 'avoid':
-      return { bg: 'bg-[#fde8e8]', text: 'text-[#aa1818]', border: 'border-[#f0b0b0]' }
+      return { bg: 'bg-[var(--sk-grade-e-bg)]', text: 'text-[var(--sk-grade-e-text)]', border: 'border-[var(--sk-grade-e-border)]' }
   }
 }

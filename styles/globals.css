@@ -164,9 +164,14 @@
 html.dark {
   color-scheme: dark;
 
-  /* Accent green — unchanged */
-  --sk-brand-forest: #6abf58;
-  --sk-brand-leaf:   #88cc70;
+  /* Accent green — D1 dark: lifted forest so it separates on a dark ground */
+  --sk-brand-forest: #6FA97F;
+  --sk-brand-leaf:   #6FA97F;
+
+  /* Score bands — dark */
+  --sk-score-good: #8FC79E;
+  --sk-score-mid:  #D6B366;
+  --sk-score-weak: #E39070;
 
   /* Page / shell backgrounds — warm dark */
   --sk-brand-mist:        #1a1714;
@@ -436,5 +441,39 @@ html.dark .sk2::after {
 @media (min-width: 640px) {
   .pt-safe {
     padding-top: 2rem;
+  }
+}
+
+/* ── Accessibility — colour is never the only signal (D1 Step 8) ───────────
+   Green and clay sit close in perceived lightness (deuteranopia failure).
+   Wherever they carry meaning a second cue is required: bar POSITION, dot
+   FILL COUNT, or an explicit WORD. These utilities enforce the fallback. */
+
+@media (prefers-contrast: more) {
+  :root {
+    --sk-text-muted:     #6E6656;
+    --sk-text-faint:     #8A8270;
+    --sk-border-default: #D4CCB8;
+  }
+}
+
+/* Diagonal hatch on caution fills so severity survives without hue. */
+.sk-pattern-caution {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.28) 0 2px,
+    rgba(255, 255, 255, 0) 2px 5px
+  );
+}
+
+/* Nothing interactive below 44px — a floor, not a target. */
+.sk-tap { min-height: var(--sk-min-tap); min-width: var(--sk-min-tap); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
