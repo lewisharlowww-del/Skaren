@@ -75,7 +75,7 @@ export function BottomNav() {
         alignItems: "flex-end",
         background: "var(--sk-brand-mist-card)",
         borderTop: "1px solid var(--sk-border-default)",
-        padding: "0 6px calc(26px + env(safe-area-inset-bottom))",
+        padding: "0 6px calc(10px + env(safe-area-inset-bottom))",
       }}
       aria-label={t("nav_scan", lang)}
     >
@@ -103,21 +103,21 @@ export function BottomNav() {
             >
               <span
                 style={{
-                  marginTop: -26,
+                  marginTop: -18,
                   background: "var(--sk-nav-scan-bg)",
                   borderRadius: "16px 16px 0 0",
-                  padding: "13px 0 14px",
-                  width: 72,
+                  padding: "10px 0 11px",
+                  width: 64,
                   minHeight: "var(--sk-min-tap)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  gap: 5,
+                  gap: 4,
                   color: "var(--sk-nav-scan-fg)",
                 }}
               >
-                <Icon size={18} />
-                <span style={{ fontFamily: "var(--sk-font-ui)", fontSize: 10, fontWeight: 500 }}>
+                <Icon size={17} />
+                <span style={{ fontFamily: "var(--sk-font-ui)", fontSize: 9.5, fontWeight: 500 }}>
                   {t(item.key, lang)}
                 </span>
               </span>
@@ -136,7 +136,7 @@ export function BottomNav() {
               flex: 1,
               display: "flex",
               justifyContent: "center",
-              padding: "13px 0 14px",
+              padding: "9px 0 8px",
             }}
           >
             <span
@@ -145,8 +145,8 @@ export function BottomNav() {
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 5,
-                padding: "6px 12px 5px",
+                gap: 4,
+                padding: "5px 12px 4px",
                 borderRadius: 13,
                 minHeight: "var(--sk-min-tap)",
                 background: active ? "var(--sk-nav-active-pill)" : "transparent",
@@ -154,8 +154,8 @@ export function BottomNav() {
                 transition: "background-color 160ms ease-out, color 160ms ease-out",
               }}
             >
-              <Icon size={18} />
-              <span style={{ fontFamily: "var(--sk-font-ui)", fontSize: 10, fontWeight: 500 }}>
+              <Icon size={17} />
+              <span style={{ fontFamily: "var(--sk-font-ui)", fontSize: 9.5, fontWeight: 500 }}>
                 {t(item.key, lang)}
               </span>
             </span>

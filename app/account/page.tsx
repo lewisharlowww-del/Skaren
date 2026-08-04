@@ -128,7 +128,7 @@ function ProfileCard({
       />
 
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#c7d5c4]">
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--sk-text-on-dark-muted)]">
           {t("account_membership_label", lang)}
         </p>
         {checkingPremium ? (
@@ -137,7 +137,7 @@ function ProfileCard({
           <span
             className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold"
             style={{
-              color: isPremium ? "#f2dfaa" : "#dce8d9",
+              color: isPremium ? "var(--sk-score-mid)" : "var(--sk-text-on-dark)",
               borderColor: isPremium
                 ? "rgba(242,223,170,0.42)"
                 : "rgba(220,232,217,0.28)",
@@ -161,38 +161,38 @@ function ProfileCard({
           >
             {name}
           </p>
-          <p className="mt-1 truncate text-[12px] text-[#c7d5c4]">{email}</p>
+          <p className="mt-1 truncate text-[12px] text-[var(--sk-text-on-dark-muted)]">{email}</p>
         </div>
       </div>
 
       <div className="mt-5 grid grid-cols-3 border-t border-white/15 pt-4">
         <div className="border-r border-white/15 pr-3">
-          <ScanBarcode className="mb-2 h-4 w-4 text-[#a9c1a5]" />
+          <ScanBarcode className="mb-2 h-4 w-4 text-[var(--sk-merk-highlight)]" />
           <p className="text-[17px] font-bold leading-none text-white">{scanCount}</p>
-          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#a9c1a5]">
+          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--sk-merk-highlight)]">
             {lang === "no" ? "visninger" : "views"}
           </p>
         </div>
         <div className="border-r border-white/15 px-3">
-          <Flame className="mb-2 h-4 w-4 text-[#d8c78f]" />
+          <Flame className="mb-2 h-4 w-4 text-[var(--sk-score-mid)]" />
           <p className="text-[17px] font-bold leading-none text-white">{streakDays}</p>
-          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#a9c1a5]">
+          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--sk-merk-highlight)]">
             {t("account_streak_label", lang)}
           </p>
         </div>
         <div className="pl-3">
-          <Leaf className="mb-2 h-4 w-4 text-[#a9c1a5]" />
+          <Leaf className="mb-2 h-4 w-4 text-[var(--sk-merk-highlight)]" />
           <p className="truncate text-[12px] font-bold leading-none text-white">
             {gamificationBadge}
           </p>
-          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#a9c1a5]">
+          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--sk-merk-highlight)]">
             {t("account_level_label", lang)}
           </p>
         </div>
       </div>
 
       {joinedDate ? (
-        <p className="mt-4 text-[11px] text-[#91aa8e]">
+        <p className="mt-4 text-[11px] text-[var(--sk-text-on-dark-muted)]">
           {t("account_member_since", lang)} {joinedDate}
         </p>
       ) : null}
@@ -208,19 +208,19 @@ function ProCard({ isPremium, lang }: { isPremium: boolean; lang: Language }) {
       href="/pricing"
       className="mb-6 flex items-center gap-3 rounded-2xl border px-5 py-4 transition active:scale-[0.99]"
       style={{
-        background: "#fffdf8",
-        borderColor: "#d8c68e",
+        background: "var(--sk-grade-c-bg)",
+        borderColor: "var(--sk-grade-c-border)",
         boxShadow: "0 10px 28px rgba(112,96,48,0.08)",
       }}
     >
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#f0e8d0]">
-        <Crown className="h-5 w-5 text-[#706030]" />
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--sk-grade-c-bg)]">
+        <Crown className="h-5 w-5 text-[var(--sk-grade-c-text)]" />
       </div>
       <div className="flex-1">
-        <p className="text-[13px] font-bold text-[#4f4528]">{t('account_upgrade', lang)}</p>
-        <p className="mt-0.5 text-[11px] text-[#8c7a49]">{t('account_upgrade_sub', lang)}</p>
+        <p className="text-[13px] font-bold text-[var(--sk-text-primary)]">{t('account_upgrade', lang)}</p>
+        <p className="mt-0.5 text-[11px] text-[var(--sk-text-muted)]">{t('account_upgrade_sub', lang)}</p>
       </div>
-      <ChevronRight className="h-4 w-4 shrink-0 text-[#a18d58]" />
+      <ChevronRight className="h-4 w-4 shrink-0 text-[var(--sk-grade-c-text)]" />
     </Link>
   );
 }
@@ -329,7 +329,7 @@ function DeleteDialog({
               <X className="h-4 w-4" />
             </button>
           </div>
-          <h2 className="mt-3 text-[20px] font-black" style={{ fontFamily: "var(--font-familjen), sans-serif", color: "var(--sk-status-danger)" }}>
+          <h2 className="mt-3 text-[20px] font-semibold" style={{ fontFamily: "var(--font-familjen), sans-serif", color: "var(--sk-status-danger)" }}>
             {t('account_delete_title', lang)}
           </h2>
           <p className="mt-1 text-[13px]" style={{ color: "var(--sk-text-secondary)" }}>
@@ -348,7 +348,7 @@ function DeleteDialog({
               type="button"
               disabled={loading}
               onClick={onConfirm}
-              className="w-full rounded-2xl py-3.5 text-[14px] font-black text-white transition-opacity active:opacity-80 disabled:opacity-50"
+              className="w-full rounded-2xl py-3.5 text-[14px] font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-50"
               style={{ background: "#aa1818" }}
             >
               {loading ? t('account_deleting', lang) : t('account_delete_confirm', lang)}
@@ -544,8 +544,8 @@ export default function AccountPage() {
             Profile & preferences
           </p>
           <h1
-            className="text-[30px] font-bold leading-none text-[#243f24]"
-            style={{ fontFamily: "var(--font-familjen), sans-serif" }}
+            className="text-[32px] font-semibold leading-none"
+            style={{ fontFamily: "var(--font-familjen), sans-serif", color: "var(--sk-text-primary)", letterSpacing: "-0.03em" }}
           >
             {t('account_title', lang)}
           </h1>
@@ -820,9 +820,9 @@ export default function AccountPage() {
             />
             <Divider />
             <SettingsRow
-              icon={<Trash2 className="h-4 w-4 text-[#aa1818] dark:text-[#e07070]" />}
-              iconBg="#fcebeb"
-              iconBgDark="var(--sk-grade-e-bg)"
+              icon={<Trash2 className="h-4 w-4" style={{ color: "var(--sk-status-warning)" }} />}
+              iconBg="var(--sk-grade-d-bg)"
+              iconBgDark="var(--sk-grade-d-bg)"
               label={t('account_delete', lang)}
               subtitle={t('account_delete_sub', lang)}
               danger

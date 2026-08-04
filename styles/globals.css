@@ -537,3 +537,13 @@ html.dark .sk2::after {
     transparent 50% 100%
   );
 }
+
+/* ── Barcode loader — every loading state is Merk's barcode, never a circle ── */
+@keyframes sk-barcode-pulse {
+  0%, 100% { opacity: 0.3; transform: scaleY(0.75); }
+  50%      { opacity: 1;   transform: scaleY(1); }
+}
+.sk-barcode-loader > span { transform-origin: center bottom; }
+@media (prefers-reduced-motion: reduce) {
+  .sk-barcode-loader > span { animation: none !important; opacity: 0.8; }
+}

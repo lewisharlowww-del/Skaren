@@ -1,20 +1,48 @@
+/**
+ * Spinner — but never a spinner. Per the redesign spec, every loading state is
+ * Merk's barcode, never a circle. This renders a small row of barcode bars that
+ * pulse in sequence, keeping the same { size, className } API so existing call
+ * sites (scan, search, list, pricing) pick it up with no changes.
+ */
+
 type SpinnerProps = {
   size?: number;
   className?: string;
 };
 
+// Bar heights as a fraction of the box, drawn like a barcode fragment.
+const BARS = [0.55, 1, 0.7, 1, 0.45, 0.85, 0.65];
+
 export function Spinner({ size = 20, className = "" }: SpinnerProps) {
+  const gap = Math.max(1.5, size * 0.09);
+  const barW = Math.max(1.5, size * 0.09);
   return (
-    <svg
-      className={`animate-spin ${className}`}
-      width={size}
-      height={size}
-      viewBox="0 0 36 36"
-      fill="none"
-      aria-hidden="true"
+    <span
+      className={`sk-barcode-loader ${className}`}
+      role="status"
+      aria-label="Loading"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap,
+        height: size,
+        width: size,
+      }}
     >
-      <circle cx="18" cy="18" r="14" stroke="#E6E0D0" strokeWidth="3" />
-      <path d="M18 4 A14 14 0 0 1 32 18" stroke="#33684A" strokeWidth="3" strokeLinecap="round" />
-    </svg>
+      {BARS.map((h, i) => (
+        <span
+          key={i}
+          style={{
+            width: barW,
+            height: `${h * 100}%`,
+            borderRadius: 0.5,
+            background: "var(--sk-brand-forest, #33684A)",
+            animation: "sk-barcode-pulse 1s ease-in-out infinite",
+            animationDelay: `${i * 0.09}s`,
+          }}
+        />
+      ))}
+    </span>
   );
 }
