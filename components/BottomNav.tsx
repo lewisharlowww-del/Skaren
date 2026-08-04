@@ -1,23 +1,39 @@
 "use client";
 
+/**
+ * BottomNav — D1 "The Shelf", step 6.
+ *
+ * The bar is paper (--sk-brand-mist-card) with a hairline top border. Scan is
+ * permanently raised out of it — a dark tab with a 16px 16px 0 0 radius that
+ * never changes state, because it is the app's anchor. The other four show
+ * active state as a soft pill behind icon and label.
+ *
+ * Icons come from components/NavIcons: one 24×24 grid, 1.7px stroke, round
+ * caps and joins, no fills, rendered at 18px.
+ */
+
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useTransition, useState, useEffect, useRef, useCallback } from "react";
-import { BarChart3, History, ScanBarcode, ShoppingCart, UserRound } from "lucide-react";
+import { useTransition, useState, useEffect } from "react";
+import {
+  IconAccount,
+  IconHistory,
+  IconLists,
+  IconScan,
+  IconStats,
+} from "@/components/NavIcons";
 import { t } from "@/lib/i18n";
 import { useLang } from "@/lib/language-context";
 
 const navItems = [
-  { href: "/history",       key: "nav_history" as const,  icon: History },
-  { href: "/shopping-list", key: "nav_list" as const,     icon: ShoppingCart },
-  { href: "/scan",          key: "nav_scan" as const,     icon: ScanBarcode, primary: true },
-  { href: "/stats",         key: "nav_stats" as const,    icon: BarChart3 },
-  { href: "/account",       key: "nav_account" as const,  icon: UserRound },
+  { href: "/history",       key: "nav_history" as const,  Icon: IconHistory },
+  { href: "/shopping-list", key: "nav_list" as const,     Icon: IconLists },
+  { href: "/scan",          key: "nav_scan" as const,     Icon: IconScan, primary: true },
+  { href: "/stats",         key: "nav_stats" as const,    Icon: IconStats },
+  { href: "/account",       key: "nav_account" as const,  Icon: IconAccount },
 ];
 
 const tabPaths = ["/history", "/shopping-list", "/scan", "/stats", "/dashboard", "/account"];
-
-type Indicator = { left: number; top: number; width: number; height: number; visible: boolean };
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -27,17 +43,6 @@ export function BottomNav() {
 
   // Optimistic target so the tapped tab reacts on the same frame as the tap.
   const [pending, setPending] = useState<string | null>(null);
-  // Tapped icon feedback (hop + glow), retriggerable via nonce.
-  const [tap, setTap] = useState<{ index: number; nonce: number } | null>(null);
-  // The gooey liquid pill position + a nonce to restart its stretch animation.
-  const [indicator, setIndicator] = useState<Indicator>({ left: 0, top: 0, width: 0, height: 0, visible: false });
-  const [gooNonce, setGooNonce] = useState(0);
-  const firstMeasure = useRef(true);
-
-  const navRef = useRef<HTMLElement | null>(null);
-  const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
-  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const activePath = pending ?? pathname;
 
   const hasSelectedTab = tabPaths.some(
@@ -50,48 +55,12 @@ export function BottomNav() {
     (itemPath === "/stats" && activePath.startsWith("/dashboard")) ||
     (!!primary && !hasSelectedTab);
 
-  const activeIndex = navItems.findIndex((it) => isActive(it.href.split("?")[0], it.primary));
-  const activeIsPrimary = activeIndex >= 0 && !!navItems[activeIndex].primary;
-
-  // Glide the liquid pill under whichever non-primary tab is active.
-  const measure = useCallback((animate: boolean) => {
-    const nav = navRef.current;
-    const el = activeIndex >= 0 ? itemRefs.current[activeIndex] : null;
-    if (!nav || !el || activeIsPrimary) {
-      setIndicator((i) => ({ ...i, visible: false }));
-      return;
-    }
-    const nr = nav.getBoundingClientRect();
-    const r = el.getBoundingClientRect();
-    setIndicator({ left: r.left - nr.left, top: r.top - nr.top, width: r.width, height: r.height, visible: true });
-    if (animate) setGooNonce((n) => n + 1);
-  }, [activeIndex, activeIsPrimary]);
-
-  useEffect(() => {
-    const animate = !firstMeasure.current;
-    firstMeasure.current = false;
-    measure(animate);
-  }, [measure, lang]);
-
-  useEffect(() => {
-    const onResize = () => measure(false);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [measure]);
-
   useEffect(() => {
     if (pending && (pathname === pending || pathname.startsWith(`${pending}/`))) setPending(null);
   }, [pathname, pending]);
 
-  useEffect(() => () => { if (tapTimer.current) clearTimeout(tapTimer.current); }, []);
-
-  const handleTap = (href: string, index: number) => (e: React.MouseEvent) => {
+  const handleTap = (href: string) => (e: React.MouseEvent) => {
     const target = href.split("?")[0];
-    // Always fire the icon hop + glow, even on the current tab.
-    setTap({ index, nonce: Date.now() });
-    if (tapTimer.current) clearTimeout(tapTimer.current);
-    tapTimer.current = setTimeout(() => setTap(null), 640);
-
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
     if (target === pathname) return;
@@ -101,55 +70,95 @@ export function BottomNav() {
 
   return (
     <nav
-      ref={navRef}
-      className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-black/[0.07] bg-white/95 dark:bg-[#242018]/96 dark:border-[#2e2a24]/50 px-2 pt-1.5 backdrop-blur-2xl sm:hidden"
-      style={{ paddingBottom: "calc(0.375rem + env(safe-area-inset-bottom))" }}
+      className="sk-nav fixed inset-x-0 bottom-0 z-50 flex sm:hidden"
+      style={{
+        alignItems: "flex-end",
+        background: "var(--sk-brand-mist-card)",
+        borderTop: "1px solid var(--sk-border-default)",
+        padding: "0 6px calc(26px + env(safe-area-inset-bottom))",
+      }}
+      aria-label={t("nav_scan", lang)}
     >
-      {/* Liquid magic-move pill that glides between tabs and stretches mid-travel */}
-      <span
-        aria-hidden
-        className="nav-goo-outer pointer-events-none absolute z-0"
-        style={{
-          left: indicator.left,
-          top: indicator.top,
-          width: indicator.width,
-          height: indicator.height,
-          opacity: indicator.visible ? 1 : 0,
-        }}
-      >
-        <span key={gooNonce} className="nav-goo-inner" />
-      </span>
-
-      {navItems.map((item, index) => {
+      {navItems.map((item) => {
         const itemPath = item.href.split("?")[0];
         const active = isActive(itemPath, item.primary);
-        const isTapping = tap?.index === index;
+        const { Icon } = item;
+
+        // The raised Scan tab. Permanently dark, permanently the same — it is
+        // the anchor, so it never renders an active or inactive variant.
+        if (item.primary) {
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={handleTap(item.href)}
+              aria-current={active ? "page" : undefined}
+              className="focus-ring sk-nav-scan"
+              style={{
+                flex: 1,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "flex-end",
+              }}
+            >
+              <span
+                style={{
+                  marginTop: -26,
+                  background: "var(--sk-nav-scan-bg)",
+                  borderRadius: "16px 16px 0 0",
+                  padding: "13px 0 14px",
+                  width: 72,
+                  minHeight: "var(--sk-min-tap)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 5,
+                  color: "var(--sk-nav-scan-fg)",
+                }}
+              >
+                <Icon size={18} />
+                <span style={{ fontFamily: "var(--sk-font-ui)", fontSize: 10, fontWeight: 500 }}>
+                  {t(item.key, lang)}
+                </span>
+              </span>
+            </Link>
+          );
+        }
 
         return (
           <Link
             key={item.href}
             href={item.href}
-            ref={(el) => { itemRefs.current[index] = el; }}
-            onClick={handleTap(item.href, index)}
-            className={`focus-ring type-caption relative z-10 flex min-h-[3.25rem] flex-col items-center justify-center gap-1 rounded-[1.2rem] px-2 py-2 transition-transform duration-150 ease-out active:scale-90 ${
-              item.primary
-                ? "bg-ink dark:bg-[#2d5025] text-white shadow-soft"
-                : active
-                  ? "text-forest dark:text-[#6abf58]"
-                  : "text-soil-500 dark:text-[#8a8070] hover:bg-soil-50/60 dark:hover:bg-[#6abf58]/5 rounded-[1.2rem]"
-            }`}
+            onClick={handleTap(item.href)}
+            aria-current={active ? "page" : undefined}
+            className="focus-ring sk-nav-tab"
+            style={{
+              flex: 1,
+              display: "flex",
+              justifyContent: "center",
+              padding: "13px 0 14px",
+            }}
           >
-            <span className="relative flex items-center justify-center">
-              {/* Glow ring that blooms out of the tapped icon */}
-              {isTapping && <span key={`g-${tap!.nonce}`} className="nav-glow" aria-hidden />}
-              <item.icon
-                key={isTapping ? `h-${tap!.nonce}` : "idle"}
-                className={`relative h-[1.1rem] w-[1.1rem] ${isTapping ? "nav-hop" : ""} ${
-                  item.primary ? "" : active ? "stroke-[2.4px]" : ""
-                }`}
-              />
+            <span
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 5,
+                padding: "6px 12px 5px",
+                borderRadius: 13,
+                minHeight: "var(--sk-min-tap)",
+                background: active ? "var(--sk-nav-active-pill)" : "transparent",
+                color: active ? "var(--sk-text-primary)" : "var(--sk-nav-inactive)",
+                transition: "background-color 160ms ease-out, color 160ms ease-out",
+              }}
+            >
+              <Icon size={18} />
+              <span style={{ fontFamily: "var(--sk-font-ui)", fontSize: 10, fontWeight: 500 }}>
+                {t(item.key, lang)}
+              </span>
             </span>
-            <span className="relative" style={{ fontSize: 11 }}>{t(item.key, lang)}</span>
           </Link>
         );
       })}

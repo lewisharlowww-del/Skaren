@@ -57,6 +57,14 @@ export type ProductResult = {
   additives: AdditiveAnalysis[];
   novaGroup: 1 | 2 | 3 | 4 | null;
   aiSummary: Array<string | ProductInsight>;
+  /* ── Scoring provenance ──────────────────────────────────────────────────
+     Which engine produced the number, and which version of it. Persisted with
+     every saved scan so a re-tune never silently rewrites a user's history. */
+  healthScore?: number;
+  healthSource?: "nutriscore" | "skaren-category" | "skaren-absolute";
+  healthModel?: string;
+  healthBasis?: string;
+  healthConfident?: boolean;
 };
 
 export type ProductStore = {

@@ -24,7 +24,7 @@ const OPTIONS: {
     label: "Dark",
     sub: "Always dark",
     icon: <Moon size={18} />,
-    preview: { bg: "#1a1714", card: "#242018", text: "#f0ece0", sub: "#6e6458", accent: "#6FA97F" },
+    preview: { bg: "#14120C", card: "#1C1811", text: "#f0ece0", sub: "#6e6458", accent: "#6FA97F" },
   },
 ];
 

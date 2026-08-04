@@ -1,7 +1,20 @@
 import { analyzeAdditives } from "@/lib/additives";
 import { getEcoGrade, getNutritionGrade, gradeLetterToScore, hasEcoData, normalizeEcoGrade } from "@/lib/ecoscore";
 import { calculateHealthGrade } from "@/lib/healthscore";
+import { resolveHealthGrade } from "@/lib/merk/healthGrade";
 import type { ProductResult } from "@/lib/types";
+
+/** The model that produced every score shipped before the resolver landed. */
+export const LEGACY_HEALTH_MODEL = "absolute-0.9";
+
+/**
+ * Nutri-Score-first scoring is opt-in until it has been compared against real
+ * products. A user who saw 22 yesterday must not see 64 today without the model
+ * version explaining why.
+ */
+export function healthResolverEnabled() {
+  return process.env.NEXT_PUBLIC_SKAREN_HEALTH_RESOLVER === "1";
+}
 
 type OpenFoodFactsProduct = {
   product_name?: string;
@@ -24,6 +37,8 @@ type OpenFoodFactsProduct = {
   ecoscore_tags?: string[];
   nutriscore_grade?: string;
   nutrition_grades?: string;
+  /** Raw Nutri-Score points, roughly −15 (best) … 40 (worst). */
+  nutriscore_score?: number;
   packaging?: string;
   packaging_text?: string;
   packaging_tags?: string[];
@@ -234,10 +249,28 @@ export async function fetchOpenFoodFactsProduct(barcode: string) {
   let response: Response;
 
   try {
-    response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${cleanBarcode}`, {
-      next: { revalidate: 3600 },
-      signal: controller.signal
-    });
+    // Fields are pinned so the payload stays small and the score fields can
+    // never silently disappear from under us.
+    const fields = [
+      "product_name", "product_name_en", "abbreviated_product_name",
+      "brands", "brands_tags",
+      "categories", "categories_tags", "categories_hierarchy",
+      "ingredients_text", "ingredients_text_en", "additives_tags", "nova_group",
+      "nutriscore_grade", "nutrition_grades", "nutriscore_score",
+      "ecoscore_grade", "ecoscore_score", "ecoscore_data", "ecoscore_tags",
+      "environment_impact_level", "environment_impact_level_tags",
+      "packaging", "packaging_text", "packaging_tags",
+      "origins", "origins_tags", "manufacturing_places",
+      "countries", "countries_tags"
+    ].join(",");
+
+    response = await fetch(
+      `https://world.openfoodfacts.org/api/v2/product/${cleanBarcode}?fields=${fields}`,
+      {
+        next: { revalidate: 3600 },
+        signal: controller.signal
+      }
+    );
   } catch {
     throw new ProductLookupError();
   } finally {
@@ -290,17 +323,48 @@ export function normalizeOpenFoodFactsProduct(barcode: string, product: OpenFood
     aiSummary: []
   };
 
+  const fallback = {
+    nutrition: {},
+    labels: [],
+    category: normalizedProduct.categories,
+    novaGroup: normalizedProduct.novaGroup,
+    additives: normalizedProduct.additives
+  };
+
+  // The resolver changes what the number MEANS, so it stays behind a flag until
+  // it has been diffed against real products. `healthModel` is persisted with
+  // every scan so history never rewrites itself when the flag flips.
+  if (!healthResolverEnabled()) {
+    return {
+      ...normalizedProduct,
+      ecoGradeLetter: getEcoGrade(normalizedProduct),
+      nutritionGradeLetter: getNutritionGrade(normalizedProduct),
+      healthGrade: calculateHealthGrade(fallback),
+      healthModel: LEGACY_HEALTH_MODEL,
+      healthSource: "skaren-absolute",
+      healthConfident: true
+    };
+  }
+
+  const health = resolveHealthGrade({
+    offFields: {
+      nutriscore_grade: product.nutriscore_grade,
+      nutrition_grades: product.nutrition_grades,
+      nutriscore_score: product.nutriscore_score
+    },
+    fallback
+  });
+
   return {
     ...normalizedProduct,
     ecoGradeLetter: getEcoGrade(normalizedProduct),
     nutritionGradeLetter: getNutritionGrade(normalizedProduct),
-    healthGrade: calculateHealthGrade({
-      nutrition: {},
-      labels: [],
-      category: normalizedProduct.categories,
-      novaGroup: normalizedProduct.novaGroup,
-      additives: normalizedProduct.additives
-    })
+    healthGrade: health.grade,
+    healthScore: health.score,
+    healthSource: health.source,
+    healthModel: health.model,
+    healthBasis: health.basis,
+    healthConfident: health.confident
   };
 }
 
