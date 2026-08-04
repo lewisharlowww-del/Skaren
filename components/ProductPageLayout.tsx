@@ -9,6 +9,7 @@ import { ArrowLeft, CheckCircle2, ChevronRight, Crown, Info, ListPlus } from "lu
 import { NutritionTable } from "@/components/NutritionTable";
 import { Additives } from "@/components/Additives";
 import { Merk, type MerkExpression } from "@/components/Merk";
+import { BarcodeMeter } from "@/components/BarcodeMeter";
 import { getGradeLabel } from "@/components/ScoreBadge";
 import { useShoppingList } from "@/hooks/useShoppingList";
 import { hasEcoData } from "@/lib/ecoscore";
@@ -134,25 +135,26 @@ function getGradeSummary(
 function getMerkVerdict(
   grade: GradeLetter | null,
   lang: "en" | "no"
-): { expression: MerkExpression; text: string } {
+): { expression: MerkExpression; headline: string; text: string } {
   const no = lang === "no";
   if (!grade) {
     return {
       expression: "unsure",
+      headline: no ? "Vet ikke helt." : "Not sure yet.",
       text: no
         ? "Jeg mangler nok data til å gi en score her ennå."
         : "I don't have enough data to score this one yet.",
     };
   }
-  const map: Record<GradeLetter, { expression: MerkExpression; en: string; no: string }> = {
-    A: { expression: "confident", en: "One of the better choices on its shelf.", no: "Et av de bedre valgene i hylla." },
-    B: { expression: "happy", en: "A solid pick — little here worth worrying about.", no: "Et solid valg — lite her å bekymre seg for." },
-    C: { expression: "thinking", en: "Middle of the shelf. Fine now and then.", no: "Midt på hylla. Grei av og til." },
-    D: { expression: "curious", en: "Worth a closer look before it becomes a habit.", no: "Verdt en nærmere titt før det blir en vane." },
-    E: { expression: "concern", en: "There are better options next to this one.", no: "Det finnes bedre alternativer ved siden av." },
+  const map: Record<GradeLetter, { expression: MerkExpression; headEn: string; headNo: string; en: string; no: string }> = {
+    A: { expression: "confident", headEn: "Clean pick.", headNo: "Rent produkt.", en: "One of the better choices on its shelf.", no: "Et av de bedre valgene i hylla." },
+    B: { expression: "happy", headEn: "Solid choice.", headNo: "Godt valg.", en: "Little here worth worrying about.", no: "Lite her å bekymre seg for." },
+    C: { expression: "thinking", headEn: "Middle of the shelf.", headNo: "Midt på hylla.", en: "Fine now and then.", no: "Grei av og til." },
+    D: { expression: "curious", headEn: "Worth a look.", headNo: "Verdt en titt.", en: "Worth a closer look before it becomes a habit.", no: "Verdt en nærmere titt før det blir en vane." },
+    E: { expression: "concern", headEn: "Lots of salt here.", headNo: "Mye salt her.", en: "There are better options next to this one.", no: "Det finnes bedre alternativer ved siden av." },
   };
   const m = map[grade];
-  return { expression: m.expression, text: no ? m.no : m.en };
+  return { expression: m.expression, headline: no ? m.headNo : m.headEn, text: no ? m.no : m.en };
 }
 
 function getShoppingCategory(product: ProductResult) {
@@ -402,181 +404,132 @@ export function ProductPageLayout({
         <div className="h-10 w-10" aria-hidden="true" />
       </div>
 
-      {/* ── HERO — G4: warm cream, blurred orbs, circular image, green left border ── */}
-      <div
-        ref={heroRef}
-        className="relative mx-4 mt-2 overflow-hidden rounded-2xl"
-        style={{
-          background: "var(--sk-brand-mist-card)",
-          borderLeft: "4px solid var(--sk-brand-leaf)",
-          border: "0.5px solid var(--sk-border-default)",
-          borderLeftWidth: 4,
-          borderLeftColor: "var(--sk-brand-leaf)",
-          willChange: "opacity",
-        }}
-      >
-        {/* Content row */}
-        <div
-          ref={heroContentRef}
-          style={{ display: "flex", alignItems: "center", gap: 14, padding: "18px 18px 18px 14px", position: "relative", zIndex: 1, willChange: "opacity, transform" }}
-        >
-          {/* Circular image */}
-          <div style={{ position: "relative", flexShrink: 0 }}>
-            <div style={{
-              width: 80, height: 80, borderRadius: "50%",
-              background: "rgba(255,255,255,0.88)",
-              border: "2.5px solid var(--sk-border-green)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              overflow: "hidden",
-            }}>
-              {product.displayImage ? (
-                <img
-                  ref={(node) => { heroMediaRef.current = node; }}
-                  src={product.displayImage}
-                  alt={product.name}
-                  style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }}
-                />
-              ) : (
-                <div
-                  ref={(node) => { heroMediaRef.current = node; }}
-                  style={{ fontSize: 36, lineHeight: 1 }}
-                >
-                  {product.placeholderEmoji}
-                </div>
-              )}
-            </div>
-            {/* Green checkmark badge */}
-            <div style={{
-              position: "absolute", bottom: -2, right: -2,
-              width: 22, height: 22, borderRadius: "50%",
-              background: "var(--sk-brand-forest)",
-              border: "2px solid var(--sk-brand-mist-card)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              zIndex: 2,
-            }}>
-              <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                <path d="M1 4L4 7L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </div>
-
-          {/* Text */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h1
-              style={{
-                fontSize: 15,
-                fontWeight: 800,
-                color: "var(--sk-text-primary)",
-                fontFamily: "var(--font-familjen), sans-serif",
-                lineHeight: 1.25,
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
+      {/* ── VERDICT CARD — Merk's sentence leads, product image beside him.
+            Folded top-right corner marks this as a Merk-owned card. ────────── */}
+      <div ref={heroRef} className="mx-4 mt-2" style={{ willChange: "opacity" }}>
+        <div className="sk-folded" style={{ padding: "16px 18px" }}>
+          <div
+            ref={heroContentRef}
+            style={{ display: "flex", alignItems: "center", gap: 14, position: "relative", zIndex: 1, willChange: "opacity, transform" }}
+          >
+            {/* Product image — soft square, not a circle */}
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <div style={{
+                width: 76, height: 76, borderRadius: 14,
+                background: "var(--sk-brand-mist)",
+                border: "0.5px solid var(--sk-border-default)",
+                display: "flex", alignItems: "center", justifyContent: "center",
                 overflow: "hidden",
-              }}
-            >
-              {product.name}
-            </h1>
-            {product.brand && (
-              <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--sk-text-muted)", marginTop: 3 }}>
-                {product.brand}
+              }}>
+                {product.displayImage ? (
+                  <img
+                    ref={(node) => { heroMediaRef.current = node; }}
+                    src={product.displayImage}
+                    alt={product.name}
+                    style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }}
+                  />
+                ) : (
+                  <div
+                    ref={(node) => { heroMediaRef.current = node; }}
+                    style={{ fontSize: 34, lineHeight: 1 }}
+                  >
+                    {product.placeholderEmoji}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Merk's verdict — the sentence is the headline, not the grade */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p
+                style={{
+                  fontFamily: "var(--font-familjen), sans-serif",
+                  fontSize: 19,
+                  fontWeight: 600,
+                  letterSpacing: "-0.03em",
+                  color: "var(--sk-text-primary)",
+                  lineHeight: 1.1,
+                }}
+              >
+                {merkVerdict.headline}
               </p>
-            )}
-            <span
-              style={{
-                display: "inline-flex", alignItems: "center",
-                marginTop: 8,
-                background: "var(--sk-grade-a-bg)",
-                border: "0.5px solid var(--sk-grade-a-border)",
-                borderRadius: 20,
-                padding: "3px 10px",
-                fontSize: 12,
-                color: "var(--sk-grade-a-text)",
-                fontWeight: 600,
-              }}
-            >
-              {product.norwegianDataStatus === "kassalapp" ? `✓ ${t('product_store_data', lang)}` : t('product_limited_data', lang)}
-            </span>
+              <p style={{ fontSize: 14, lineHeight: 1.4, color: "var(--sk-text-secondary)", marginTop: 5 }}>
+                {merkVerdict.text}
+              </p>
+            </div>
+
+            {/* Merk himself, small, reacting to the grade */}
+            <div style={{ flexShrink: 0, alignSelf: "flex-end", marginBottom: -4 }}>
+              <Merk expression={merkVerdict.expression} size={54} limbs={false} aria-label="Merk" />
+            </div>
           </div>
         </div>
+        {/* Product name + brand as a quiet mono line under the verdict */}
+        <p
+          style={{
+            fontFamily: "var(--sk-font-data)",
+            fontSize: 11,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "var(--sk-text-muted)",
+            marginTop: 8,
+            paddingLeft: 2,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {product.name}{product.brand ? ` · ${product.brand}` : ""}
+        </p>
       </div>
 
-      {/* ── GRADES ──────────────────────────────────────────────────────── */}
+      {/* ── GRADES — ink letter + barcode density, no colour tint ─────────── */}
       <section ref={gradeHelpRef} className="relative mx-4 mt-3">
-        <div className="mb-2 flex items-center justify-between px-0.5">
-          <SectionLabel>{t("product_grades", lang)}</SectionLabel>
-          <button
-            ref={gradeHelpButtonRef}
-            type="button"
-            aria-label="Explain grades"
-            aria-expanded={gradeHelpOpen}
-            onClick={() => setGradeHelpOpen((open) => !open)}
-            className="focus-ring grid h-11 w-11 place-items-center rounded-full"
-            style={{
-              background: CARD_BG,
-              border: `0.5px solid ${CARD_BORDER}`,
-              color: MUTED,
-            }}
-          >
-            <Info className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div
-          className="overflow-hidden rounded-2xl"
-          style={{ background: CARD_BG, border: `0.5px solid ${CARD_BORDER}` }}
-        >
-          <div className="grid grid-cols-2">
-            <div className="flex flex-col items-center gap-2 px-4 py-4">
-              <div style={{ width: 72, height: 72, borderRadius: "50%", border: `2.5px solid ${getGradeBorder(healthGrade)}`, background: getGradeBackground(healthGrade), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3 }}>
-                <span className="type-grade" style={{ fontSize: 24, color: getColor(healthGrade), fontFamily: "var(--font-dm-sans), sans-serif" }}>
-                  {healthGrade ?? "–"}
-                </span>
-                {healthGrade ? (
-                  <span style={{ fontSize: 9, fontWeight: 700, lineHeight: 1, color: getColor(healthGrade), textTransform: "uppercase", letterSpacing: 0, whiteSpace: "nowrap" }}>
-                    {getGradeLabel(healthGrade, lang)}
-                  </span>
-                ) : null}
-              </div>
-              <span className="type-section-label" style={{ color: MUTED }}>
-                {t("product_health", lang)}
-              </span>
-              <span className="type-caption text-center" style={{ color: getColor(healthGrade), textTransform: "none", letterSpacing: 0 }}>
-                {getGradeSummary(healthGrade, "health", lang)}
-              </span>
+        <div className="grid grid-cols-2 gap-2.5">
+          <div style={{ background: CARD_BG, border: `0.5px solid ${CARD_BORDER}`, borderRadius: "var(--sk-radius-md)", padding: "14px 16px" }}>
+            <div className="flex items-center justify-between">
+              <span className="type-section-label" style={{ color: MUTED }}>{t("product_health", lang)}</span>
+              <button
+                ref={gradeHelpButtonRef}
+                type="button"
+                aria-label="Explain grades"
+                aria-expanded={gradeHelpOpen}
+                onClick={() => setGradeHelpOpen((open) => !open)}
+                className="focus-ring grid h-6 w-6 -mr-1 -mt-1 place-items-center rounded-full"
+                style={{ color: MUTED }}
+              >
+                <Info className="h-3.5 w-3.5" />
+              </button>
             </div>
-
-            <div
-              className="flex flex-col items-center gap-2 border-l px-4 py-4"
-              style={{
-                borderColor: CARD_BORDER,
-                opacity: hasOfficialEcoData ? 1 : 0.55,
-              }}
-            >
-              <div style={{ width: 72, height: 72, borderRadius: "50%", border: hasOfficialEcoData ? `2.5px solid ${getGradeBorder(ecoGrade)}` : `2px dashed ${CARD_BORDER}`, background: hasOfficialEcoData ? getGradeBackground(ecoGrade) : CARD_BG, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3 }}>
-                <span className="type-grade" style={{ fontSize: 24, color: hasOfficialEcoData ? getColor(ecoGrade) : MUTED, fontFamily: "var(--font-dm-sans), sans-serif" }}>
-                  {ecoGrade ?? "–"}
-                </span>
-                {ecoGrade ? (
-                  <span style={{ fontSize: 9, fontWeight: 700, lineHeight: 1, color: getColor(ecoGrade), textTransform: "uppercase", letterSpacing: 0, whiteSpace: "nowrap" }}>
-                    {getGradeLabel(ecoGrade, lang)}
-                  </span>
-                ) : null}
-              </div>
-              <span className="type-section-label" style={{ color: MUTED }}>
-                {t("product_eco", lang)}
+            <div className="flex items-end justify-between" style={{ marginTop: 8 }}>
+              <span style={{ fontFamily: "var(--font-familjen), sans-serif", fontSize: 32, fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 0.85, color: "var(--sk-text-primary)" }}>
+                {healthGrade ?? "–"}
               </span>
-              <span className="type-caption text-center" style={{ color: hasOfficialEcoData ? getColor(ecoGrade) : MUTED, textTransform: "none", letterSpacing: 0 }}>
-                {getGradeSummary(ecoGrade, "eco", lang)}
-              </span>
+              <BarcodeMeter grade={healthGrade} />
             </div>
+            <p className="type-caption" style={{ color: MUTED, textTransform: "none", letterSpacing: 0, marginTop: 8 }}>
+              {getGradeSummary(healthGrade, "health", lang)}
+            </p>
+          </div>
+
+          <div style={{ background: CARD_BG, border: `0.5px solid ${CARD_BORDER}`, borderRadius: "var(--sk-radius-md)", padding: "14px 16px", opacity: hasOfficialEcoData ? 1 : 0.6 }}>
+            <span className="type-section-label" style={{ color: MUTED }}>{t("product_eco", lang)}</span>
+            <div className="flex items-end justify-between" style={{ marginTop: 8 }}>
+              <span style={{ fontFamily: "var(--font-familjen), sans-serif", fontSize: 32, fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 0.85, color: hasOfficialEcoData ? "var(--sk-text-primary)" : MUTED }}>
+                {ecoGrade ?? "–"}
+              </span>
+              <BarcodeMeter grade={hasOfficialEcoData ? ecoGrade : null} />
+            </div>
+            <p className="type-caption" style={{ color: MUTED, textTransform: "none", letterSpacing: 0, marginTop: 8 }}>
+              {getGradeSummary(ecoGrade, "eco", lang)}
+            </p>
           </div>
         </div>
 
         {/* Grade help popover */}
         {gradeHelpOpen ? (
           <div
-            style={{ position: "absolute", right: 0, top: 54, zIndex: 30, width: "min(18rem, calc(100vw - 3rem))", background: CARD_BG, borderRadius: 16, border: `0.5px solid ${CARD_BORDER}`, padding: 16, boxShadow: "0 18px 60px rgba(50,42,31,0.15)", textAlign: "left" }}
+            style={{ position: "absolute", right: 0, top: 96, zIndex: 30, width: "min(18rem, calc(100vw - 3rem))", background: CARD_BG, borderRadius: 16, border: `0.5px solid ${CARD_BORDER}`, padding: 16, boxShadow: "0 18px 60px rgba(50,42,31,0.15)", textAlign: "left" }}
           >
             <p className="type-section-label" style={{ color: "var(--sk-text-green)", marginBottom: 12 }}>
               {t('product_how_grades_work', lang)}
@@ -593,30 +546,6 @@ export function ProductPageLayout({
             </div>
           </div>
         ) : null}
-      </section>
-
-      {/* ── MERK'S VERDICT — one voice, right under the grades ───────────── */}
-      <section className="mx-4 mt-3">
-        <div
-          className="flex items-center gap-3 rounded-2xl px-4 py-3.5"
-          style={{ background: "var(--sk-surface-insight)", border: `0.5px solid ${CARD_BORDER}` }}
-        >
-          <div style={{ flexShrink: 0 }}>
-            <Merk expression={merkVerdict.expression} size={52} aria-label="Merk" />
-          </div>
-          <p
-            style={{
-              flex: 1,
-              minWidth: 0,
-              fontSize: 14,
-              lineHeight: 1.45,
-              fontStyle: "italic",
-              color: "var(--sk-text-secondary)",
-            }}
-          >
-            {merkVerdict.text}
-          </p>
-        </div>
       </section>
 
       {/* ── SCROLLABLE CONTENT ──────────────────────────────────────────── */}
