@@ -18,6 +18,7 @@ import {
   X
 } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
+import { Merk } from "@/components/Merk";
 import { ProductSearchThumbnail } from "@/components/ProductSearchThumbnail";
 import { SkarenLoader } from "@/components/SkarenLoader";
 import { Spinner } from "@/components/Spinner";
@@ -831,6 +832,7 @@ export default function ShoppingListPage() {
 
   const toBuy = filteredItems.filter((item) => !item.checked);
   const done = filteredItems.filter((item) => item.checked);
+  const notScannedCount = toBuy.filter((item) => !item.healthGrade).length;
 
   async function saveItem(item: NewShoppingListItem) {
     const savedItem = await addItem(item);
@@ -923,10 +925,11 @@ export default function ShoppingListPage() {
         <div className="mx-auto w-full max-w-xl px-4 pb-8 pt-safe">
           <header className="flex items-start justify-between gap-4">
             <div>
-              <p className="type-section-label text-[var(--sk-text-faint)]">{t('list_section_label', lang)}</p>
-              <h1 className="type-heading-1 mt-1">{t('list_title', lang)}</h1>
-              <p className="mt-1 text-[13px] text-[var(--sk-text-muted)]">
-                {items.length} {items.length === 1 ? t('list_item', lang) : t('list_items', lang)}
+              <h1 style={{ fontFamily: "var(--sk-font-brand)", fontSize: 32, fontWeight: 600, letterSpacing: "-0.03em", color: "var(--sk-text-primary)", lineHeight: 1.02 }}>
+                {t('list_title', lang)}
+              </h1>
+              <p className="mt-1 text-[13px]" style={{ color: "var(--sk-text-muted)" }}>
+                {toBuy.length} {lang === 'no' ? 'å kjøpe' : 'to buy'} · {done.length} {lang === 'no' ? 'ferdig' : 'done'}
               </p>
             </div>
             {items.length > 0 ? (
@@ -951,6 +954,31 @@ export default function ShoppingListPage() {
             </div>
             ) : null}
           </header>
+
+          {/* Merk's basket note — a Merk-owned dark card summarising the list. */}
+          {items.length > 0 ? (
+            <div
+              className="relative mt-4 flex items-center gap-3 overflow-hidden"
+              style={{ background: "var(--sk-text-primary)", borderRadius: 18, padding: "13px 15px" }}
+            >
+              <span
+                aria-hidden
+                style={{ position: "absolute", top: 0, right: 0, width: 26, height: 26, background: "var(--sk-brand-mist)", clipPath: "polygon(100% 0, 100% 100%, 0 0)", opacity: 0.14 }}
+              />
+              <div style={{ flexShrink: 0 }}>
+                <Merk expression={notScannedCount > 0 ? "curious" : "confident"} size={40} limbs={false} aria-hidden />
+              </div>
+              <p className="text-[13px] leading-snug" style={{ color: "var(--sk-text-on-dark)" }}>
+                {notScannedCount > 0
+                  ? (lang === "no"
+                      ? `${notScannedCount} ${notScannedCount === 1 ? "vare" : "varer"} jeg ikke har sett ennå. Skann dem i butikken, så fyller jeg dem inn.`
+                      : `${notScannedCount} ${notScannedCount === 1 ? "item" : "items"} I have not seen yet. Scan them in the store and I will fill them in.`)
+                  : (lang === "no"
+                      ? "Alt på lista er skannet. Godt jobbet."
+                      : "Everything on the list is scanned. Nice work.")}
+              </p>
+            </div>
+          ) : null}
 
           {items.length > 0 && searchOpen ? (
             <div className="relative mt-5">

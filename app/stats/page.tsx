@@ -13,6 +13,7 @@ import {
   ShieldAlert
 } from "lucide-react";
 import { WatchlistRanking, AdditiveDonuts } from "@/components/WatchlistRanking";
+import { bandColour } from "@/components/ScoreCard";
 import { BottomNav } from "@/components/BottomNav";
 import { SkarenLoader } from "@/components/SkarenLoader";
 import {
@@ -67,6 +68,8 @@ const copy = {
     balanced: "Balanced period",
     improve: "Room to improve",
     average: "average",
+    vsLastWeek: "vs last week",
+    vsLastMonth: "vs last month",
     strongChoice: "strong",
     weakerChoice: "weaker",
     choices: "choices",
@@ -113,6 +116,8 @@ const copy = {
     balanced: "Balansert periode",
     improve: "Rom for forbedring",
     average: "snitt",
+    vsLastWeek: "vs forrige uke",
+    vsLastMonth: "vs forrige måned",
     strongChoice: "sterke",
     weakerChoice: "svakere",
     choices: "valg",
@@ -442,6 +447,38 @@ export default function StatsPage() {
             </Card>
           ) : (
             <div className="mt-6 space-y-3">
+              {/* AVERAGE SCORE — the number, band-coloured, with a delta vs last period. */}
+              <Card className="p-4">
+                <div className="flex items-center justify-between">
+                  <p className="sk-label">{text.averageGrade}</p>
+                  {stats.avgScore != null && stats.previousAvgScore != null && stats.avgScore !== stats.previousAvgScore ? (
+                    <span
+                      className="inline-flex items-center gap-1 text-[12px]"
+                      style={{ color: stats.avgScore > stats.previousAvgScore ? "var(--sk-score-good)" : "var(--sk-score-weak)", fontVariantNumeric: "tabular-nums" }}
+                    >
+                      {stats.avgScore > stats.previousAvgScore ? "▲" : "▼"} {Math.abs(stats.avgScore - stats.previousAvgScore)} {range === "week" ? text.vsLastWeek : text.vsLastMonth}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="mt-2.5 flex items-baseline gap-3">
+                  <span
+                    style={{
+                      fontFamily: "var(--sk-font-ui)",
+                      fontVariantNumeric: "tabular-nums",
+                      fontSize: 40,
+                      fontWeight: 400,
+                      lineHeight: 1,
+                      color: bandColour(stats.avgScore),
+                    }}
+                  >
+                    {stats.avgScore ?? "–"}
+                  </span>
+                  <span className="text-[13px]" style={{ color: "var(--sk-text-muted)" }}>
+                    {text.average} {stats.avgHealthGrade}
+                  </span>
+                </div>
+              </Card>
+
               <section className="rounded-[var(--sk-radius-lg)] border-[0.5px] border-[var(--sk-border-green)] bg-[var(--sk-surface-insight)] px-4 py-4">
                 <p className="text-[15px] font-bold text-[var(--sk-brand-forest)]">{summaryTone}</p>
                 <p className="mt-1 text-[12px] leading-relaxed text-[var(--sk-text-secondary)]">

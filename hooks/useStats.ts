@@ -21,6 +21,8 @@ export type StatsAdditiveDetail = Pick<
 
 export type StatsData = {
   totalScans: number;
+  avgScore: number | null;
+  previousAvgScore: number | null;
   avgHealthGrade: string;
   scanTrendVsLast: number | null;
   previousAvgHealthGrade: string | null;
@@ -43,6 +45,8 @@ export type StatsData = {
 
 const emptyStats: StatsData = {
   totalScans: 0,
+  avgScore: null,
+  previousAvgScore: null,
   avgHealthGrade: "–",
   scanTrendVsLast: null,
   previousAvgHealthGrade: null,
@@ -392,6 +396,8 @@ export function useStats(range: StatsRange, language: Language = "en") {
 
     return {
       totalScans: current.length,
+      avgScore: currentAverageScore !== null ? Math.round(currentAverageScore) : null,
+      previousAvgScore: previousAverageScore !== null ? Math.round(previousAverageScore) : null,
       avgHealthGrade: currentAverageScore !== null
         ? scoreToDisplayGrade(currentAverageScore)
         : "–",
