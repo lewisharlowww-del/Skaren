@@ -402,6 +402,28 @@ export function lookupENumber(code: string): ENumber | null {
   if (match) {
     const mixedKey = match[1].toUpperCase() + match[2].toLowerCase()
     if (ENUMBERS[mixedKey]) return ENUMBERS[mixedKey]
+
+    // Group fallback: a bare parent code (e.g. "E472", "E470", "E160") is often
+    // printed without its letter, but the database only holds the lettered
+    // variants (E472a, E472b…). Fall back to the first variant of the group so
+    // the additive is recognised (they share function and safety), and present
+    // it under the parent code the label actually shows.
+    if (!match[2]) {
+      const base = match[1].toUpperCase() // e.g. "E472"
+      const variantRe = new RegExp(`^${base}[a-z]$`)
+      const variantKey = Object.keys(ENUMBERS)
+        .filter((key) => variantRe.test(key))
+        .sort()[0]
+      if (variantKey) {
+        const variant = ENUMBERS[variantKey]
+        return {
+          ...variant,
+          code: base,
+          // Name the group, not one specific ester, since the label was generic.
+          name: variant.category,
+        }
+      }
+    }
   }
   return null
 }
