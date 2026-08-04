@@ -90,6 +90,16 @@ function getGamificationBadge(scanCount: number, lang: Language): string {
   return no ? "Ny skanner" : "New scanner";
 }
 
+// Numeric level for the account stat card, e.g. "Lv 4".
+function getLevel(scanCount: number): number {
+  if (scanCount >= 100) return 5;
+  if (scanCount >= 25) return 4;
+  if (scanCount >= 10) return 3;
+  if (scanCount >= 5) return 2;
+  if (scanCount >= 1) return 1;
+  return 0;
+}
+
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 // Initials for the avatar circle, e.g. "Ingrid Nilsen" -> "IN".
@@ -125,37 +135,46 @@ function StatCard({ value, label, accent }: { value: string; label: string; acce
   );
 }
 
-// Membership card — a Merk-owned card with the folded corner. Pro shows the
-// plan + ACTIVE chip; free shows an upgrade prompt. Never the old dark slab.
+// Membership card — a dark ink Merk-owned card with the folded corner. Pro
+// shows the plan + ACTIVE chip; free shows an upgrade prompt.
 function MembershipCard({ isPremium, checkingPremium, lang }: { isPremium: boolean; checkingPremium: boolean; lang: Language }) {
   const inner = (
-    <div className="sk-folded flex items-center gap-3.5" style={{ padding: "14px 16px" }}>
+    <div
+      className="relative flex items-center gap-3.5 overflow-hidden"
+      style={{ background: "var(--sk-text-primary)", borderRadius: 18, padding: "16px 18px" }}
+    >
+      {/* Folded top-right corner — his silhouette signature. */}
+      <span
+        aria-hidden
+        style={{ position: "absolute", top: 0, right: 0, width: 30, height: 30, background: "var(--sk-brand-mist)", clipPath: "polygon(100% 0, 100% 100%, 0 0)", opacity: 0.16 }}
+      />
+      {/* Merk as the plan mark. */}
       <div
         className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
-        style={{ background: "var(--sk-brand-mist)", border: "0.5px solid var(--sk-border-default)" }}
+        style={{ background: "rgba(246,243,236,0.08)" }}
       >
         <Merk expression={isPremium ? "confident" : "happy"} size={30} limbs={false} aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p style={{ fontFamily: "var(--sk-font-brand)", fontSize: 16, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--sk-text-primary)" }}>
+          <p style={{ fontFamily: "var(--sk-font-brand)", fontSize: 17, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--sk-text-on-dark)" }}>
             {isPremium ? "Skaren Pro" : t('account_free_member', lang)}
           </p>
           {checkingPremium ? (
-            <span className="h-4 w-14 animate-pulse rounded-full" style={{ background: "var(--sk-brand-mist-dark)" }} />
+            <span className="h-4 w-14 animate-pulse rounded-full" style={{ background: "rgba(246,243,236,0.12)" }} />
           ) : isPremium ? (
             <span
-              style={{ fontFamily: "var(--sk-font-data)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", background: "var(--sk-grade-a-bg)", color: "var(--sk-grade-a-text)", borderRadius: 999, padding: "2px 7px" }}
+              style={{ fontFamily: "var(--sk-font-data)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", background: "var(--sk-brand-forest)", color: "var(--sk-text-on-dark)", borderRadius: 999, padding: "3px 8px" }}
             >
               {t('account_pro_member', lang)}
             </span>
           ) : null}
         </div>
-        <p className="mt-0.5 truncate text-[12px]" style={{ color: "var(--sk-text-muted)" }}>
+        <p className="mt-0.5 truncate text-[12.5px]" style={{ color: "var(--sk-text-on-dark-muted)" }}>
           {isPremium ? t('account_pro_sub', lang) : t('account_upgrade_sub', lang)}
         </p>
       </div>
-      {!isPremium ? <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-faint)" }} /> : null}
+      <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-on-dark-muted)" }} />
     </div>
   );
 
@@ -169,10 +188,53 @@ function MembershipCard({ isPremium, checkingPremium, lang }: { isPremium: boole
 
 function SectionLabel({ label }: { label: string }) {
   return (
-    <p className="text-[11px] font-bold uppercase mb-2 px-1" style={{ color: "var(--sk-text-muted)", letterSpacing: "0.07em", fontFamily: "var(--font-dm-sans), sans-serif" }}>
+    <p style={{ fontFamily: "var(--sk-font-data)", fontSize: 10, fontWeight: 400, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--sk-text-muted)", marginBottom: 8, paddingLeft: 4 }}>
       {label}
     </p>
   );
+}
+
+// A clean settings row — no coloured icon. Label left, optional value or
+// subtitle, chevron right. Matches the redesign menu exactly.
+function Row({
+  label,
+  value,
+  subtitle,
+  danger,
+  chevronRotated,
+  href,
+  onClick,
+}: {
+  label: string;
+  value?: string;
+  subtitle?: string;
+  danger?: boolean;
+  chevronRotated?: boolean;
+  href?: string;
+  onClick?: () => void;
+}) {
+  const inner = (
+    <>
+      <div className="min-w-0 flex-1">
+        <p className="text-[15px] font-semibold" style={{ color: danger ? "var(--sk-status-warning)" : "var(--sk-text-primary)" }}>
+          {label}
+        </p>
+        {subtitle ? (
+          <p className="mt-0.5 truncate text-[12px]" style={{ color: "var(--sk-text-muted)" }}>{subtitle}</p>
+        ) : null}
+      </div>
+      {value ? (
+        <span className="shrink-0 text-[13px]" style={{ color: "var(--sk-text-muted)" }}>{value}</span>
+      ) : null}
+      <ChevronRight
+        className="h-4 w-4 shrink-0 transition-transform"
+        style={{ color: "var(--sk-text-faint)", transform: chevronRotated ? "rotate(90deg)" : "rotate(0deg)" }}
+      />
+    </>
+  );
+  const cls = "flex w-full items-center gap-3 px-5 py-4 text-left";
+  if (href) return <Link href={href} className={cls}>{inner}</Link>;
+  return <button type="button" onClick={onClick} className={cls}>{inner}</button>;
 }
 
 function Divider() {
@@ -485,14 +547,14 @@ export default function AccountPage() {
           <div className="flex items-center gap-3.5">
             <div
               className="grid h-14 w-14 shrink-0 place-items-center rounded-full"
-              style={{ background: "var(--sk-brand-forest)", color: "var(--sk-text-on-dark)", fontFamily: "var(--sk-font-brand)", fontSize: 18, fontWeight: 600 }}
+              style={{ background: "var(--sk-text-primary)", color: "var(--sk-text-on-dark)", fontFamily: "var(--sk-font-ui)", fontSize: 18, fontWeight: 700, letterSpacing: "0.02em" }}
             >
               {getInitials(displayName)}
             </div>
             <div className="min-w-0 flex-1">
               <p
                 className="truncate"
-                style={{ fontFamily: "var(--sk-font-brand)", fontSize: 20, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--sk-text-primary)" }}
+                style={{ fontFamily: "var(--sk-font-ui)", fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--sk-text-primary)" }}
               >
                 {displayName}
               </p>
@@ -511,269 +573,178 @@ export default function AccountPage() {
           <div className="mt-3 grid grid-cols-3 gap-2.5">
             <StatCard value={String(streakDays)} label={t('account_streak_label', lang)} />
             <StatCard value={String(scanCount)} label={lang === 'no' ? 'skanninger' : 'scans'} />
-            <StatCard value={getGamificationBadge(scanCount, lang)} label={t('account_level_label', lang)} accent />
+            <StatCard value={`Lv ${getLevel(scanCount)}`} label={getGamificationBadge(scanCount, lang).toLowerCase()} accent />
           </div>
+
+          {/* ── Badges — its own card with overlapping avatars ── */}
+          {(() => {
+            const badges = computeBadges({ scans: scanSummaries, streakDays, joinedAt: user?.created_at, lang });
+            const earned = earnedCount(badges);
+            return (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setBadgesOpen((o) => !o)}
+                  className="mt-3 flex w-full items-center gap-3.5 rounded-2xl px-4 py-3.5 text-left"
+                  style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}
+                >
+                  {/* Overlapping badge avatars. */}
+                  <div className="flex shrink-0 items-center">
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        className="grid h-8 w-8 place-items-center rounded-full"
+                        style={{
+                          background: [ "var(--sk-brand-forest)", "#8A6A46", "var(--sk-text-primary)" ][i],
+                          color: "var(--sk-text-on-dark)",
+                          border: "2px solid var(--sk-surface-white)",
+                          marginLeft: i === 0 ? 0 : -10,
+                          fontSize: 13,
+                        }}
+                      >
+                        {[ "\u2605", "\u25C6", "\u2759\u2759" ][i]}
+                      </span>
+                    ))}
+                    {badges.length > 3 ? (
+                      <span
+                        className="grid h-8 w-8 place-items-center rounded-full text-[11px] font-semibold"
+                        style={{ background: "var(--sk-brand-mist-dark)", color: "var(--sk-text-secondary)", border: "2px solid var(--sk-surface-white)", marginLeft: -10 }}
+                      >
+                        +{badges.length - 3}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px] font-semibold" style={{ color: "var(--sk-text-primary)" }}>{t("account_badges", lang)}</p>
+                    <p className="mt-0.5 text-[12px]" style={{ color: "var(--sk-text-muted)" }}>
+                      {earned} {t("account_badges_of", lang)} {badges.length} {t("account_badges_earned_suffix", lang)}
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: badgesOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
+                </button>
+                {badgesOpen ? (
+                  <div className="mt-2 rounded-2xl px-4 pb-5 pt-4" style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}>
+                    <BadgesSection badges={badges} lang={lang} />
+                  </div>
+                ) : null}
+              </>
+            );
+          })()}
 
           {/* ── Preferences ── */}
-          <SectionLabel label={t('account_preferences', lang)} />
-          <div className="mb-4 overflow-hidden rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}>
-            {/* Language inline picker */}
-            <div>
-              <button
-                type="button"
-                onClick={() => setLangOpen((o) => !o)}
-                className="flex w-full items-center gap-3.5 px-5 py-4 text-left active:bg-[#F6F3EC] transition-colors"
-              >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-b-bg)" }}>
-                  <Globe className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{t('account_language', lang)}</p>
-                  <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{lang === 'no' ? t('language_norwegian', lang) : t('language_english', lang)}</p>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: langOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
-              </button>
-              {langOpen && (
-                <div className="px-5 pb-4 flex gap-3" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
-                  {([
-                    { value: 'no' as const, flag: '🇳🇴', label: t('language_norwegian', lang) },
-                    { value: 'en' as const, flag: '🇬🇧', label: t('language_english', lang) },
-                  ]).map((option) => {
-                    const active = lang === option.value;
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => { setLang(option.value); setLangOpen(false); }}
-                        className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold transition-all"
-                        style={{
-                          background: active ? "var(--sk-brand-forest)" : "var(--sk-grade-a-bg)",
-                          color: active ? "#ffffff" : "var(--sk-text-primary)",
-                          border: active ? "none" : "1px solid var(--sk-border-default)",
-                          marginTop: 12,
-                        }}
-                      >
-                        <span className="text-[15px] leading-none">{option.flag}</span>
-                        {option.label}
-                        {active && <Check size={13} />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            <Divider />
-            {/* Appearance accordion */}
-            <div>
-              <button
-                type="button"
-                onClick={() => setAppearanceOpen((o) => !o)}
-                className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors"
-              >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-d-bg)" }}>
-                  <Moon className="h-4 w-4 text-orange-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{t('account_appearance', lang)}</p>
-                  <p className="mt-0.5 text-[12px] truncate" style={{ color: "var(--sk-text-muted)" }}>
-                    {themePref === "light" ? t('account_theme_light', lang) : t('account_theme_dark', lang)}
-                  </p>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: appearanceOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
-              </button>
-              {appearanceOpen && (
-                <div className="px-5 pb-4 flex gap-3" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
-                  {([
-                    { value: "light" as const, label: t('account_theme_light', lang), icon: <Sun size={15} /> },
-                    { value: "dark" as const, label: t('account_theme_dark', lang), icon: <Moon size={15} /> },
-                  ]).map((opt) => {
-                    const active = themePref === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setThemePref(opt.value)}
-                        className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold transition-all"
-                        style={{
-                          background: active ? "var(--sk-brand-forest)" : "var(--sk-grade-a-bg)",
-                          color: active ? "#ffffff" : "var(--sk-text-primary)",
-                          border: active ? "none" : "1px solid var(--sk-border-default)",
-                          marginTop: 12,
-                        }}
-                      >
-                        {opt.icon}
-                        {opt.label}
-                        {active && <Check size={13} />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            <Divider />
-            {/* Badges accordion */}
-            {(() => {
-              const badges = computeBadges({ scans: scanSummaries, streakDays, joinedAt: user?.created_at, lang });
-              const earned = earnedCount(badges);
-              return (
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => setBadgesOpen((o) => !o)}
-                    className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors"
-                  >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
-                      <span style={{ fontSize: 16, lineHeight: 1 }}>🏅</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{t("account_badges", lang)}</p>
-                      <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{earned} {t("account_badges_of", lang)} {badges.length} {t("account_badges_earned_suffix", lang)}</p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: badgesOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
-                  </button>
-                  {badgesOpen && (
-                    <div className="px-4 pb-5" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
-                      <div className="pt-4">
-                        <BadgesSection badges={badges} lang={lang} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
+          <div className="mt-6">
+            <SectionLabel label={t('account_preferences', lang)} />
           </div>
-
-          {/* ── Data & Privacy ── */}
-          <SectionLabel label={t('account_data_privacy', lang)} />
-          <div className="mb-4 overflow-hidden rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}>
-
-            {/* Export */}
-            <div>
-              <button type="button" onClick={() => setExportOpen((o) => !o)} className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
-                  <Download className="h-4 w-4 text-[#33684A] dark:text-[#6FA97F]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{t('account_export', lang)}</p>
-                  <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{t('account_export_sub', lang)}</p>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: exportOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
-              </button>
-              {exportOpen && (
-                <div className="px-5 pb-4 space-y-2" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
-                  <p className="text-[13px] pt-3 leading-relaxed" style={{ color: "var(--sk-text-secondary)" }}>
-                    Download a CSV file containing your full scan history — product names, barcodes, grades, and dates.
-                  </p>
-                  {exportError && (
-                    <p className="text-[12px] mt-2" style={{ color: "var(--sk-status-danger)" }}>{exportError}</p>
-                  )}
-                  <button
-                    disabled={exportLoading}
-                    className="mt-1 w-full rounded-xl py-2.5 text-[13px] font-semibold text-white transition-opacity active:opacity-75 disabled:opacity-50"
-                    style={{ background: "var(--sk-brand-forest)" }}
-                    onClick={() => void exportData()}
-                  >
-                    {exportLoading ? t('account_export_preparing', lang) : t('account_export_csv', lang)}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <Divider />
-
-            {/* Privacy Policy */}
-            <Link href="/privacy" className="flex w-full items-center gap-3.5 px-5 py-4 transition-colors">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
-                <Lock className="h-4 w-4" style={{ color: "var(--sk-text-green)" }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{lang === 'no' ? 'Personvernerklæring' : 'Privacy Policy'}</p>
-                <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{lang === 'no' ? 'Hvordan vi samler inn og bruker dataene dine' : 'How we collect and use your data'}</p>
-              </div>
-              <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-faint)" }} />
-            </Link>
-
-            <Divider />
-
-            {/* Terms of Use */}
-            <Link href="/terms" className="flex w-full items-center gap-3.5 px-5 py-4 transition-colors">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
-                <FileText className="h-4 w-4" style={{ color: "var(--sk-text-green)" }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{lang === 'no' ? 'Brukervilkår' : 'Terms of Use'}</p>
-                <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{lang === 'no' ? 'Regler for bruk av Skaren' : 'Rules for using Skaren'}</p>
-              </div>
-              <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-faint)" }} />
-            </Link>
-
-            <Divider />
-
-            {/* Nutrition disclaimer */}
-            <Link href="/disclaimer" className="flex w-full items-center gap-3.5 px-5 py-4 transition-colors">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-d-bg)" }}>
-                <TriangleAlert className="h-4 w-4 text-orange-500" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{lang === 'no' ? 'Ansvarsfraskrivelse' : 'Nutrition Disclaimer'}</p>
-                <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{lang === 'no' ? 'Ikke medisinsk råd — les før bruk' : 'Not medical advice — read before use'}</p>
-              </div>
-              <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-faint)" }} />
-            </Link>
-
-            <Divider />
-
-            {/* Contact & support */}
-            <div>
-              <button type="button" onClick={() => setContactOpen((o) => !o)} className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--sk-grade-a-bg)" }}>
-                  <Mail className="h-4 w-4" style={{ color: "var(--sk-text-green)" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold" style={{ color: "var(--sk-text-primary)" }}>{lang === 'no' ? 'Kontakt og støtte' : 'Contact & support'}</p>
-                  <p className="mt-0.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>hello@skaren.app</p>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 transition-transform" style={{ color: "var(--sk-text-faint)", transform: contactOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
-              </button>
-              {contactOpen && (
-                <div className="px-5 pb-4 space-y-2" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
-                  <p className="text-[13px] pt-3" style={{ color: "var(--sk-text-secondary)" }}>Questions, bug reports, or data requests — we reply within 48 hours.</p>
-                  <a
-                    href="mailto:hello@skaren.app"
-                    className="mt-1 flex items-center justify-center gap-2 w-full rounded-xl py-2.5 text-[13px] font-semibold text-white transition-opacity active:opacity-75"
-                    style={{ background: "var(--sk-brand-forest)" }}
-                  >
-                    <Mail className="h-4 w-4" />
-                    hello@skaren.app
-                  </a>
-                </div>
-              )}
-            </div>
-
-          </div>
-
-          {/* ── Account actions ── */}
-          <SectionLabel label={t('account_title', lang)} />
           <div className="overflow-hidden rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}>
-            <SettingsRow
-              icon={<LogOut className="h-4 w-4 text-[#948B76] dark:text-[#8a8070]" />}
-              iconBg="#F3EEE2"
-              iconBgDark="var(--sk-dark-surface)"
-              label={t('account_sign_out', lang)}
-              subtitle={user?.email ?? ""}
-              onClick={() => void signOut()}
+            <Row
+              label={t('account_language', lang)}
+              value={lang === 'no' ? t('language_norwegian', lang) : t('language_english', lang)}
+              chevronRotated={langOpen}
+              onClick={() => setLangOpen((o) => !o)}
+            />
+            {langOpen ? (
+              <div className="px-5 pb-4 flex gap-3" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
+                {([
+                  { value: 'no' as const, flag: '\uD83C\uDDF3\uD83C\uDDF4', label: t('language_norwegian', lang) },
+                  { value: 'en' as const, flag: '\uD83C\uDDEC\uD83C\uDDE7', label: t('language_english', lang) },
+                ]).map((option) => {
+                  const active = lang === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => { setLang(option.value); setLangOpen(false); }}
+                      className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold"
+                      style={{ background: active ? "var(--sk-brand-forest)" : "var(--sk-grade-a-bg)", color: active ? "#ffffff" : "var(--sk-text-primary)", border: active ? "none" : "1px solid var(--sk-border-default)", marginTop: 12 }}
+                    >
+                      <span className="text-[15px] leading-none">{option.flag}</span>
+                      {option.label}
+                      {active && <Check size={13} />}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+            <Divider />
+            <Row
+              label={t('account_appearance', lang)}
+              value={themePref === "light" ? t('account_theme_light', lang) : t('account_theme_dark', lang)}
+              chevronRotated={appearanceOpen}
+              onClick={() => setAppearanceOpen((o) => !o)}
+            />
+            {appearanceOpen ? (
+              <div className="px-5 pb-4 flex gap-3" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
+                {([
+                  { value: "light" as const, label: t('account_theme_light', lang), icon: <Sun size={15} /> },
+                  { value: "dark" as const, label: t('account_theme_dark', lang), icon: <Moon size={15} /> },
+                ]).map((opt) => {
+                  const active = themePref === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setThemePref(opt.value)}
+                      className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold"
+                      style={{ background: active ? "var(--sk-brand-forest)" : "var(--sk-grade-a-bg)", color: active ? "#ffffff" : "var(--sk-text-primary)", border: active ? "none" : "1px solid var(--sk-border-default)", marginTop: 12 }}
+                    >
+                      {opt.icon}
+                      {opt.label}
+                      {active && <Check size={13} />}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+
+          {/* ── Data & privacy ── */}
+          <div className="mt-6">
+            <SectionLabel label={t('account_data_privacy', lang)} />
+          </div>
+          <div className="overflow-hidden rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}>
+            <Row
+              label={t('account_export', lang)}
+              subtitle={t('account_export_sub', lang)}
+              chevronRotated={exportOpen}
+              onClick={() => setExportOpen((o) => !o)}
+            />
+            {exportOpen ? (
+              <div className="px-5 pb-4 space-y-2" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
+                {exportError ? <p className="text-[12px] pt-3" style={{ color: "var(--sk-status-danger)" }}>{exportError}</p> : null}
+                <button
+                  disabled={exportLoading}
+                  className="mt-3 w-full rounded-xl py-2.5 text-[13px] font-semibold text-white transition-opacity active:opacity-75 disabled:opacity-50"
+                  style={{ background: "var(--sk-brand-forest)" }}
+                  onClick={() => void exportData()}
+                >
+                  {exportLoading ? t('account_export_preparing', lang) : t('account_export_csv', lang)}
+                </button>
+              </div>
+            ) : null}
+            <Divider />
+            <Row
+              label={lang === 'no' ? 'Personvernerkl\u00e6ring' : 'Privacy policy'}
+              subtitle={lang === 'no' ? 'Hvordan vi h\u00e5ndterer dataene dine' : 'How we handle your data'}
+              href="/privacy"
             />
             <Divider />
-            <SettingsRow
-              icon={<Trash2 className="h-4 w-4" style={{ color: "var(--sk-status-warning)" }} />}
-              iconBg="var(--sk-grade-d-bg)"
-              iconBgDark="var(--sk-grade-d-bg)"
+            <Row
               label={t('account_delete', lang)}
               subtitle={t('account_delete_sub', lang)}
               danger
               onClick={() => setShowDeleteDialog(true)}
             />
           </div>
+
+          {/* ── Sign out — outlined full-width button ── */}
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            className="mt-6 w-full rounded-2xl py-4 text-[15px] font-semibold transition active:scale-[0.99]"
+            style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)", color: "var(--sk-text-primary)" }}
+          >
+            {t('account_sign_out', lang)}
+          </button>
 
         </div>
       </main>
