@@ -261,38 +261,42 @@ export default function ProductPage({ params }: ProductPageProps) {
               <div className="h-10 w-10" aria-hidden="true" />
             </div>
 
-            {/* Hero card — circular image + name/brand/status, cream bg, green left border */}
-            <div
-              className="relative mx-4 mt-2 overflow-hidden rounded-2xl"
-              style={{ background: "var(--sk-brand-mist-card)", border: "0.5px solid var(--sk-border-default)", borderLeftWidth: 4, borderLeftColor: "var(--sk-brand-leaf)" }}
-            >
-              <div className="flex items-center gap-3.5" style={{ padding: "18px 18px 18px 14px" }}>
-                <div className="sk2 sk2-d1 shrink-0 rounded-full" style={{ width: 80, height: 80, background: "#e6efe6" }} />
+            {/* Product header — context line, name title, small square image */}
+            <div className="mx-4 mt-2">
+              <div className="sk2 sk2-d1 h-2.5 w-32 rounded-full" />
+              <div className="mt-2.5 flex items-start gap-3.5">
                 <div className="min-w-0 flex-1">
-                  <div className="sk2 sk2-d1 h-3.5 w-4/5 rounded-full" />
-                  <div className="sk2 sk2-d2 mt-2 h-2.5 w-2/5 rounded-full" />
-                  <div className="sk2 sk2-d3 mt-2.5 h-5 w-1/2 rounded-full" />
+                  <div className="sk2 sk2-d1 h-6 w-4/5 rounded-lg" />
+                  <div className="sk2 sk2-d2 mt-2 h-3 w-2/5 rounded-full" />
                 </div>
+                <div className="sk2 sk2-d1 shrink-0 rounded-2xl" style={{ width: 56, height: 56 }} />
               </div>
             </div>
 
-            {/* Grades — section label + two side-by-side grade circles */}
+            {/* Score card — big number, why pill, two grade tiles */}
             <section className="mx-4 mt-3">
-              <div className="sk2 sk2-d1 mb-2 ml-0.5 h-2.5 w-16 rounded-full" />
-              <div className="overflow-hidden rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "0.5px solid var(--sk-border-default)" }}>
-                <div className="grid grid-cols-2">
-                  <div className="flex flex-col items-center gap-2 px-4 py-4">
-                    <div className="sk2 sk2-d1 rounded-full" style={{ width: 72, height: 72 }} />
-                    <div className="sk2 sk2-d1 h-2.5 w-12 rounded-full" />
-                    <div className="sk2 sk2-d1 h-2 w-16 rounded-full" />
+              <div className="overflow-hidden rounded-[22px] p-5" style={{ background: "var(--sk-surface-white)", border: "0.5px solid var(--sk-border-default)" }}>
+                <div className="flex items-start gap-4">
+                  <div>
+                    <div className="sk2 sk2-d1 h-9 w-14 rounded-lg" />
+                    <div className="sk2 sk2-d2 mt-2 h-2 w-10 rounded-full" />
+                    <div className="sk2 sk2-d3 mt-2.5 h-8 w-16 rounded-full" />
                   </div>
-                  <div className="flex flex-col items-center gap-2 px-4 py-4" style={{ borderLeft: "0.5px solid var(--sk-border-default)" }}>
-                    <div className="sk2 sk2-d2 rounded-full" style={{ width: 72, height: 72 }} />
-                    <div className="sk2 sk2-d2 h-2.5 w-12 rounded-full" />
-                    <div className="sk2 sk2-d2 h-2 w-16 rounded-full" />
+                  <div className="mt-2.5 flex-1">
+                    <div className="sk2 sk2-d2 h-2 w-full rounded-full" />
                   </div>
                 </div>
+                <div className="mt-4 flex gap-2.5">
+                  {[0, 1].map((tile) => (
+                    <div key={tile} className={`sk2 sk2-d${tile + 1} h-20 flex-1 rounded-2xl`} />
+                  ))}
+                </div>
               </div>
+            </section>
+
+            {/* Merk verdict — dark card placeholder */}
+            <section className="mx-4 mt-3">
+              <div className="rounded-[22px]" style={{ background: "var(--sk-brand-mist-card)", height: 84 }} />
             </section>
 
             {/* Two section cards below (processing / nutrition placeholders) */}
