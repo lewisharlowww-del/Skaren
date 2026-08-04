@@ -58,6 +58,15 @@ function formatQuantity(amount: string, unit: string) {
   return cleanAmount ? `${cleanAmount} ${unit}` : "";
 }
 
+/** Score band colours, matching History and the result screen exactly. */
+const LIST_GRADE_COLOUR: Record<string, string> = {
+  A: "var(--sk-score-good)",
+  B: "var(--sk-score-good)",
+  C: "var(--sk-score-mid)",
+  D: "var(--sk-score-mid)",
+  E: "var(--sk-score-weak)"
+};
+
 const gradeStyles: Record<
   NonNullable<ShoppingListItem["healthGrade"]>,
   string
@@ -99,6 +108,7 @@ function inferShoppingCategory(
 function ItemRow({
   item,
   expanded,
+  lang,
   onToggle,
   onExpand,
   onDelete,
@@ -106,6 +116,7 @@ function ItemRow({
 }: {
   item: ShoppingListItem;
   expanded: boolean;
+  lang: "no" | "en";
   onToggle: () => void;
   onExpand: () => void;
   onDelete: () => void;
@@ -163,14 +174,25 @@ function ItemRow({
             ) : null}
           </span>
 
+          {/* Scanned items carry their score; unscanned ones say so plainly.
+              That turns the list into a scan to-do rather than a wish list. */}
           {item.healthGrade ? (
             <span
-              className={`grid h-7 min-w-7 place-items-center rounded-full px-2 text-[11px] font-bold ${gradeStyles[item.healthGrade]}`}
-              aria-label={`Health grade ${item.healthGrade}`}
+              style={{
+                fontFamily: "var(--sk-font-ui)",
+                fontVariantNumeric: "tabular-nums",
+                fontSize: 17,
+                color: LIST_GRADE_COLOUR[item.healthGrade],
+              }}
+              aria-label={`Score ${item.healthGrade}`}
             >
               {item.healthGrade}
             </span>
-          ) : null}
+          ) : (
+            <span style={{ fontSize: 11.5, color: "var(--sk-text-faint)" }}>
+              {t('list_not_scanned', lang)}
+            </span>
+          )}
 
           <ChevronRight
             className={`h-4 w-4 shrink-0 text-[var(--sk-text-faint)] transition-transform ${
@@ -1011,6 +1033,7 @@ export default function ShoppingListPage() {
                 <div className="mt-3 space-y-2">
                   {toBuy.map((item) => (
                     <ItemRow
+                      lang={lang}
                       key={item.id}
                       item={item}
                       expanded={expandedId === item.id}
@@ -1044,6 +1067,7 @@ export default function ShoppingListPage() {
                   <div className="mt-2 space-y-2">
                     {done.map((item) => (
                       <ItemRow
+                      lang={lang}
                         key={item.id}
                         item={item}
                         expanded={expandedId === item.id}

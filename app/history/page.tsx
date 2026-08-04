@@ -94,24 +94,128 @@ function formatTime(dateStr?: string): string {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function GradeBadge({
-  grade,
-  label,
+/** One score ladder, used identically in History, List and the result screen. */
+function scoreColour(score: number | null): string {
+  if (score == null) return 'var(--sk-text-faint)'
+  if (score >= 60) return 'var(--sk-score-good)'
+  if (score >= 40) return 'var(--sk-score-mid)'
+  return 'var(--sk-score-weak)'
+}
+
+/**
+ * OverallCard — where the user's shopping sits overall, and the week in bars.
+ *
+ * The weakest day is clay and the best is green, so the chart says something
+ * rather than just showing seven numbers. Bar HEIGHT carries the same meaning
+ * as the colour does, which is what keeps it readable without hue.
+ */
+function OverallCard({
+  scans,
+  lang,
 }: {
-  grade: Grade
-  label: string
+  scans: ScanRecord[]
+  lang: 'no' | 'en'
 }) {
-  const s = GRADE_STYLES[grade]
-  return (
-    <span
-      className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-[13px] font-black leading-none"
-      style={{ background: s.bg, color: s.color }}
-      aria-label={`${label}: ${grade}`}
-      title={`${label}: ${grade}`}
-    >
-      {grade}
-    </span>
+  const scored = scans.filter((scan) => typeof scan.ecoscan_score === 'number')
+  if (scored.length === 0) return null
+
+  const average = Math.round(
+    scored.reduce((sum, scan) => sum + (scan.ecoscan_score ?? 0), 0) / scored.length
   )
+
+  // Last seven days, oldest first.
+  const today = new Date()
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(today)
+    day.setDate(today.getDate() - (6 - index))
+    const key = day.toDateString()
+    const dayScans = scored.filter(
+      (scan) => scan.created_at && new Date(scan.created_at).toDateString() === key
+    )
+    const value = dayScans.length
+      ? Math.round(dayScans.reduce((sum, scan) => sum + (scan.ecoscan_score ?? 0), 0) / dayScans.length)
+      : null
+    return { key, value, label: day.toLocaleDateString(lang === 'no' ? 'nb-NO' : 'en-GB', { weekday: 'narrow' }) }
+  })
+
+  const values = days.filter((day) => day.value != null).map((day) => day.value as number)
+  const best = values.length ? Math.max(...values) : null
+  const worst = values.length ? Math.min(...values) : null
+
+  return (
+    <div
+      className="mx-4 mb-4"
+      style={{
+        background: 'var(--sk-surface-card)',
+        border: '0.5px solid var(--sk-border-default)',
+        borderRadius: 22,
+        padding: 20,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+        <div>
+          <div
+            style={{
+              fontFamily: 'var(--sk-font-ui)',
+              fontVariantNumeric: 'tabular-nums',
+              fontSize: 40,
+              lineHeight: 1,
+              color: scoreColour(average),
+            }}
+          >
+            {average}
+          </div>
+          <div
+            style={{
+              fontFamily: 'var(--sk-font-data)',
+              fontSize: 10,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'var(--sk-text-muted)',
+              marginTop: 6,
+            }}
+          >
+            {lang === 'no' ? 'Snittscore' : 'Average score'}
+          </div>
+        </div>
+        <div style={{ fontSize: 11.5, color: 'var(--sk-text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+          {scored.length} {lang === 'no' ? 'skanninger totalt' : 'scans all time'}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 54, marginTop: 18 }}>
+        {days.map((day) => {
+          const height = day.value == null ? 4 : Math.max(8, (day.value / 100) * 54)
+          const colour =
+            day.value == null
+              ? 'var(--sk-brand-mist-dark)'
+              : day.value === best
+                ? 'var(--sk-score-good)'
+                : day.value === worst
+                  ? 'var(--sk-score-weak)'
+                  : 'var(--sk-brand-mist-dark)'
+          return (
+            <div key={day.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: '100%', height, borderRadius: 4, background: colour }} />
+              <span style={{ fontSize: 10, color: 'var(--sk-text-muted)' }}>{day.label}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/** "2 scans · avg 82" — the day at a glance, above the rows. */
+function daySummary(items: CollapsedScan[], lang: 'no' | 'en'): string {
+  const scored = items.filter((item) => typeof item.scan.ecoscan_score === 'number')
+  const count = items.length
+  const noun = lang === 'no' ? (count === 1 ? 'skanning' : 'skanninger') : count === 1 ? 'scan' : 'scans'
+  if (!scored.length) return `${count} ${noun}`
+  const average = Math.round(
+    scored.reduce((sum, item) => sum + (item.scan.ecoscan_score ?? 0), 0) / scored.length
+  )
+  return `${count} ${noun} · ${lang === 'no' ? 'snitt' : 'avg'} ${average}`
 }
 
 function ScanRow({
@@ -124,8 +228,6 @@ function ScanRow({
   lang: 'no' | 'en'
 }) {
   const { scan, count } = item
-  const healthGrade = getHealthGrade(scan)
-  const ecoGrade = getEcoGrade(scan)
   const time = formatTime(scan.created_at)
   const initial = (scan.product_name ?? '?')[0].toUpperCase()
   const image = scan.product_image ?? readLocalProduct(scan.barcode)?.displayImage ?? null
@@ -162,21 +264,21 @@ function ScanRow({
         </p>
       </div>
 
-      {/* Grades + time */}
-      <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-        <div className="flex gap-1.5">
-          <GradeBadge
-            grade={healthGrade}
-            label={t('product_health', lang)}
-          />
-          {ecoGrade ? (
-            <GradeBadge
-              grade={ecoGrade}
-              label={t('product_eco', lang)}
-            />
-          ) : null}
-        </div>
-        <span className="text-[12px] text-[var(--sk-text-secondary)]">
+      {/* The numeric score, right-aligned in its band colour. No grade letters
+          and no additive callouts — those belong on the result page. */}
+      <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+        <span
+          style={{
+            fontFamily: 'var(--sk-font-ui)',
+            fontVariantNumeric: 'tabular-nums',
+            fontSize: 19,
+            lineHeight: 1.1,
+            color: scoreColour(scan.ecoscan_score ?? null),
+          }}
+        >
+          {scan.ecoscan_score ?? '–'}
+        </span>
+        <span className="text-[12px]" style={{ color: 'var(--sk-text-muted)' }}>
           {count > 1 ? `${count} ${lang === 'no' ? 'visninger' : 'views'} · ` : ''}
           {time}
         </span>
@@ -379,6 +481,8 @@ export default function HistoryPage() {
           </div>
         </div>
 
+        <OverallCard scans={displayScans} lang={lang} />
+
         {/* Filter pills */}
         <div className="flex gap-2 px-5 pb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           {FILTER_KEYS.map(({ key, translationKey }) => (
@@ -431,13 +535,22 @@ export default function HistoryPage() {
             groupedScans.map((group) => (
               <section key={group.label} aria-labelledby={`history-${group.label.replace(/\W+/g, '-').toLowerCase()}`}>
                 <div className="sticky top-0 z-20 -mx-1 mb-2 bg-[var(--sk-brand-mist)]/95 px-2 py-2 backdrop-blur-md">
-                  <h2
-                    id={`history-${group.label.replace(/\W+/g, '-').toLowerCase()}`}
-                    className="text-[12px] font-bold uppercase"
-                    style={{ color: "var(--sk-text-muted)", letterSpacing: "0.12em", fontFamily: "var(--font-dm-sans), sans-serif" }}
-                  >
-                    {group.label}
-                  </h2>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <h2
+                      id={`history-${group.label.replace(/\W+/g, '-').toLowerCase()}`}
+                      className="text-[12px] uppercase"
+                      style={{ color: "var(--sk-text-muted)", letterSpacing: "0.12em", fontFamily: "var(--sk-font-data)" }}
+                    >
+                      {group.label}
+                    </h2>
+                    {/* Per-day summary: how many, and how they averaged. */}
+                    <span
+                      className="text-[11.5px]"
+                      style={{ color: 'var(--sk-text-muted)', fontVariantNumeric: 'tabular-nums' }}
+                    >
+                      {daySummary(group.scans, lang)}
+                    </span>
+                  </div>
                 </div>
                 <div className="bg-white rounded-2xl border border-[#E6E0D0] overflow-hidden">
                   {group.scans.map((item, i) => (

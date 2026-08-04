@@ -21,6 +21,7 @@ import {
   withProductDefaults
 } from "@/lib/productDetails";
 import type { ProductResult } from "@/lib/types";
+import { NoDataScreen } from "@/components/NoDataScreen";
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 
 type ProductPageProps = {
@@ -340,6 +341,13 @@ export default function ProductPage({ params }: ProductPageProps) {
               {lang === "no" ? "Analyserer produkt – sjekker næring, ingredienser og karakterer." : "Analyzing product – checking nutrition, ingredients, and grades."}
             </span>
           </div>
+        ) : error && error.type === "not-found" ? (
+          /* Not a failure state — a missing record, said plainly. */
+          <NoDataScreen
+            barcode={params.barcode}
+            lang={lang}
+            onRetry={() => void loadProduct({ skipCache: true })}
+          />
         ) : error ? (
           <div className="mx-auto mt-8 max-w-xl rounded-[2rem] border border-black/5 bg-white p-6 text-center shadow-soft sm:mt-10 sm:p-8">
             <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-rose-50 text-rose-600">

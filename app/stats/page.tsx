@@ -12,6 +12,7 @@ import {
   ScanBarcode,
   ShieldAlert
 } from "lucide-react";
+import { WatchlistRanking, AdditiveDonuts } from "@/components/WatchlistRanking";
 import { BottomNav } from "@/components/BottomNav";
 import { SkarenLoader } from "@/components/SkarenLoader";
 import {
@@ -547,6 +548,35 @@ export default function StatsPage() {
                     <p className="pt-1 text-right text-[12px] leading-relaxed text-[var(--sk-text-muted)]">
                       {text.across} {stats.totalScans} {text.selectedScans}
                     </p>
+                  </div>
+
+                  {/* Two donuts: how much of the shelf was clean */}
+                  <div className="mt-4">
+                    <AdditiveDonuts
+                      additiveFreePercent={
+                        stats.totalScans > 0
+                          ? Math.round(((stats.totalScans - stats.additivesTotal > 0 ? stats.totalScans - stats.additivesTotal : 0) / stats.totalScans) * 100)
+                          : 0
+                      }
+                      worthWatchingPercent={
+                        stats.additivesTotal > 0
+                          ? Math.round(((stats.additivesToAvoid + stats.additivesModerate) / stats.additivesTotal) * 100)
+                          : 0
+                      }
+                      lang={lang}
+                    />
+                  </div>
+
+                  {/* Which specific E-numbers this user keeps meeting */}
+                  <div className="mt-4">
+                    <WatchlistRanking
+                      items={[...stats.additiveDetails.avoid, ...stats.additiveDetails.moderate].map((additive) => ({
+                        code: additive.code,
+                        name: additive.name,
+                        count: additive.count
+                      }))}
+                      lang={lang}
+                    />
                   </div>
 
                   <div className="mt-4 space-y-2.5">
