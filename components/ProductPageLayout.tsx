@@ -144,26 +144,27 @@ function getGradeSummary(
 function getMerkVerdict(
   grade: GradeLetter | null,
   lang: "en" | "no"
-): { expression: MerkExpression; headline: string; text: string } {
+): { expression: MerkExpression; headline: string; eyebrow: string | null; text: string } {
   const no = lang === "no";
   if (!grade) {
     return {
       expression: "unsure",
       headline: no ? "Vet ikke helt." : "Not sure yet.",
+      eyebrow: null,
       text: no
         ? "Jeg mangler nok data til å gi en score her ennå."
         : "I don't have enough data to score this one yet.",
     };
   }
-  const map: Record<GradeLetter, { expression: MerkExpression; headEn: string; headNo: string; en: string; no: string }> = {
-    A: { expression: "confident", headEn: "Clean pick.", headNo: "Rent produkt.", en: "One of the better choices on its shelf.", no: "Et av de bedre valgene i hylla." },
-    B: { expression: "happy", headEn: "Solid choice.", headNo: "Godt valg.", en: "Little here worth worrying about.", no: "Lite her å bekymre seg for." },
-    C: { expression: "thinking", headEn: "Middle of the shelf.", headNo: "Midt på hylla.", en: "Fine now and then.", no: "Grei av og til." },
-    D: { expression: "curious", headEn: "Worth a look.", headNo: "Verdt en titt.", en: "Worth a closer look before it becomes a habit.", no: "Verdt en nærmere titt før det blir en vane." },
-    E: { expression: "concern", headEn: "Lots of salt here.", headNo: "Mye salt her.", en: "There are better options next to this one.", no: "Det finnes bedre alternativer ved siden av." },
+  const map: Record<GradeLetter, { expression: MerkExpression; headEn: string; headNo: string; ebEn: string; ebNo: string; en: string; no: string }> = {
+    A: { expression: "confident", headEn: "Clean pick.", headNo: "Rent produkt.", ebEn: "Among the best on this shelf.", ebNo: "Blant de beste i hylla.", en: "One of the better choices on its shelf.", no: "Et av de bedre valgene i hylla." },
+    B: { expression: "confident", headEn: "Solid choice.", headNo: "Godt valg.", ebEn: "Better than most on this shelf.", ebNo: "Bedre enn de fleste i hylla.", en: "A solid pick — little here worth worrying about.", no: "Et solid valg — lite her å bekymre seg for." },
+    C: { expression: "thinking", headEn: "Middle of the shelf.", headNo: "Midt på hylla.", ebEn: "About average for its shelf.", ebNo: "Omtrent midt på hylla.", en: "Fine now and then, nothing to flag.", no: "Grei av og til, ingenting å flagge." },
+    D: { expression: "curious", headEn: "Worth a look.", headNo: "Verdt en titt.", ebEn: "Below the shelf median.", ebNo: "Under medianen i hylla.", en: "Worth a closer look before it becomes a habit.", no: "Verdt en nærmere titt før det blir en vane." },
+    E: { expression: "concern", headEn: "Lots of salt here.", headNo: "Mye salt her.", ebEn: "Near the bottom of this shelf.", ebNo: "Nær bunnen av hylla.", en: "There are better options next to this one.", no: "Det finnes bedre alternativer ved siden av." },
   };
   const m = map[grade];
-  return { expression: m.expression, headline: no ? m.headNo : m.headEn, text: no ? m.no : m.en };
+  return { expression: m.expression, headline: no ? m.headNo : m.headEn, eyebrow: no ? m.ebNo : m.ebEn, text: no ? m.no : m.en };
 }
 
 function getShoppingCategory(product: ProductResult) {
@@ -270,6 +271,15 @@ export function ProductPageLayout({
   const ecoGrade = hasOfficialEcoData ? product.ecoGradeLetter ?? getEcoGrade(product) : null;
   const healthGrade = hasNutritionSignal(product) ? product.healthGrade : null;
   const merkVerdict = getMerkVerdict(healthGrade, lang);
+  // Context line — the product's shelf. Prefer the first Kassalapp category,
+  // fall back to the OFF category, then to a generic "shelf" word.
+  const shelfContext = (() => {
+    const raw = product.kassalappCategories?.[0]
+      ?? (product.categories ? product.categories.split(",")[0]?.trim() : "");
+    if (!raw) return null;
+    const label = raw.length > 28 ? raw.slice(0, 28) : raw;
+    return `${label} · ${lang === "no" ? "hylle" : "shelf"}`.toUpperCase();
+  })();
   const nutritionRows = getNutritionRows(product);
   const ingredients = visibleIngredients(product);
 
@@ -455,61 +465,60 @@ export function ProductPageLayout({
         <div className="h-10 w-10" aria-hidden="true" />
       </div>
 
-      {/* ── PRODUCT HEADER — the product name is the title (D1 "The Shelf"). ── */}
+      {/* ── PRODUCT HEADER — context line, then the product name is the title. ── */}
       <div ref={heroRef} className="mx-4 mt-2" style={{ willChange: "opacity" }}>
-        <div
-          ref={heroContentRef}
-          style={{ display: "flex", alignItems: "center", gap: 14, position: "relative", zIndex: 1, willChange: "opacity, transform" }}
-        >
-          {/* Product image — soft square */}
-          <div style={{ position: "relative", flexShrink: 0 }}>
-            <div style={{
-              width: 66, height: 66, borderRadius: 14,
-              background: "var(--sk-surface-card)",
-              border: "0.5px solid var(--sk-border-default)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              overflow: "hidden",
-            }}>
-              {product.displayImage ? (
-                <img
-                  ref={(node) => { heroMediaRef.current = node; }}
-                  src={product.displayImage}
-                  alt={product.name}
-                  style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }}
-                />
-              ) : (
-                <div
-                  ref={(node) => { heroMediaRef.current = node; }}
-                  style={{ fontSize: 30, lineHeight: 1 }}
-                >
-                  {product.placeholderEmoji}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {product.brand && (
-              <p style={{ fontFamily: "var(--sk-font-data)", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--sk-text-muted)", marginBottom: 3 }}>
-                {product.brand}
+        <div ref={heroContentRef} style={{ willChange: "opacity, transform" }}>
+          {/* Context line — where this sits on its shelf, mono uppercase. */}
+          {shelfContext ? (
+            <p style={{ fontFamily: "var(--sk-font-data)", fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--sk-text-muted)", marginBottom: 6 }}>
+              {shelfContext}
+            </p>
+          ) : null}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1
+                style={{
+                  fontFamily: "var(--sk-font-ui)",
+                  fontSize: 24,
+                  fontWeight: 600,
+                  letterSpacing: "-0.025em",
+                  color: "var(--sk-text-primary)",
+                  lineHeight: 1.12,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
+                {product.name}
+              </h1>
+              <p style={{ fontSize: 13, color: "var(--sk-text-muted)", marginTop: 4 }}>
+                {product.brand || product.barcode}
               </p>
-            )}
-            <h1
-              style={{
-                fontFamily: "var(--sk-font-brand)",
-                fontSize: 22,
-                fontWeight: 600,
-                letterSpacing: "-0.03em",
-                color: "var(--sk-text-primary)",
-                lineHeight: 1.08,
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
+            </div>
+            {/* Product image — small soft square beside the name. */}
+            <div style={{ flexShrink: 0 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 14,
+                background: "var(--sk-surface-card)",
+                border: "0.5px solid var(--sk-border-default)",
+                display: "flex", alignItems: "center", justifyContent: "center",
                 overflow: "hidden",
-              }}
-            >
-              {product.name}
-            </h1>
+              }}>
+                {product.displayImage ? (
+                  <img
+                    ref={(node) => { heroMediaRef.current = node; }}
+                    src={product.displayImage}
+                    alt={product.name}
+                    style={{ width: "100%", height: "100%", objectFit: "contain", padding: 5 }}
+                  />
+                ) : (
+                  <div ref={(node) => { heroMediaRef.current = node; }} style={{ fontSize: 26, lineHeight: 1 }}>
+                    {product.placeholderEmoji}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -527,20 +536,41 @@ export function ProductPageLayout({
         />
       </div>
 
-      {/* ── MERK'S VERDICT — one sentence, right under the score (D1 order). ── */}
+      {/* ── MERK'S VERDICT — dark ink card, folded corner, green eyebrow line
+            carrying the sharpest fact, then the verdict sentence (spec §2.4). ── */}
       <section className="mx-4 mt-3">
         <div
-          className="flex items-center gap-3 rounded-2xl px-4 py-3"
-          style={{ background: "var(--sk-surface-insight)", border: `0.5px solid ${CARD_BORDER}` }}
+          style={{
+            position: "relative",
+            background: "var(--sk-text-primary)",
+            borderRadius: 22,
+            padding: "18px 20px",
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 14,
+          }}
         >
-          <div style={{ flexShrink: 0 }}>
-            <Merk expression={merkVerdict.expression} size={44} limbs={false} aria-label="Merk" />
+          {/* Folded top-right corner — his silhouette signature. */}
+          <span
+            aria-hidden
+            style={{
+              position: "absolute", top: 0, right: 0, width: 30, height: 30,
+              background: "var(--sk-brand-mist)",
+              clipPath: "polygon(100% 0, 100% 100%, 0 0)",
+              opacity: 0.14,
+            }}
+          />
+          <div style={{ flexShrink: 0, marginTop: 2 }}>
+            <Merk expression={merkVerdict.expression} size={72} limbs={false} aria-label="Merk" />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontFamily: "var(--sk-font-brand)", fontSize: 15, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--sk-text-primary)", lineHeight: 1.15 }}>
-              {merkVerdict.headline}
-            </p>
-            <p style={{ fontSize: 13, lineHeight: 1.4, color: "var(--sk-text-secondary)", marginTop: 2 }}>
+            {merkVerdict.eyebrow ? (
+              <p style={{ fontFamily: "var(--sk-font-data)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--sk-merk-highlight)", marginBottom: 6 }}>
+                {merkVerdict.eyebrow}
+              </p>
+            ) : null}
+            <p style={{ fontSize: 15, lineHeight: 1.5, color: "var(--sk-text-on-dark)" }}>
               {merkVerdict.text}
             </p>
           </div>
