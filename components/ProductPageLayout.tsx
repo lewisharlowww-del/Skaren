@@ -7,10 +7,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, ChevronRight, Crown, Info, ListPlus } from "lucide-react";
 import { NutritionTable } from "@/components/NutritionTable";
-import { Additives } from "@/components/Additives";
+import { Additives, additivesHeaderHint } from "@/components/Additives";
 import { Merk, type MerkExpression } from "@/components/Merk";
 import { BarcodeMeter } from "@/components/BarcodeMeter";
-import { ScoreCard } from "@/components/ScoreCard";
+import { ScoreCard, bandColour } from "@/components/ScoreCard";
 import { ScoreMethodSheet, type Deduction } from "@/components/ScoreMethodSheet";
 import { ProcessingLevel, AllergenCard } from "@/components/ProcessingLevel";
 import { Alternatives, MerkBuyNote } from "@/components/Alternatives";
@@ -429,22 +429,26 @@ export function ProductPageLayout({
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div ref={compactHeaderRef} style={{ opacity: 0, display: "flex", alignItems: "center", gap: 6, position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", willChange: "opacity" }}>
+          {/* His face IS the verdict, so it is the thing that must not be lost
+              on scroll — a grade letter repeated in a sticky bar is not. */}
+          <Merk expression={merkVerdict.expression} size={30} limbs={false} still aria-hidden />
           <span
-            className="truncate max-w-[160px]"
-            style={{ color: "var(--sk-text-primary)", fontSize: 13, fontWeight: 700, fontFamily: "var(--font-dm-sans), sans-serif" }}
+            className="truncate max-w-[150px]"
+            style={{ color: "var(--sk-text-primary)", fontSize: 13, fontFamily: "var(--sk-font-ui)" }}
           >
             {product.name}
           </span>
-          {healthGrade ? (
-            <span style={{ fontSize: 12, fontWeight: 800, borderRadius: 6, padding: "2px 7px", background: GRADE_BACKGROUNDS[healthGrade], color: GRADE_COLORS[healthGrade], flexShrink: 0 }}>
-              {healthGrade}
-            </span>
-          ) : null}
-          {ecoGrade ? (
-            <span style={{ fontSize: 12, fontWeight: 800, borderRadius: 6, padding: "2px 7px", background: GRADE_BACKGROUNDS[ecoGrade], color: GRADE_COLORS[ecoGrade], flexShrink: 0 }}>
-              {ecoGrade}
-            </span>
-          ) : null}
+          <span
+            style={{
+              fontFamily: "var(--sk-font-ui)",
+              fontVariantNumeric: "tabular-nums",
+              fontSize: 15,
+              color: bandColour(score),
+              flexShrink: 0
+            }}
+          >
+            {score ?? "–"}
+          </span>
         </div>
         <span ref={scanResultRef} style={{ opacity: 1, color: MUTED, fontFamily: "var(--font-dm-sans), sans-serif", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", willChange: "opacity" }}>
           {t('scan_result', lang)}
@@ -582,7 +586,12 @@ export function ProductPageLayout({
         {/* 3b. ADDITIVES — the marketing spearhead sits high, right under the
               verdict and above nutrition. */}
         <div className="mb-4 flex flex-col gap-2.5">
-          <SectionLabel>{t('product_additives', lang)}</SectionLabel>
+          <div className="flex items-baseline justify-between gap-3">
+            <SectionLabel>{t('product_additives', lang)}</SectionLabel>
+            <span style={{ fontSize: 12, color: "var(--sk-text-muted)" }}>
+              {additivesHeaderHint(allAdditives.length, lang)}
+            </span>
+          </div>
           {isPremium ? (
             <Additives additives={allAdditives} lang={lang} />
           ) : (

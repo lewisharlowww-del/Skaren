@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { BadgesSection } from "@/components/BadgesSection";
+import { Merk } from "@/components/Merk";
 import { BottomNav } from "@/components/BottomNav";
 import { SkarenLoader } from "@/components/SkarenLoader";
 import { computeBadges, earnedCount, type ScanSummary } from "@/lib/badges";
@@ -117,9 +118,8 @@ function ProfileCard({
       className="relative mb-5 overflow-hidden rounded-2xl border px-5 py-5 text-[#F6F3EC]"
       style={{
         background:
-          "radial-gradient(circle at 50% 34%, #52734b 0%, #3d6037 28%, #33684A 62%, #243d20 100%)",
-        borderColor: "#52734b",
-        boxShadow: "0 18px 42px rgba(45, 74, 38, 0.14)",
+          "var(--sk-text-primary)",
+        borderColor: "rgba(246,243,236,0.12)",
       }}
     >
       <div
@@ -152,7 +152,8 @@ function ProfileCard({
         )}
       </div>
 
-      <div className="mt-7">
+      <div className="mt-7 flex items-center gap-3">
+        <Merk expression={isPremium ? "confident" : "happy"} size={54} limbs={false} aria-label="Merk" />
         <div className="min-w-0">
           <p
             className="truncate text-[24px] font-bold leading-tight text-white"
@@ -259,7 +260,7 @@ function SettingsRow({ icon, iconBg, iconBgDark, label, subtitle, href, onClick,
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[14px] font-bold" style={{ color: danger ? "var(--sk-status-danger)" : "var(--sk-text-primary)" }}>
+        <p className="text-[14px] font-bold" style={{ color: danger ? "var(--sk-status-warning)" : "var(--sk-text-primary)" }}>
           {label}
         </p>
         <p className="mt-0.5 text-[11px] truncate" style={{ color: "var(--sk-text-muted)" }}>{subtitle}</p>
@@ -317,7 +318,7 @@ function DeleteDialog({
         <div className="px-6 pt-6 pb-5" style={{ background: "var(--sk-grade-e-bg)", borderBottom: "1px solid var(--sk-grade-e-border)" }}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: "var(--sk-grade-e-border)" }}>
-              <Trash2 className="h-5 w-5" style={{ color: "var(--sk-status-danger)" }} />
+              <Trash2 className="h-5 w-5" style={{ color: "var(--sk-status-warning)" }} />
             </div>
             <button
               onClick={onClose}
