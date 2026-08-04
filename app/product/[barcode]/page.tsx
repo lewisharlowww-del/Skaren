@@ -249,10 +249,11 @@ export default function ProductPage({ params }: ProductPageProps) {
               >
                 <ArrowLeft className="h-5 w-5" />
               </Link>
-              <span className="inline-flex items-center gap-1.5" style={{ color: "var(--sk-text-muted)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>
-                <span className="relative grid h-[14px] w-[14px] place-items-center">
-                  <span className="sk-ring-el absolute inset-0 rounded-full border-[1.5px]" style={{ borderColor: "var(--sk-brand-leaf)", animation: "sk-ringpulse 2s ease-in-out infinite" }} />
-                  <span className="h-[4px] w-[4px] rounded-full" style={{ background: "var(--sk-brand-forest)" }} />
+              <span className="inline-flex items-center gap-2" style={{ color: "var(--sk-text-muted)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+                <span className="sk-barcode-loader" style={{ display: "inline-flex", alignItems: "flex-end", gap: 1.5, height: 12 }} aria-hidden>
+                  {[7, 5, 9, 5, 7].map((h, i) => (
+                    <span key={i} style={{ width: 1.5, height: h, background: "var(--sk-brand-forest)", animation: "sk-barcode-pulse 1s ease-in-out infinite", animationDelay: `${i * 0.09}s` }} />
+                  ))}
                 </span>
                 {loadingSlow
                   ? (lang === "no" ? "Laster…" : "Loading…")
@@ -261,16 +262,11 @@ export default function ProductPage({ params }: ProductPageProps) {
               <div className="h-10 w-10" aria-hidden="true" />
             </div>
 
-            {/* Product header — context line, name title, small square image */}
+            {/* Product header — context line, then name title (no thumbnail) */}
             <div className="mx-4 mt-2">
               <div className="sk2 sk2-d1 h-2.5 w-32 rounded-full" />
-              <div className="mt-2.5 flex items-start gap-3.5">
-                <div className="min-w-0 flex-1">
-                  <div className="sk2 sk2-d1 h-6 w-4/5 rounded-lg" />
-                  <div className="sk2 sk2-d2 mt-2 h-3 w-2/5 rounded-full" />
-                </div>
-                <div className="sk2 sk2-d1 shrink-0 rounded-2xl" style={{ width: 56, height: 56 }} />
-              </div>
+              <div className="sk2 sk2-d1 mt-2.5 h-6 w-4/5 rounded-lg" />
+              <div className="sk2 sk2-d2 mt-2 h-3 w-2/5 rounded-full" />
             </div>
 
             {/* Score card — big number, why pill, two grade tiles */}
