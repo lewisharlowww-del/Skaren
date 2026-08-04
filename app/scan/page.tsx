@@ -5,14 +5,15 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, Crown, ScanBarcode, Search } from "lucide-react";
+import { ArrowRight, Crown, Search } from "lucide-react";
 import { isNativeScannerAvailable } from "@/lib/nativeScanner";
 import { BottomNav } from "@/components/BottomNav";
+import { Merk } from "@/components/Merk";
 import { Spinner } from "@/components/Spinner";
 import { useUser } from "@/hooks/useUser";
+import { eanState } from "@/lib/ean";
 import { t } from "@/lib/i18n";
 import { useLang } from "@/lib/language-context";
-import { PhoneFrame } from "@/components/PhoneFrame";
 import { vibrate } from "@/lib/haptics";
 import { cacheProductLocally } from "@/lib/localProducts";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
@@ -32,87 +33,104 @@ const NativeBarcodeScanner = dynamic(
   { ssr: false }
 );
 
-const loadingMessages = ["Reading barcode...", "Checking ingredients...", "Checking product grades...", "Analyzing nutrition..."];
+const BRACKET = "3px solid var(--sk-brand-forest)";
 
+/** Four corner brackets, each rounded on its OUTER corner only. */
+const CORNERS: Array<{
+  key: string;
+  pos: React.CSSProperties;
+  radius: string;
+  edges: React.CSSProperties;
+}> = [
+  { key: "tl", pos: { left: 0, top: 0 }, radius: "14px 0 0 0", edges: { borderLeft: BRACKET, borderTop: BRACKET } },
+  { key: "tr", pos: { right: 0, top: 0 }, radius: "0 14px 0 0", edges: { borderRight: BRACKET, borderTop: BRACKET } },
+  { key: "bl", pos: { left: 0, bottom: 0 }, radius: "0 0 0 14px", edges: { borderLeft: BRACKET, borderBottom: BRACKET } },
+  { key: "br", pos: { right: 0, bottom: 0 }, radius: "0 0 14px 0", edges: { borderRight: BRACKET, borderBottom: BRACKET } }
+];
 
-function ScanLoadingOverlay({ barcode, scanSuccess, saved }: { barcode: string; scanSuccess: boolean; saved: boolean }) {
-  const [messageIndex, setMessageIndex] = useState(0);
+/**
+ * The three-second read.
+ *
+ * Three beats only, in result-page order, and no count is revealed early — the
+ * verdict is never foreshadowed. A 1.4s floor keeps the read looking real; the
+ * last beat resolves when the request actually lands, so it can never claim to
+ * have finished work it hasn't done.
+ */
+function ScanLoadingOverlay({ scanSuccess }: { scanSuccess: boolean }) {
+  const { lang } = useLang();
+  const [beat, setBeat] = useState(0);
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
-      setMessageIndex((index) => (index + 1) % loadingMessages.length);
-    }, 1050);
-
-    return () => window.clearInterval(timer);
+    const timers = [
+      window.setTimeout(() => setBeat(1), 600),
+      window.setTimeout(() => setBeat(2), 1400)
+    ];
+    return () => timers.forEach(window.clearTimeout);
   }, []);
+
+  const steps = [
+    t("scan_step_found", lang),
+    t("scan_step_additives", lang),
+    t("scan_step_nutrition", lang)
+  ];
+  // The final beat only ticks when the product is actually in hand.
+  const resolved = scanSuccess ? 3 : beat;
 
   return (
     <motion.div
-      className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-[var(--sk-brand-mist)] px-5 py-8"
+      className="fixed inset-0 z-[80] flex flex-col items-center justify-center px-8"
+      style={{ background: "#14120C" }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.18 }}
     >
-      <motion.section
-        initial={{ opacity: 0, y: 16, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 8, scale: 0.98 }}
-        transition={{ type: "spring", stiffness: 170, damping: 24 }}
-        className="w-full max-w-sm rounded-[2rem] border border-[var(--sk-border-default)] bg-white p-6 text-center shadow-[0_24px_70px_rgba(45,74,38,0.14)]"
-      >
-        <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full ${scanSuccess ? "bg-leaf-100 text-forest" : "bg-forest text-cream"} shadow-phone scan-glow`}>
-          <AnimatePresence mode="wait">
-            {scanSuccess ? (
-              <motion.span
-                key="found"
-                initial={{ opacity: 0, scale: 0.82 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ type: "spring", stiffness: 360, damping: 24 }}
-              >
-                <CheckCircle2 className="h-12 w-12" />
-              </motion.span>
-            ) : (
-              <motion.span key="scan" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <ScanBarcode className="h-12 w-12" />
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </div>
+      <Merk expression="scanning" size={150} limbs={false} aria-label="Merk" />
 
-        <p className="type-section-label mt-5 text-forest">{scanSuccess ? "Found product" : "Skaren scan"}</p>
-        <h2 className="type-heading-2 mt-2 text-ink">
-          {scanSuccess ? "Opening product report" : loadingMessages[messageIndex]}
-        </h2>
-        <p className="type-body-sm mt-2 text-soil-600">
-          Barcode {barcode || "detected"} is being turned into a clean product report.
-        </p>
-
-        <div className="mt-6 overflow-hidden rounded-full bg-leaf-50">
-          <div className="scan-progress-line h-2 rounded-full bg-forest" />
-        </div>
-
-        <div className="mt-5 rounded-[1.5rem] border border-black/5 bg-soil-50 p-4 text-left">
-          <div className="skeleton-shimmer h-4 w-2/3 rounded-full bg-white" />
-          <div className="skeleton-shimmer mt-3 h-4 w-full rounded-full bg-white" />
-          <div className="skeleton-shimmer mt-3 h-4 w-4/5 rounded-full bg-white" />
-        </div>
-
-        <AnimatePresence>
-          {saved ? (
-            <motion.p
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              className="motion-scan-success type-body-sm mt-4 inline-flex items-center gap-2 rounded-full bg-leaf-100 px-4 py-2 font-bold text-forest"
+      <ul className="mt-8 flex w-full max-w-[280px] flex-col gap-3">
+        {steps.map((step, index) => {
+          const done = index < resolved;
+          const active = index === resolved;
+          return (
+            <li
+              key={step}
+              className="flex items-center gap-3"
+              style={{
+                fontFamily: "var(--sk-font-ui)",
+                fontSize: 14.5,
+                color: done || active ? "rgba(240,236,224,.9)" : "rgba(240,236,224,.32)",
+                transition: "color 220ms ease-out"
+              }}
             >
-              <CheckCircle2 className="h-4 w-4" />
-              Saved to history
-            </motion.p>
-          ) : null}
-        </AnimatePresence>
-      </motion.section>
+              <span
+                aria-hidden
+                className="grid h-4 w-4 flex-shrink-0 place-items-center"
+                style={{ color: done ? "#8FBF9F" : "rgba(240,236,224,.32)" }}
+              >
+                {done ? "✓" : active ? "⟳" : "·"}
+              </span>
+              {step}
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* His barcode, never a spinner. */}
+      <div className="mt-9 flex h-4 items-end gap-[3px]" aria-hidden>
+        {[62, 100, 44, 88, 55, 96, 38].map((height, index) => (
+          <span
+            key={index}
+            style={{
+              width: 3,
+              height: `${height}%`,
+              borderRadius: 1,
+              background: "#8FBF9F",
+              opacity: 0.28 + (index % 3) * 0.24,
+              animation: `sk-pulse 1.1s ease-in-out ${index * 90}ms infinite`
+            }}
+          />
+        ))}
+      </div>
     </motion.div>
   );
 }
@@ -213,158 +231,193 @@ export default function ScanPage() {
     await analyzeBarcode(barcode);
   }
 
+  const manualState = eanState(barcode);
+
   return (
     <>
       <BottomNav />
       <AnimatePresence>
-        {loading ? <ScanLoadingOverlay barcode={barcode} scanSuccess={scanSuccess} saved={savedToHistory} /> : null}
+        {loading ? <ScanLoadingOverlay scanSuccess={scanSuccess} /> : null}
       </AnimatePresence>
-      <main className={`flex h-screen flex-col ${useNativeScanner ? "sk-native-cam-host bg-transparent" : "bg-[#F6F3EC]"}`}>
-        {/* Scanner panel */}
-        <div
-          className={`relative overflow-hidden ${useNativeScanner ? "sk-native-cam-host" : ""}`}
-          style={{
-            height: "min(56vh, 34rem)",
-            minHeight: 300,
-            background: useNativeScanner ? "transparent" : "var(--sk-brand-forest)",
-          }}
-        >
-          {/* Real camera feed fills the full area */}
-          <div className="absolute inset-0">
-            {useNativeScanner ? (
-              <NativeBarcodeScanner
-                disabled={loading}
-                onDetected={(detectedBarcode) => void analyzeBarcode(detectedBarcode)}
-              />
-            ) : (
-              <BarcodeScanner
-                autoStart
-                hideControls
-                disabled={loading}
-                onDetected={(detectedBarcode) => void analyzeBarcode(detectedBarcode)}
-              />
-            )}
-          </div>
+      {/* A camera screen is always dark — #14120C in both themes. */}
+      <main
+        className={`flex h-screen flex-col ${useNativeScanner ? "sk-native-cam-host" : ""}`}
+        style={{ background: useNativeScanner ? "transparent" : "#14120C" }}
+      >
+        {/* Header row */}
+        <div className="flex items-center justify-between px-[22px] pt-safe" style={{ paddingTop: "max(20px, env(safe-area-inset-top))" }}>
+          <span
+            style={{
+              fontFamily: "var(--sk-font-data)",
+              fontSize: 10.5,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "rgba(246,243,236,.55)"
+            }}
+          >
+            {t("nav_scan", lang)}
+          </span>
+          {user ? (
+            <span style={{ fontSize: 11.5, color: "rgba(246,243,236,.42)" }}>
+              {t("scan_signed_in", lang)}
+            </span>
+          ) : (
+            <Link href="/login?next=%2Fscan" style={{ fontSize: 11.5, color: "rgba(143,191,159,.9)" }}>
+              {t("scan_log_in", lang)}
+            </Link>
+          )}
+        </div>
 
-          {/* Decorative overlay: dark vignette + corner brackets + text */}
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-            {/* Vignette */}
-            <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, rgba(82,115,75,0.08) 18%, rgba(25,38,23,0.82) 100%)" }} />
-
-            {/* Corner brackets */}
-            <div className="relative z-10" style={{ width: 240, height: 180 }}>
-              <div className="absolute left-0 top-0 h-9 w-9 rounded-tl-xl" style={{ borderTop: "3px solid rgba(255,255,255,.9)", borderLeft: "3px solid rgba(255,255,255,.9)" }} />
-              <div className="absolute right-0 top-0 h-9 w-9 rounded-tr-xl" style={{ borderTop: "3px solid rgba(255,255,255,.9)", borderRight: "3px solid rgba(255,255,255,.9)" }} />
-              <div className="absolute bottom-0 left-0 h-9 w-9 rounded-bl-xl" style={{ borderBottom: "3px solid rgba(255,255,255,.9)", borderLeft: "3px solid rgba(255,255,255,.9)" }} />
-              <div className="absolute bottom-0 right-0 h-9 w-9 rounded-br-xl" style={{ borderBottom: "3px solid rgba(255,255,255,.9)", borderRight: "3px solid rgba(255,255,255,.9)" }} />
-              {/* Animated scan line */}
-              <div className="absolute left-3 right-3" style={{ top: "50%", height: 2, background: "#88bb88", boxShadow: "0 0 10px rgba(136,187,136,0.9)" }} />
+        {/* Viewfinder — camera feed inside static brackets, one sweeping line */}
+        <div className="flex flex-1 items-center justify-center px-10">
+          <div
+            className="relative w-full overflow-hidden"
+            style={{ aspectRatio: "1.35", borderRadius: 20, background: "rgba(246,243,236,.04)" }}
+          >
+            <div className="absolute inset-0">
+              {useNativeScanner ? (
+                <NativeBarcodeScanner
+                  disabled={loading}
+                  onDetected={(detectedBarcode) => void analyzeBarcode(detectedBarcode)}
+                />
+              ) : (
+                <BarcodeScanner
+                  autoStart
+                  hideControls
+                  disabled={loading}
+                  onDetected={(detectedBarcode) => void analyzeBarcode(detectedBarcode)}
+                />
+              )}
             </div>
 
-            {/* Text below brackets */}
-            <div className="relative z-10 mt-4 flex flex-col items-center gap-1">
-              <p className="text-[18px] font-black text-white" style={{ fontFamily: "var(--font-familjen), sans-serif" }}>
-                {t('scan_title', lang)}
-              </p>
-              <p className="text-[12px]" style={{ color: "rgba(220,238,221,.72)" }}>
-                {t('scan_subtitle', lang)}
-              </p>
+            {/* Corner brackets: 34px, 3px forest, radius on the outer corner only */}
+            <div className="pointer-events-none absolute inset-0">
+              {CORNERS.map((corner) => (
+                <span
+                  key={corner.key}
+                  className="absolute"
+                  style={{
+                    ...corner.pos,
+                    width: 34,
+                    height: 34,
+                    borderRadius: corner.radius,
+                    ...corner.edges
+                  }}
+                />
+              ))}
+              <span
+                className="sk-scan-line absolute"
+                style={{
+                  left: 14,
+                  right: 14,
+                  top: 0,
+                  height: 2,
+                  background: "#8FBF9F",
+                  boxShadow: "0 0 16px 3px rgba(143,191,159,.5)",
+                  ["--sk-sweep-distance" as string]: "100%"
+                }}
+              />
             </div>
           </div>
         </div>
-        {/* Bottom sheet — lifts over the camera for depth and breathing room */}
-        <div className="relative z-10 -mt-6 flex-1 overflow-y-auto rounded-t-[1.75rem] bg-[#F6F3EC] px-5 pb-28 pt-3 shadow-[0_-12px_32px_rgba(25,38,23,0.14)]">
-          {/* Panel handle */}
-          <div className="mx-auto mb-5 h-1.5 w-11 rounded-full bg-[#e2d9cb]" />
-          {/* Divider */}
-          <div className="mb-4 flex items-center gap-3">
-            <div className="h-px flex-1 bg-[#e7ddcf]" />
-            <span className="type-section-label text-[#948B76]">{t('scan_enter_manually', lang)}</span>
-            <div className="h-px flex-1 bg-[#e7ddcf]" />
+
+        {/* Instruction — Merk's voice, not an instruction manual */}
+        <p
+          className="px-[26px] text-center"
+          style={{ fontFamily: "var(--sk-font-ui)", fontSize: 14.5, lineHeight: 1.45, color: "rgba(246,243,236,.82)" }}
+        >
+          {t("scan_hold_steady", lang)}
+        </p>
+
+        {/* Merk waits at the bottom edge, only his upper body in frame */}
+        <div className="relative mt-1.5 h-[118px] overflow-hidden" aria-hidden>
+          <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: -96 }}>
+            <Merk expression="scanning" size={190} limbs={false} />
           </div>
-          <form onSubmit={handleAnalyze} className="space-y-3">
-            <input
-              className="w-full rounded-2xl border border-[#E6E0D0] bg-white px-4 py-3.5 text-center text-lg font-bold tracking-wide text-[#33684A] shadow-[0_1px_2px_rgba(25,38,23,0.05)] placeholder:font-normal placeholder:tracking-normal placeholder:text-[#c7bdac] focus:border-[#33684A]/40 focus:outline-none focus:ring-4 focus:ring-[#33684A]/10"
-              inputMode="numeric"
-              placeholder="3017620422003"
-              value={barcode}
-              onChange={(event) => setBarcode(event.target.value)}
-              autoComplete="off"
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="tap-feedback inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#33684A] py-3.5 text-[15px] font-black text-[#E4EEE7] shadow-[0_10px_24px_rgba(45,74,38,0.22)] transition disabled:opacity-60"
+        </div>
+
+        {/* Manual fallbacks — both always visible, no menu */}
+        <div className="relative z-10 px-5 pb-3" style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom))" }}>
+          <form onSubmit={handleAnalyze}>
+            <div
+              className="flex items-center gap-[11px]"
+              style={{
+                background: "rgba(246,243,236,.09)",
+                border: `1px solid ${manualState === "invalid" ? "var(--sk-score-weak)" : "rgba(246,243,236,.16)"}`,
+                borderRadius: 16,
+                padding: "13px 15px",
+                minHeight: "var(--sk-min-tap)"
+              }}
             >
-              <AnimatePresence mode="wait" initial={false}>
-                {scanSuccess ? (
-                  <motion.span key="success" initial={{ opacity: 0, scale: 0.86 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ type: "spring", stiffness: 360, damping: 24 }}>
-                    <CheckCircle2 className="h-5 w-5" />
-                  </motion.span>
-                ) : loading ? (
-                  <motion.span key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                    <Spinner size={20} />
-                  </motion.span>
-                ) : (
-                  <motion.span key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                    <ScanBarcode className="h-5 w-5" />
-                  </motion.span>
-                )}
-              </AnimatePresence>
-              {scanSuccess ? t('scan_product_found', lang) : loading ? t('loading', lang) : t('scan_analyze', lang)}
-            </button>
-            {error ? (
-              <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-medium text-rose-700">{error}</div>
-            ) : null}
+              <span className="flex h-[15px] flex-shrink-0 items-end gap-[1.5px]" aria-hidden>
+                {[70, 100, 50, 88, 62].map((height, index) => (
+                  <span key={index} style={{ width: 2, height: `${height}%`, background: "rgba(246,243,236,.6)" }} />
+                ))}
+              </span>
+              <label className="flex-1">
+                <span className="sr-only">{t("scan_enter_barcode", lang)}</span>
+                <input
+                  className="w-full bg-transparent outline-none"
+                  style={{
+                    fontFamily: "var(--sk-font-ui)",
+                    fontVariantNumeric: "tabular-nums",
+                    fontSize: 14,
+                    color: "#F6F3EC"
+                  }}
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder={t("scan_enter_barcode", lang)}
+                  value={barcode}
+                  onChange={(event) => setBarcode(event.target.value)}
+                />
+                <span style={{ display: "block", fontSize: 11.5, color: "rgba(246,243,236,.5)", marginTop: 1 }}>
+                  {t("scan_enter_barcode_hint", lang)}
+                </span>
+              </label>
+              <button
+                type="submit"
+                disabled={loading || manualState === "invalid" || manualState === "empty"}
+                className="focus-ring grid flex-shrink-0 place-items-center rounded-full disabled:opacity-35"
+                style={{ width: 34, height: 34, color: "#8FBF9F" }}
+                aria-label={t("scan_analyze", lang)}
+              >
+                {loading ? <Spinner size={16} /> : <ArrowRight className="h-4 w-4" />}
+              </button>
+            </div>
           </form>
-          {/* Search products row — premium feature */}
-          <div className="mt-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-[#e7ddcf]" />
-            <span className="type-section-label text-[#948B76]">{t('scan_or_explore', lang)}</span>
-            <div className="h-px flex-1 bg-[#e7ddcf]" />
+
+          {/* Checksum feedback: caught locally, before a doomed lookup goes out */}
+          {manualState === "invalid" ? (
+            <p style={{ marginTop: 7, fontSize: 11.5, color: "var(--sk-score-weak)" }}>
+              {t("scan_checksum_invalid", lang)}
+            </p>
+          ) : null}
+          {error ? (
+            <p style={{ marginTop: 7, fontSize: 11.5, color: "var(--sk-score-weak)" }}>{error}</p>
+          ) : null}
+
+          <div className="mt-[9px] flex items-center gap-[11px]">
+            <span className="h-px flex-1" style={{ background: "rgba(246,243,236,.13)" }} />
+            <span style={{ fontSize: 11.5, color: "rgba(246,243,236,.42)" }}>{t("scan_or", lang)}</span>
+            <span className="h-px flex-1" style={{ background: "rgba(246,243,236,.13)" }} />
           </div>
+
           <Link
             href={isPremium ? "/search" : "/pricing"}
-            className="tap-feedback mt-4 flex items-center gap-4 rounded-2xl border border-[#E6E0D0] bg-white px-5 py-3.5 shadow-[0_1px_2px_rgba(25,38,23,0.04)]"
+            className="focus-ring mt-[9px] flex items-center gap-[11px]"
+            style={{
+              border: "1px solid rgba(246,243,236,.16)",
+              borderRadius: 16,
+              padding: "12px 15px",
+              minHeight: "var(--sk-min-tap)"
+            }}
           >
-            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[#E4EEE7]">
-              <Search className="h-5 w-5 text-[#33684A]" />
-            </div>
-            <div className="flex-1">
-              <p className="flex items-center gap-1.5 text-[14px] font-bold text-[#33684A]">
-                {t('scan_search_products', lang)}
-                {!isPremium ? (
-                  <Crown
-                    className="h-4 w-4 text-[#8a7a30]"
-                    strokeWidth={2}
-                    aria-label={t('pro_feature', lang)}
-                  />
-                ) : null}
-              </p>
-              <p className="mt-0.5 text-[12px] text-[#948B76]">{isPremium ? t('scan_find_without_scanning', lang) : t('pro_feature', lang)}</p>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b0a090" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 18l6-6-6-6"/>
-            </svg>
+            <Search className="h-4 w-4 flex-shrink-0" style={{ color: "rgba(246,243,236,.6)" }} />
+            <span className="flex-1" style={{ fontFamily: "var(--sk-font-ui)", fontSize: 14, color: "rgba(246,243,236,.6)" }}>
+              {t("scan_search_by_name", lang)}
+            </span>
+            {!isPremium ? <Crown className="h-4 w-4" style={{ color: "#D6B366" }} aria-label={t("pro_feature", lang)} /> : null}
           </Link>
-          {/* Status */}
-          <div className="mt-5 flex justify-center">
-            {userLoading ? (
-              <span className="h-8 w-36 animate-pulse rounded-full bg-[#E4EEE7]" aria-label="Checking account" />
-            ) : user ? (
-              <span className="rounded-full bg-[#E4EEE7] px-4 py-2 text-[12px] font-bold text-[#33684A]">
-                {t('scan_signed_in', lang)}
-              </span>
-            ) : (
-              <p className="text-center text-[12px] text-[#948B76]">
-                <Link href="/login?next=%2Fscan" className="font-bold text-[#33684A] underline underline-offset-2">
-                  {t('scan_log_in', lang)}
-                </Link>
-                {" · "}
-                {t('scan_free_hint', lang)}
-              </p>
-            )}
-          </div>
         </div>
       </main>
     </>

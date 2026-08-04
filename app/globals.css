@@ -390,6 +390,24 @@ html.sk-native-cam-active .sk-native-cam-host {
   }
 }
 
+/* Merk's barcode is every loading state in the app — bars, never a circle. */
+@keyframes sk-pulse {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 1; }
+}
+
+/* Scan tab — the line sweeps the viewfinder top to bottom. The brackets stay
+   static; motion belongs to the read, not the frame. */
+@keyframes sk-scan-sweep {
+  0%   { transform: translateY(0); opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateY(var(--sk-sweep-distance, 220px)); opacity: 0; }
+}
+.sk-scan-line {
+  animation: sk-scan-sweep 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
