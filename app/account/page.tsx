@@ -92,135 +92,77 @@ function getGamificationBadge(scanCount: number, lang: Language): string {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function ProfileCard({
-  name,
-  email,
-  isPremium,
-  checkingPremium,
-  streakDays,
-  scanCount,
-  joinedDate,
-  lang,
-}: {
-  name: string;
-  email: string;
-  isPremium: boolean;
-  checkingPremium: boolean;
-  streakDays: number;
-  scanCount: number;
-  joinedDate: string;
-  lang: Language;
-}) {
-  const gamificationBadge = getGamificationBadge(scanCount, lang);
+// Initials for the avatar circle, e.g. "Ingrid Nilsen" -> "IN".
+function getInitials(name: string) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
+// One plain stat card in the three-up row under the membership card.
+function StatCard({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
   return (
-    <section
-      className="relative mb-5 overflow-hidden rounded-2xl border px-5 py-5 text-[#F6F3EC]"
-      style={{
-        background:
-          "var(--sk-text-primary)",
-        borderColor: "rgba(246,243,236,0.12)",
-      }}
+    <div
+      className="rounded-2xl px-3.5 py-3.5"
+      style={{ background: "var(--sk-surface-card)", border: "0.5px solid var(--sk-border-default)" }}
     >
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px"
-        style={{ background: "rgba(255,255,255,0.34)" }}
-      />
-
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--sk-text-on-dark-muted)]">
-          {t("account_membership_label", lang)}
-        </p>
-        {checkingPremium ? (
-          <span className="h-6 w-20 animate-pulse rounded-full bg-white/10" />
-        ) : (
-          <span
-            className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold"
-            style={{
-              color: isPremium ? "var(--sk-score-mid)" : "var(--sk-text-on-dark)",
-              borderColor: isPremium
-                ? "rgba(242,223,170,0.42)"
-                : "rgba(220,232,217,0.28)",
-              background: isPremium
-                ? "rgba(112,96,48,0.26)"
-                : "rgba(255,255,255,0.08)",
-            }}
-          >
-            {isPremium ? <Crown className="h-3 w-3" /> : null}
-            {isPremium ? t("account_pro_member", lang) : t("account_free_member", lang)}
-          </span>
-        )}
-      </div>
-
-      <div className="mt-7 flex items-center gap-3">
-        <Merk expression={isPremium ? "confident" : "happy"} size={54} limbs={false} aria-label="Merk" />
-        <div className="min-w-0">
-          <p
-            className="truncate text-[24px] font-bold leading-tight text-white"
-            style={{ fontFamily: "var(--font-familjen), sans-serif" }}
-          >
-            {name}
-          </p>
-          <p className="mt-1 truncate text-[12px] text-[var(--sk-text-on-dark-muted)]">{email}</p>
-        </div>
-      </div>
-
-      <div className="mt-5 grid grid-cols-3 border-t border-white/15 pt-4">
-        <div className="border-r border-white/15 pr-3">
-          <ScanBarcode className="mb-2 h-4 w-4 text-[var(--sk-merk-highlight)]" />
-          <p className="text-[17px] font-bold leading-none text-white">{scanCount}</p>
-          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--sk-merk-highlight)]">
-            {lang === "no" ? "visninger" : "views"}
-          </p>
-        </div>
-        <div className="border-r border-white/15 px-3">
-          <Flame className="mb-2 h-4 w-4 text-[var(--sk-score-mid)]" />
-          <p className="text-[17px] font-bold leading-none text-white">{streakDays}</p>
-          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--sk-merk-highlight)]">
-            {t("account_streak_label", lang)}
-          </p>
-        </div>
-        <div className="pl-3">
-          <Leaf className="mb-2 h-4 w-4 text-[var(--sk-merk-highlight)]" />
-          <p className="truncate text-[12px] font-bold leading-none text-white">
-            {gamificationBadge}
-          </p>
-          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--sk-merk-highlight)]">
-            {t("account_level_label", lang)}
-          </p>
-        </div>
-      </div>
-
-      {joinedDate ? (
-        <p className="mt-4 text-[11px] text-[var(--sk-text-on-dark-muted)]">
-          {t("account_member_since", lang)} {joinedDate}
-        </p>
-      ) : null}
-    </section>
+      <p
+        className="truncate"
+        style={{
+          fontFamily: "var(--sk-font-ui)",
+          fontVariantNumeric: "tabular-nums",
+          fontSize: 22,
+          fontWeight: 600,
+          lineHeight: 1,
+          color: accent ? "var(--sk-brand-forest)" : "var(--sk-text-primary)",
+        }}
+      >
+        {value}
+      </p>
+      <p className="mt-1.5 text-[11px]" style={{ color: "var(--sk-text-muted)" }}>{label}</p>
+    </div>
   );
 }
 
-function ProCard({ isPremium, lang }: { isPremium: boolean; lang: Language }) {
-  if (isPremium) return null;
+// Membership card — a Merk-owned card with the folded corner. Pro shows the
+// plan + ACTIVE chip; free shows an upgrade prompt. Never the old dark slab.
+function MembershipCard({ isPremium, checkingPremium, lang }: { isPremium: boolean; checkingPremium: boolean; lang: Language }) {
+  const inner = (
+    <div className="sk-folded flex items-center gap-3.5" style={{ padding: "14px 16px" }}>
+      <div
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
+        style={{ background: "var(--sk-brand-mist)", border: "0.5px solid var(--sk-border-default)" }}
+      >
+        <Merk expression={isPremium ? "confident" : "happy"} size={30} limbs={false} aria-hidden />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p style={{ fontFamily: "var(--sk-font-brand)", fontSize: 16, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--sk-text-primary)" }}>
+            {isPremium ? "Skaren Pro" : t('account_free_member', lang)}
+          </p>
+          {checkingPremium ? (
+            <span className="h-4 w-14 animate-pulse rounded-full" style={{ background: "var(--sk-brand-mist-dark)" }} />
+          ) : isPremium ? (
+            <span
+              style={{ fontFamily: "var(--sk-font-data)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", background: "var(--sk-grade-a-bg)", color: "var(--sk-grade-a-text)", borderRadius: 999, padding: "2px 7px" }}
+            >
+              {t('account_pro_member', lang)}
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-0.5 truncate text-[12px]" style={{ color: "var(--sk-text-muted)" }}>
+          {isPremium ? t('account_pro_sub', lang) : t('account_upgrade_sub', lang)}
+        </p>
+      </div>
+      {!isPremium ? <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-faint)" }} /> : null}
+    </div>
+  );
 
+  if (isPremium) return inner;
   return (
-    <Link
-      href="/pricing"
-      className="mb-6 flex items-center gap-3 rounded-2xl border px-5 py-4 transition active:scale-[0.99]"
-      style={{
-        background: "var(--sk-grade-c-bg)",
-        borderColor: "var(--sk-grade-c-border)",
-        boxShadow: "0 10px 28px rgba(112,96,48,0.08)",
-      }}
-    >
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--sk-grade-c-bg)]">
-        <Crown className="h-5 w-5 text-[var(--sk-grade-c-text)]" />
-      </div>
-      <div className="flex-1">
-        <p className="text-[13px] font-bold text-[var(--sk-text-primary)]">{t('account_upgrade', lang)}</p>
-        <p className="mt-0.5 text-[11px] text-[var(--sk-text-muted)]">{t('account_upgrade_sub', lang)}</p>
-      </div>
-      <ChevronRight className="h-4 w-4 shrink-0 text-[var(--sk-grade-c-text)]" />
+    <Link href="/pricing" className="block transition active:scale-[0.99]">
+      {inner}
     </Link>
   );
 }
@@ -538,36 +480,39 @@ export default function AccountPage() {
       <main
         className="mx-auto min-h-screen w-full max-w-[430px] overflow-x-hidden bg-[var(--sk-brand-mist)] pb-32 pt-safe sm:max-w-lg"
       >
-        {/* Page title */}
-        <div className="px-4 pb-5 pt-1">
-          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#948B76]">
-            Profile & preferences
-          </p>
-          <h1
-            className="text-[32px] font-semibold leading-none"
-            style={{ fontFamily: "var(--font-familjen), sans-serif", color: "var(--sk-text-primary)", letterSpacing: "-0.03em" }}
-          >
-            {t('account_title', lang)}
-          </h1>
+        {/* ── Profile header — avatar + name + member since ── */}
+        <div className="px-4 pt-2">
+          <div className="flex items-center gap-3.5">
+            <div
+              className="grid h-14 w-14 shrink-0 place-items-center rounded-full"
+              style={{ background: "var(--sk-brand-forest)", color: "var(--sk-text-on-dark)", fontFamily: "var(--sk-font-brand)", fontSize: 18, fontWeight: 600 }}
+            >
+              {getInitials(displayName)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p
+                className="truncate"
+                style={{ fontFamily: "var(--sk-font-brand)", fontSize: 20, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--sk-text-primary)" }}
+              >
+                {displayName}
+              </p>
+              <p className="mt-0.5 truncate text-[12px]" style={{ color: "var(--sk-text-muted)" }}>
+                {[user?.email, joinedDate ? `${t('account_member_since', lang)} ${joinedDate}` : null].filter(Boolean).join(" · ")}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="px-4">
-          {/* ── Profile card ── */}
-          <ProfileCard
-            name={displayName}
-            email={user?.email ?? ""}
-            isPremium={isPremium}
-            checkingPremium={checkingPremium}
-            streakDays={streakDays}
-            scanCount={scanCount}
-            joinedDate={joinedDate}
-            lang={lang}
-          />
+        <div className="mt-4 px-4">
+          {/* ── Membership card — Merk-owned, folded corner ── */}
+          <MembershipCard isPremium={isPremium} checkingPremium={checkingPremium} lang={lang} />
 
-          {/* ── Pro upgrade / membership card ── */}
-          {!checkingPremium && (
-            <ProCard isPremium={isPremium} lang={lang} />
-          )}
+          {/* ── Stats row — three plain cards ── */}
+          <div className="mt-3 grid grid-cols-3 gap-2.5">
+            <StatCard value={String(streakDays)} label={t('account_streak_label', lang)} />
+            <StatCard value={String(scanCount)} label={lang === 'no' ? 'skanninger' : 'scans'} />
+            <StatCard value={getGamificationBadge(scanCount, lang)} label={t('account_level_label', lang)} accent />
+          </div>
 
           {/* ── Preferences ── */}
           <SectionLabel label={t('account_preferences', lang)} />
