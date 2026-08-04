@@ -459,13 +459,12 @@ export function ProductPageLayout({
             {score ?? "–"}
           </span>
         </div>
-        <span ref={scanResultRef} style={{ opacity: 1, color: MUTED, fontFamily: "var(--font-dm-sans), sans-serif", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", willChange: "opacity" }}>
-          {t('scan_result', lang)}
-        </span>
+        <span ref={scanResultRef} aria-hidden style={{ opacity: 0, pointerEvents: "none", width: 0 }} />
         <div className="h-10 w-10" aria-hidden="true" />
       </div>
 
-      {/* ── PRODUCT HEADER — context line, then the product name is the title. ── */}
+      {/* ── PRODUCT HEADER — context line, then the product name is the title,
+            spanning full width (no thumbnail — the label IS Merk). ────────── */}
       <div ref={heroRef} className="mx-4 mt-2" style={{ willChange: "opacity" }}>
         <div ref={heroContentRef} style={{ willChange: "opacity, transform" }}>
           {/* Context line — where this sits on its shelf, mono uppercase. */}
@@ -474,52 +473,25 @@ export function ProductPageLayout({
               {shelfContext}
             </p>
           ) : null}
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h1
-                style={{
-                  fontFamily: "var(--sk-font-ui)",
-                  fontSize: 24,
-                  fontWeight: 600,
-                  letterSpacing: "-0.025em",
-                  color: "var(--sk-text-primary)",
-                  lineHeight: 1.12,
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                }}
-              >
-                {product.name}
-              </h1>
-              <p style={{ fontSize: 13, color: "var(--sk-text-muted)", marginTop: 4 }}>
-                {product.brand || product.barcode}
-              </p>
-            </div>
-            {/* Product image — small soft square beside the name. */}
-            <div style={{ flexShrink: 0 }}>
-              <div style={{
-                width: 56, height: 56, borderRadius: 14,
-                background: "var(--sk-surface-card)",
-                border: "0.5px solid var(--sk-border-default)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                overflow: "hidden",
-              }}>
-                {product.displayImage ? (
-                  <img
-                    ref={(node) => { heroMediaRef.current = node; }}
-                    src={product.displayImage}
-                    alt={product.name}
-                    style={{ width: "100%", height: "100%", objectFit: "contain", padding: 5 }}
-                  />
-                ) : (
-                  <div ref={(node) => { heroMediaRef.current = node; }} style={{ fontSize: 26, lineHeight: 1 }}>
-                    {product.placeholderEmoji}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <h1
+            style={{
+              fontFamily: "var(--sk-font-ui)",
+              fontSize: 24,
+              fontWeight: 600,
+              letterSpacing: "-0.025em",
+              color: "var(--sk-text-primary)",
+              lineHeight: 1.12,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {product.name}
+          </h1>
+          <p style={{ fontSize: 13, color: "var(--sk-text-muted)", marginTop: 4 }}>
+            {product.brand || product.barcode}
+          </p>
         </div>
       </div>
 
@@ -555,22 +527,22 @@ export function ProductPageLayout({
           <span
             aria-hidden
             style={{
-              position: "absolute", top: 0, right: 0, width: 30, height: 30,
+              position: "absolute", top: 0, right: 0, width: 34, height: 34,
               background: "var(--sk-brand-mist)",
               clipPath: "polygon(100% 0, 100% 100%, 0 0)",
-              opacity: 0.14,
+              opacity: 0.16,
             }}
           />
           <div style={{ flexShrink: 0, marginTop: 2 }}>
-            <Merk expression={merkVerdict.expression} size={72} limbs={false} aria-label="Merk" />
+            <Merk expression={merkVerdict.expression} size={64} limbs={false} aria-label="Merk" />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            {merkVerdict.eyebrow ? (
-              <p style={{ fontFamily: "var(--sk-font-data)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--sk-merk-highlight)", marginBottom: 6 }}>
-                {merkVerdict.eyebrow}
-              </p>
-            ) : null}
-            <p style={{ fontSize: 15, lineHeight: 1.5, color: "var(--sk-text-on-dark)" }}>
+            {/* Sharpest single fact, bold cream — this is the headline. */}
+            <p style={{ fontFamily: "var(--sk-font-brand)", fontSize: 19, fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.15, color: "var(--sk-text-on-dark)" }}>
+              {merkVerdict.eyebrow ?? merkVerdict.headline}
+            </p>
+            {/* The verdict paragraph, muted cream. */}
+            <p style={{ fontSize: 14, lineHeight: 1.5, color: "var(--sk-text-on-dark-muted)", marginTop: 6 }}>
               {merkVerdict.text}
             </p>
           </div>
