@@ -9,7 +9,6 @@ import { ArrowLeft, CheckCircle2, ChevronRight, Crown, Info, ListPlus } from "lu
 import { NutritionTable } from "@/components/NutritionTable";
 import { Additives, additivesHeaderHint } from "@/components/Additives";
 import { Merk, type MerkExpression } from "@/components/Merk";
-import { BarcodeMeter } from "@/components/BarcodeMeter";
 import { ScoreCard, bandColour } from "@/components/ScoreCard";
 import { ScoreMethodSheet, type Deduction } from "@/components/ScoreMethodSheet";
 import { ProcessingLevel, AllergenCard } from "@/components/ProcessingLevel";
@@ -456,83 +455,63 @@ export function ProductPageLayout({
         <div className="h-10 w-10" aria-hidden="true" />
       </div>
 
-      {/* ── VERDICT CARD — Merk's sentence leads, product image beside him.
-            Folded top-right corner marks this as a Merk-owned card. ────────── */}
+      {/* ── PRODUCT HEADER — the product name is the title (D1 "The Shelf"). ── */}
       <div ref={heroRef} className="mx-4 mt-2" style={{ willChange: "opacity" }}>
-        <div className="sk-folded" style={{ padding: "16px 18px" }}>
-          <div
-            ref={heroContentRef}
-            style={{ display: "flex", alignItems: "center", gap: 14, position: "relative", zIndex: 1, willChange: "opacity, transform" }}
-          >
-            {/* Product image — soft square, not a circle */}
-            <div style={{ position: "relative", flexShrink: 0 }}>
-              <div style={{
-                width: 76, height: 76, borderRadius: 14,
-                background: "var(--sk-brand-mist)",
-                border: "0.5px solid var(--sk-border-default)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                overflow: "hidden",
-              }}>
-                {product.displayImage ? (
-                  <img
-                    ref={(node) => { heroMediaRef.current = node; }}
-                    src={product.displayImage}
-                    alt={product.name}
-                    style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }}
-                  />
-                ) : (
-                  <div
-                    ref={(node) => { heroMediaRef.current = node; }}
-                    style={{ fontSize: 34, lineHeight: 1 }}
-                  >
-                    {product.placeholderEmoji}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Merk's verdict — the sentence is the headline, not the grade */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p
-                style={{
-                  fontFamily: "var(--font-familjen), sans-serif",
-                  fontSize: 19,
-                  fontWeight: 600,
-                  letterSpacing: "-0.03em",
-                  color: "var(--sk-text-primary)",
-                  lineHeight: 1.1,
-                }}
-              >
-                {merkVerdict.headline}
-              </p>
-              <p style={{ fontSize: 14, lineHeight: 1.4, color: "var(--sk-text-secondary)", marginTop: 5 }}>
-                {merkVerdict.text}
-              </p>
-            </div>
-
-            {/* Merk himself, small, reacting to the grade */}
-            <div style={{ flexShrink: 0, alignSelf: "flex-end", marginBottom: -4 }}>
-              <Merk expression={merkVerdict.expression} size={54} limbs={false} aria-label="Merk" />
+        <div
+          ref={heroContentRef}
+          style={{ display: "flex", alignItems: "center", gap: 14, position: "relative", zIndex: 1, willChange: "opacity, transform" }}
+        >
+          {/* Product image — soft square */}
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <div style={{
+              width: 66, height: 66, borderRadius: 14,
+              background: "var(--sk-surface-card)",
+              border: "0.5px solid var(--sk-border-default)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              overflow: "hidden",
+            }}>
+              {product.displayImage ? (
+                <img
+                  ref={(node) => { heroMediaRef.current = node; }}
+                  src={product.displayImage}
+                  alt={product.name}
+                  style={{ width: "100%", height: "100%", objectFit: "contain", padding: 6 }}
+                />
+              ) : (
+                <div
+                  ref={(node) => { heroMediaRef.current = node; }}
+                  style={{ fontSize: 30, lineHeight: 1 }}
+                >
+                  {product.placeholderEmoji}
+                </div>
+              )}
             </div>
           </div>
+
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {product.brand && (
+              <p style={{ fontFamily: "var(--sk-font-data)", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--sk-text-muted)", marginBottom: 3 }}>
+                {product.brand}
+              </p>
+            )}
+            <h1
+              style={{
+                fontFamily: "var(--sk-font-brand)",
+                fontSize: 22,
+                fontWeight: 600,
+                letterSpacing: "-0.03em",
+                color: "var(--sk-text-primary)",
+                lineHeight: 1.08,
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
+              {product.name}
+            </h1>
+          </div>
         </div>
-        {/* Product name + brand as a quiet mono line under the verdict */}
-        <p
-          style={{
-            fontFamily: "var(--sk-font-data)",
-            fontSize: 11,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "var(--sk-text-muted)",
-            marginTop: 8,
-            paddingLeft: 2,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {product.name}{product.brand ? ` · ${product.brand}` : ""}
-        </p>
       </div>
 
       {/* ── SCORE CARD — the number, the shelf, and two grade tiles ──────── */}
@@ -547,6 +526,26 @@ export function ProductPageLayout({
           onWhy={() => setMethodOpen(true)}
         />
       </div>
+
+      {/* ── MERK'S VERDICT — one sentence, right under the score (D1 order). ── */}
+      <section className="mx-4 mt-3">
+        <div
+          className="flex items-center gap-3 rounded-2xl px-4 py-3"
+          style={{ background: "var(--sk-surface-insight)", border: `0.5px solid ${CARD_BORDER}` }}
+        >
+          <div style={{ flexShrink: 0 }}>
+            <Merk expression={merkVerdict.expression} size={44} limbs={false} aria-label="Merk" />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontFamily: "var(--sk-font-brand)", fontSize: 15, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--sk-text-primary)", lineHeight: 1.15 }}>
+              {merkVerdict.headline}
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.4, color: "var(--sk-text-secondary)", marginTop: 2 }}>
+              {merkVerdict.text}
+            </p>
+          </div>
+        </div>
+      </section>
 
       <ScoreMethodSheet
         open={methodOpen}

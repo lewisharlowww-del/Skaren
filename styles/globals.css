@@ -504,7 +504,7 @@ html.dark .sk2::after {
   }
 }
 
-/* ── Merk-owned folded-corner card (D2 "Merk gir svar") ────────────────────
+/* ── Merk-owned folded-corner card ─────────────────────────────────────────
    Only Merk's cards get the folded top-right corner — verdict, alternative,
    history quote. Data tables stay plain. The fold is his silhouette signature. */
 .sk-folded {
