@@ -1,5 +1,20 @@
 "use client";
 
+/**
+ * Additives — D1 "The Shelf", step 4.
+ *
+ * The marketing spearhead, so it sits directly under Merk's verdict and above
+ * nutrition. Three rules hold the section together:
+ *
+ *   1. The PROPORTION is the headline, not the count. A segmented ratio bar
+ *      means 1-of-4 can never read like 4-of-4.
+ *   2. FUNCTION FIRST. "Preservative" in plain words is the bold line; the
+ *      chemical name sits quiet underneath. That keeps the section educational
+ *      rather than alarmist.
+ *   3. Severity lives in the left edge, the meter and the word — never in a
+ *      whole card turning red.
+ */
+
 import { useState } from "react";
 import type { AdditiveAnalysis } from "@/lib/additives";
 import { lookupENumber, type SafetyRating } from "@/lib/enumbers";
@@ -10,23 +25,33 @@ type AdditivesProps = {
   lang?: Language;
 };
 
-const SAFETY_STYLES: Record<SafetyRating, { dot: string; tag: { bg: string; color: string } }> = {
-  safe:     { dot: "var(--sk-grade-a-text)", tag: { bg: "var(--sk-grade-a-bg)", color: "var(--sk-grade-a-text)" } },
-  moderate: { dot: "var(--sk-grade-c-text)", tag: { bg: "var(--sk-grade-c-bg)", color: "var(--sk-grade-c-text)" } },
-  avoid:    { dot: "var(--sk-grade-e-text)", tag: { bg: "var(--sk-grade-e-bg)", color: "var(--sk-grade-e-text)" } },
+type Item = AdditiveAnalysis & { functionWord: string | null };
+
+/** Plain-words function, translated. The E-number database calls it `category`. */
+const FUNCTION_NO: Record<string, string> = {
+  Colour: "Fargestoff",
+  Preservative: "Konserveringsmiddel",
+  Antioxidant: "Antioksidant",
+  "Acidity Regulator": "Surhetsregulator",
+  Emulsifier: "Emulgator",
+  Stabiliser: "Stabilisator",
+  Thickener: "Fortykningsmiddel",
+  Sweetener: "Søtstoff",
+  "Flavour Enhancer": "Smaksforsterker",
+  "Raising Agent": "Hevemiddel",
+  "Anti-caking Agent": "Antiklumpemiddel",
+  "Glazing Agent": "Overflatemiddel"
 };
 
-function safetyLabel(safety: SafetyRating, lang: Language): string {
-  if (safety === "safe") return t('product_safe', lang);
-  if (safety === "avoid") return t('product_avoid', lang);
-  return t('product_moderate', lang);
+function functionWord(category: string | undefined, lang: Language): string | null {
+  if (!category) return null;
+  return lang === "no" ? FUNCTION_NO[category] ?? category : category;
 }
 
-/** Normalise the union input to a consistent AdditiveAnalysis array */
-function normalise(input: AdditiveAnalysis[] | string[]): AdditiveAnalysis[] {
+/** Normalise the union input to a consistent list, carrying the function word. */
+function normalise(input: AdditiveAnalysis[] | string[], lang: Language): Item[] {
   if (input.length === 0) return [];
 
-  // Detect string[] vs AdditiveAnalysis[]
   if (typeof input[0] === "string") {
     return (input as string[]).map((code) => {
       const entry = lookupENumber(code);
@@ -37,89 +62,305 @@ function normalise(input: AdditiveAnalysis[] | string[]): AdditiveAnalysis[] {
           risk: entry.safety as AdditiveAnalysis["risk"],
           description: entry.description,
           known: true,
+          functionWord: functionWord(entry.category, lang)
         };
       }
-      // Unknown code — show gracefully
       return {
         code: code.toUpperCase(),
-        name: `${code.toUpperCase()} Unknown additive`,
+        name: `${code.toUpperCase()}`,
         risk: "moderate" as AdditiveAnalysis["risk"],
-        description: "Not in Skaren's additive database",
+        description: t("product_unknown_additive", lang),
         known: false,
+        functionWord: null
       };
     });
   }
 
-  return input as AdditiveAnalysis[];
+  return (input as AdditiveAnalysis[]).map((additive) => ({
+    ...additive,
+    functionWord: functionWord(lookupENumber(additive.code)?.category, lang)
+  }));
 }
 
-export function Additives({ additives, lang = 'no' }: AdditivesProps) {
-  const [openCode, setOpenCode] = useState<string | null>(null);
-  const items = normalise(additives);
+/** Three dots, filled by severity. Colour is never the only cue — the count is. */
+function CautionMeter({ filled }: { filled: number }) {
+  return (
+    <span style={{ display: "flex", gap: 2.5 }} aria-hidden>
+      {[0, 1, 2].map((index) => (
+        <span
+          key={index}
+          style={{
+            width: index < filled ? 4.5 : 5,
+            height: index < filled ? 4.5 : 5,
+            borderRadius: "50%",
+            background: index < filled ? "var(--sk-score-weak)" : "var(--sk-grade-e-bg)"
+          }}
+        />
+      ))}
+    </span>
+  );
+}
 
+export function Additives({ additives, lang = "no" }: AdditivesProps) {
+  const [openCode, setOpenCode] = useState<string | null>(null);
+  const items = normalise(additives, lang);
+
+  // On a clean product the whole section collapses to one card. No tiles, no
+  // grid — nothing to explain, so nothing is shown.
   if (items.length === 0) {
     return (
-      <div style={{ background: "var(--sk-grade-a-bg)", borderRadius: 14, border: "0.5px solid var(--sk-grade-a-border)", padding: "10px 12px" }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--sk-grade-a-text)" }}>{t('product_no_additives', lang)}</p>
+      <div
+        style={{
+          background: "var(--sk-surface-card)",
+          border: "0.5px solid var(--sk-border-default)",
+          borderRadius: 18,
+          padding: "14px 18px"
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+          <span
+            style={{
+              fontFamily: "var(--sk-font-brand)",
+              fontSize: 34,
+              letterSpacing: "-0.04em",
+              lineHeight: 1,
+              color: "var(--sk-score-good)"
+            }}
+          >
+            0
+          </span>
+          <span style={{ fontSize: 12.5, color: "var(--sk-text-muted)" }}>{t("product_additives_total", lang)}</span>
+        </div>
+        <div
+          style={{ marginTop: 11, height: 10, borderRadius: 3, background: "var(--sk-border-green)" }}
+          aria-hidden
+        />
+        <p style={{ marginTop: 7, fontSize: 11.5, color: "var(--sk-text-secondary)" }}>
+          {t("product_no_additives", lang)}
+        </p>
       </div>
     );
   }
 
+  const watch = items.filter((item) => item.risk !== "safe");
+  const safe = items.filter((item) => item.risk === "safe");
+
   return (
-    <div style={{ background: "var(--sk-surface-white)", borderRadius: 14, border: "0.5px solid var(--sk-border-default)", overflow: "hidden" }}>
-      {items.map((additive, index) => {
-        const safety = (additive.risk ?? "moderate") as SafetyRating;
-        const styles = SAFETY_STYLES[safety] ?? SAFETY_STYLES.moderate;
-        const isOpen = openCode === additive.code;
-        const isLast = index === items.length - 1;
+    <div>
+      {/* Summary — the ratio is the headline */}
+      <div
+        style={{
+          background: "var(--sk-surface-card)",
+          border: "0.5px solid var(--sk-border-default)",
+          borderRadius: 18,
+          padding: "14px 18px",
+          display: "flex",
+          alignItems: "center",
+          gap: 16
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexShrink: 0 }}>
+          <span
+            style={{
+              fontFamily: "var(--sk-font-brand)",
+              fontSize: 34,
+              letterSpacing: "-0.04em",
+              lineHeight: 1,
+              fontVariantNumeric: "tabular-nums",
+              color: "var(--sk-text-primary)"
+            }}
+          >
+            {items.length}
+          </span>
+          <span style={{ fontSize: 12.5, color: "var(--sk-text-muted)" }}>{t("product_additives_total", lang)}</span>
+        </div>
 
-        return (
-          <div key={additive.code}>
-            <button
-              type="button"
-              onClick={() => setOpenCode(isOpen ? null : additive.code)}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 12px",
-                borderBottom: isLast && !isOpen ? "none" : "0.5px solid var(--sk-border-muted)",
-                background: "transparent",
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-            >
-              {/* Coloured dot */}
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: styles.dot, flexShrink: 0 }} />
-
-              {/* Name + description */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: "var(--sk-text-primary)", lineHeight: 1.3 }}>
-                  {additive.code.toUpperCase()} {additive.name}
-                </p>
-                {!isOpen && additive.description ? (
-                  <p style={{ fontSize: 11, color: "var(--sk-text-muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {additive.description}
-                  </p>
-                ) : null}
-              </div>
-
-              {/* Safety tag */}
-              <span style={{ fontSize: 10, fontWeight: 700, borderRadius: 6, padding: "2px 7px", flexShrink: 0, background: styles.tag.bg, color: styles.tag.color }}>
-                {safetyLabel(safety, lang)}
-              </span>
-            </button>
-
-            {/* Expanded description */}
-            {isOpen ? (
-              <div style={{ padding: "6px 12px 10px 27px", borderBottom: isLast ? "none" : "0.5px solid var(--sk-border-muted)", background: styles.tag.bg }}>
-                <p style={{ fontSize: 12, color: styles.dot, lineHeight: 1.5 }}>{additive.description}</p>
-              </div>
-            ) : null}
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", gap: 3 }} aria-hidden>
+            {items.map((item, index) => (
+              <span
+                key={`${item.code}-${index}`}
+                style={{
+                  flex: 1,
+                  height: 10,
+                  borderRadius: 3,
+                  background: item.risk === "safe" ? "var(--sk-border-green)" : "var(--sk-score-weak)"
+                }}
+              />
+            ))}
           </div>
-        );
-      })}
+          {/* Both regular weight: the proportion speaks, nobody shouts. */}
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 7, fontSize: 11.5 }}>
+            <span style={{ color: "var(--sk-score-weak)" }}>
+              {watch.length} {t("product_worth_watching", lang)}
+            </span>
+            <span style={{ color: "var(--sk-status-positive)" }}>
+              {safe.length} {t("product_harmless", lang)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Tiles — watch first, then safe */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 8,
+          alignItems: "start",
+          marginTop: 10
+        }}
+      >
+        {watch.map((item) => {
+          const isOpen = openCode === item.code;
+          return (
+            <button
+              key={item.code}
+              type="button"
+              onClick={() => setOpenCode(isOpen ? null : item.code)}
+              className="focus-ring"
+              style={{
+                position: "relative",
+                overflow: "hidden",
+                textAlign: "left",
+                background: "var(--sk-surface-card)",
+                border: "1px solid var(--sk-grade-e-border)",
+                borderRadius: 16,
+                padding: "11px 13px",
+                minHeight: "var(--sk-min-tap)",
+                gridColumn: isOpen ? "span 2" : undefined
+              }}
+              aria-expanded={isOpen}
+            >
+              <span
+                aria-hidden
+                style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, background: "var(--sk-score-weak)" }}
+              />
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span
+                  style={{
+                    fontFamily: "var(--sk-font-data)",
+                    fontVariantNumeric: "tabular-nums",
+                    fontSize: 14,
+                    color: "var(--sk-text-primary)"
+                  }}
+                >
+                  {item.code.toUpperCase()}
+                </span>
+                <CautionMeter filled={item.risk === "avoid" ? 3 : 2} />
+              </span>
+              {item.functionWord ? (
+                <span
+                  style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--sk-text-primary)", marginTop: 5 }}
+                >
+                  {item.functionWord}
+                </span>
+              ) : null}
+              <span style={{ display: "block", fontSize: 10.5, color: "var(--sk-text-muted)", marginTop: 1 }}>
+                {item.name}
+              </span>
+              <span
+                style={{
+                  display: "block",
+                  fontFamily: "var(--sk-font-data)",
+                  fontSize: 9,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: "var(--sk-score-weak)",
+                  marginTop: 6
+                }}
+              >
+                {t("product_worth_watching", lang)}
+              </span>
+              {isOpen && item.description ? (
+                <span
+                  style={{
+                    display: "block",
+                    fontSize: 12,
+                    lineHeight: 1.5,
+                    color: "var(--sk-text-secondary)",
+                    marginTop: 8
+                  }}
+                >
+                  {item.description}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+
+        {safe.map((item) => {
+          const isOpen = openCode === item.code;
+          return (
+            <button
+              key={item.code}
+              type="button"
+              onClick={() => setOpenCode(isOpen ? null : item.code)}
+              className="focus-ring"
+              style={{
+                position: "relative",
+                overflow: "hidden",
+                textAlign: "left",
+                background: "var(--sk-brand-mist)",
+                border: "1px solid var(--sk-border-default)",
+                borderRadius: 15,
+                padding: "11px 13px",
+                minHeight: "var(--sk-min-tap)",
+                gridColumn: isOpen ? "span 2" : undefined
+              }}
+              aria-expanded={isOpen}
+            >
+              <span
+                aria-hidden
+                style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: "var(--sk-border-green)" }}
+              />
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <span
+                  style={{
+                    fontFamily: "var(--sk-font-data)",
+                    fontVariantNumeric: "tabular-nums",
+                    fontSize: 12.5,
+                    color: "var(--sk-text-secondary)"
+                  }}
+                >
+                  {item.code.toUpperCase()}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "var(--sk-font-data)",
+                    fontSize: 9,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "var(--sk-grade-a-text)",
+                    background: "var(--sk-grade-a-bg)",
+                    padding: "3px 8px",
+                    borderRadius: 999
+                  }}
+                >
+                  {t("product_safe", lang)}
+                </span>
+              </span>
+              {item.functionWord ? (
+                <span style={{ display: "block", fontSize: 11.5, color: "var(--sk-text-muted)", marginTop: 5 }}>
+                  {item.functionWord}
+                </span>
+              ) : null}
+              {isOpen && item.description ? (
+                <span
+                  style={{ display: "block", fontSize: 12, lineHeight: 1.5, color: "var(--sk-text-secondary)", marginTop: 8 }}
+                >
+                  {item.description}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
+}
+
+/** Header sub-line for the section — "Nothing to explain" on a clean product. */
+export function additivesHeaderHint(count: number, lang: Language): string {
+  return count === 0 ? t("product_nothing_to_explain", lang) : t("product_tap_to_explain", lang);
 }
