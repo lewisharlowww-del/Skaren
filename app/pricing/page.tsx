@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Check, Crown, LoaderCircle, RotateCcw, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Crown, RotateCcw, Sparkles } from "lucide-react";
+import { Spinner } from "@/components/Spinner";
 import { useLang } from "@/lib/language-context";
 import { configurePurchases, getSubscriptionPlans, purchaseMonthly, purchaseYearly, restorePurchases } from "@/lib/revenuecat";
 import type { SubscriptionPlanInfo, SubscriptionPlans, SubscriptionTrial } from "@/lib/revenuecat";
@@ -260,7 +261,7 @@ export default function PricingPage() {
           className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#33684A] disabled:opacity-60"
         >
           {pendingAction === "restore" ? (
-            <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+            <Spinner size={14} />
           ) : (
             <RotateCcw className="h-3.5 w-3.5" />
           )}
@@ -399,7 +400,7 @@ export default function PricingPage() {
           className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#33684A] text-[16px] font-extrabold text-white shadow-[0_12px_28px_rgba(45,74,38,0.30)] transition active:scale-[0.985] disabled:opacity-60"
         >
           {pendingAction === "purchase" ? (
-            <LoaderCircle className="h-[18px] w-[18px] animate-spin" />
+            <Spinner size={18} color="var(--sk-text-on-dark)" />
           ) : (
             <Crown className="h-[18px] w-[18px]" />
           )}

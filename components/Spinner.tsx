@@ -8,12 +8,14 @@
 type SpinnerProps = {
   size?: number;
   className?: string;
+  /** Bar colour. Defaults to forest; pass a light value on dark buttons. */
+  color?: string;
 };
 
 // Bar heights as a fraction of the box, drawn like a barcode fragment.
 const BARS = [0.55, 1, 0.7, 1, 0.45, 0.85, 0.65];
 
-export function Spinner({ size = 20, className = "" }: SpinnerProps) {
+export function Spinner({ size = 20, className = "", color = "var(--sk-brand-forest, #33684A)" }: SpinnerProps) {
   const gap = Math.max(1.5, size * 0.09);
   const barW = Math.max(1.5, size * 0.09);
   return (
@@ -37,7 +39,7 @@ export function Spinner({ size = 20, className = "" }: SpinnerProps) {
             width: barW,
             height: `${h * 100}%`,
             borderRadius: 0.5,
-            background: "var(--sk-brand-forest, #33684A)",
+            background: color,
             animation: "sk-barcode-pulse 1s ease-in-out infinite",
             animationDelay: `${i * 0.09}s`,
           }}
