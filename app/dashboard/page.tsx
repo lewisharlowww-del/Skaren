@@ -14,13 +14,97 @@ import { useUser } from "@/hooks/useUser";
 import { getEcoGrade, gradeLetterToScore, hasEcoData } from "@/lib/ecoscore";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import type { GradeLetter, ProductResult, ScanRecord } from "@/lib/types";
+import { useLang } from "@/lib/language-context";
+import type { Language } from "@/lib/i18n";
 
 const badges = [
-  { name: "First Scan", test: (scans: ScanRecord[]) => scans.length >= 1 },
-  { name: "5 Products Scanned", test: (scans: ScanRecord[]) => scans.length >= 5 },
-  { name: "Smart Shopper", test: (scans: ScanRecord[]) => scans.some((scan) => scan.ecoscan_score >= 75) },
-  { name: "Careful Checker", test: (scans: ScanRecord[]) => scans.some((scan) => scan.ecoscan_score < 55) }
+  { nameEn: "First Scan", nameNo: "Første skanning", test: (scans: ScanRecord[]) => scans.length >= 1 },
+  { nameEn: "5 Products Scanned", nameNo: "5 produkter skannet", test: (scans: ScanRecord[]) => scans.length >= 5 },
+  { nameEn: "Smart Shopper", nameNo: "Smart handler", test: (scans: ScanRecord[]) => scans.some((scan) => scan.ecoscan_score >= 75) },
+  { nameEn: "Careful Checker", nameNo: "Nøye sjekker", test: (scans: ScanRecord[]) => scans.some((scan) => scan.ecoscan_score < 55) }
 ];
+
+// Every user-facing string on this screen, in both languages. The gradeTone /
+// gradeDetail helpers below take `lang` so even the health-grade blurb follows
+// the app language.
+const copy = {
+  en: {
+    overview: "Your Skaren overview",
+    title: "Stats",
+    subtitle: "See your scan rhythm, saved product history, and the grades you are choosing most often.",
+    newScan: "New scan",
+    monthlyGrade: "Monthly Health Grade",
+    scans: "Scans",
+    bestGrade: "Best grade",
+    badges: "Badges",
+    productsScanned: "Products scanned",
+    productsScannedDetail: "All-time saved product reports",
+    currentStreak: "Current streak",
+    day: "day",
+    days: "days",
+    streakOn: "Nice rhythm. Keep scanning.",
+    streakOff: "Scan today to start a streak.",
+    bestHealthGrade: "Best Health Grade",
+    lowestHealthGrade: "Lowest Health Grade",
+    grade: "Grade",
+    noBest: "No best product yet",
+    noWorst: "No lower-grade product yet",
+    milestones: "Milestones",
+    earned: "Earned",
+    locked: "Locked",
+    latestProducts: "Latest products",
+    recentScans: "Recent scans",
+    noDate: "No date",
+    monthPrompt: "Scan this month to build your Health Grade trend.",
+    basedOn: (n: number) => `Based on ${n} saved product${n === 1 ? "" : "s"} this month.`,
+    gradeLabel: { A: "Health Grade A", B: "Health Grade B", C: "Health Grade C", D: "Health Grade D", E: "Health Grade E" },
+    gradeDetail: {
+      A: "Excellent monthly health profile.",
+      B: "Good monthly health profile.",
+      C: "Average monthly health profile.",
+      D: "Lower monthly health profile.",
+      E: "Very low monthly health profile.",
+    },
+  },
+  no: {
+    overview: "Din Skaren-oversikt",
+    title: "Statistikk",
+    subtitle: "Se skannerytmen din, lagret produkthistorikk og karakterene du velger oftest.",
+    newScan: "Ny skanning",
+    monthlyGrade: "Månedlig helsekarakter",
+    scans: "Skanninger",
+    bestGrade: "Beste karakter",
+    badges: "Merker",
+    productsScanned: "Produkter skannet",
+    productsScannedDetail: "Alle lagrede produktrapporter",
+    currentStreak: "Nåværende rekke",
+    day: "dag",
+    days: "dager",
+    streakOn: "Fin rytme. Fortsett å skanne.",
+    streakOff: "Skann i dag for å starte en rekke.",
+    bestHealthGrade: "Beste helsekarakter",
+    lowestHealthGrade: "Laveste helsekarakter",
+    grade: "Karakter",
+    noBest: "Ingen beste produkt ennå",
+    noWorst: "Ingen produkt med lavere karakter ennå",
+    milestones: "Milepæler",
+    earned: "Oppnådd",
+    locked: "Låst",
+    latestProducts: "Siste produkter",
+    recentScans: "Nylige skanninger",
+    noDate: "Ingen dato",
+    monthPrompt: "Skann denne måneden for å bygge helsekarakter-trenden din.",
+    basedOn: (n: number) => `Basert på ${n} lagret${n === 1 ? "" : "e"} produkt${n === 1 ? "" : "er"} denne måneden.`,
+    gradeLabel: { A: "Helsekarakter A", B: "Helsekarakter B", C: "Helsekarakter C", D: "Helsekarakter D", E: "Helsekarakter E" },
+    gradeDetail: {
+      A: "Utmerket månedlig helseprofil.",
+      B: "God månedlig helseprofil.",
+      C: "Gjennomsnittlig månedlig helseprofil.",
+      D: "Lavere månedlig helseprofil.",
+      E: "Svært lav månedlig helseprofil.",
+    },
+  },
+} as const;
 
 function scoreToGrade(score: number) {
   if (score >= 80) return "A";
@@ -43,20 +127,22 @@ function getScanGradeScore(scan: ScanRecord, overrides: Record<string, GradeLett
 }
 
 function gradeTone(score: number) {
-  if (score >= 80) return { text: "text-forest", ring: "var(--sk-brand-forest)", bg: "from-emerald-50 to-white", label: "Health Grade A", detail: "Excellent monthly health profile." };
-  if (score >= 60) return { text: "text-leaf-700", ring: "var(--sk-brand-leaf)", bg: "from-leaf-50 to-white", label: "Health Grade B", detail: "Good monthly health profile." };
-  if (score >= 40) return { text: "text-amber-700", ring: "var(--sk-grade-d-text)", bg: "from-amber-50 to-white", label: "Health Grade C", detail: "Average monthly health profile." };
-  if (score >= 20) return { text: "text-orange-700", ring: "var(--sk-grade-d-text)", bg: "from-orange-50 to-white", label: "Health Grade D", detail: "Lower monthly health profile." };
-  return { text: "text-rose-700", ring: "var(--sk-grade-e-text)", bg: "from-rose-50 to-white", label: "Health Grade E", detail: "Very low monthly health profile." };
+  if (score >= 80) return { text: "text-forest", ring: "var(--sk-brand-forest)", bg: "from-emerald-50 to-white", grade: "A" as const };
+  if (score >= 60) return { text: "text-leaf-700", ring: "var(--sk-brand-leaf)", bg: "from-leaf-50 to-white", grade: "B" as const };
+  if (score >= 40) return { text: "text-amber-700", ring: "var(--sk-grade-d-text)", bg: "from-amber-50 to-white", grade: "C" as const };
+  if (score >= 20) return { text: "text-orange-700", ring: "var(--sk-grade-d-text)", bg: "from-orange-50 to-white", grade: "D" as const };
+  return { text: "text-rose-700", ring: "var(--sk-grade-e-text)", bg: "from-rose-50 to-white", grade: "E" as const };
 }
 
-function formatDate(value?: string) {
-  if (!value) return "No date";
-  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(new Date(value));
+function formatDate(value: string | undefined, lang: Language, fallback: string) {
+  if (!value) return fallback;
+  return new Intl.DateTimeFormat(lang === "no" ? "nb-NO" : "en", { month: "short", day: "numeric" }).format(new Date(value));
 }
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { lang } = useLang();
+  const text = copy[lang];
   const { user, loading: userLoading, isConfigured } = useUser();
   const { scans, loading: scansLoading } = useScans(user);
   const streak = useStreak(scans);
@@ -161,10 +247,10 @@ export default function DashboardPage() {
       <main className="page-fade-up mx-auto w-full max-w-[430px] overflow-x-hidden px-4 pb-44 pt-4 sm:max-w-6xl sm:py-8">
         <div className="flex w-full min-w-0 flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div className="min-w-0">
-            <p className="type-section-label text-forest">Your Skaren overview</p>
-            <h1 className="type-display-lg mt-1 text-ink sm:mt-2">Stats</h1>
+            <p className="type-section-label text-forest">{text.overview}</p>
+            <h1 className="type-display-lg mt-1 text-ink sm:mt-2">{text.title}</h1>
             <p className="type-body-lg mt-2 max-w-xl text-soil-600">
-              See your scan rhythm, saved product history, and the grades you are choosing most often.
+              {text.subtitle}
             </p>
           </div>
           <button
@@ -172,7 +258,7 @@ export default function DashboardPage() {
             className="focus-ring tap-feedback type-button inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-white shadow-soft"
           >
             <ScanBarcode className="h-5 w-5" />
-            New scan
+            {text.newScan}
           </button>
         </div>
 
@@ -207,25 +293,25 @@ export default function DashboardPage() {
                   <div>
                     <div className="type-section-label inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-2 text-forest shadow-sm">
                       <CalendarDays className="h-4 w-4" />
-                      Monthly Health Grade
+                      {text.monthlyGrade}
                     </div>
-                    <h2 className="type-heading-1 mt-4 text-ink">{tone.label}</h2>
+                    <h2 className="type-heading-1 mt-4 text-ink">{text.gradeLabel[tone.grade]}</h2>
                     <p className="type-body-lg mt-3 text-soil-600">
                       {monthlyScans.length
-                        ? `${tone.detail} Based on ${monthlyScans.length} saved product${monthlyScans.length === 1 ? "" : "s"} this month.`
-                        : "Scan this month to build your Health Grade trend."}
+                        ? `${text.gradeDetail[tone.grade]} ${text.basedOn(monthlyScans.length)}`
+                        : text.monthPrompt}
                     </p>
                     <div className="mt-5 grid grid-cols-3 gap-2">
                       <div className="rounded-2xl bg-white/75 p-3 shadow-sm">
-                        <p className="type-section-label text-soil-500">Scans</p>
+                        <p className="type-section-label text-soil-500">{text.scans}</p>
                         <p className="type-heading-2 mt-1 text-ink">{monthlyScans.length}</p>
                       </div>
                       <div className="rounded-2xl bg-white/75 p-3 shadow-sm">
-                        <p className="type-section-label text-soil-500">Best grade</p>
+                        <p className="type-section-label text-soil-500">{text.bestGrade}</p>
                         <p className="type-heading-2 mt-1 text-ink">{best ? getScanGrade(best, gradeOverrides) : "–"}</p>
                       </div>
                       <div className="rounded-2xl bg-white/75 p-3 shadow-sm">
-                        <p className="type-section-label text-soil-500">Badges</p>
+                        <p className="type-section-label text-soil-500">{text.badges}</p>
                         <p className="type-heading-2 mt-1 text-ink">{earnedBadges}/{badges.length}</p>
                       </div>
                     </div>
@@ -234,22 +320,22 @@ export default function DashboardPage() {
               </div>
 
               <div className="grid w-full min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-1">
-                <StatCard label="Products scanned" value={String(scans.length)} icon={ScanBarcode} detail="All-time saved product reports" tone="dark" />
-                <StatCard label="Current streak" value={`${streak || 0} day${streak === 1 ? "" : "s"}`} icon={Flame} detail={streak ? "Nice rhythm. Keep scanning." : "Scan today to start a streak."} tone={streak ? "green" : "neutral"} />
+                <StatCard label={text.productsScanned} value={String(scans.length)} icon={ScanBarcode} detail={text.productsScannedDetail} tone="dark" />
+                <StatCard label={text.currentStreak} value={`${streak || 0} ${streak === 1 ? text.day : text.days}`} icon={Flame} detail={streak ? text.streakOn : text.streakOff} tone={streak ? "green" : "neutral"} />
               </div>
             </section>
 
             <section className="mt-4 grid w-full min-w-0 gap-4 sm:grid-cols-2">
-              <StatCard label="Best Health Grade" value={best ? `Grade ${getScanGrade(best, gradeOverrides)}` : "–"} icon={Trophy} detail={best?.product_name ?? "No best product yet"} tone="green" />
-              <StatCard label="Lowest Health Grade" value={worst ? `Grade ${getScanGrade(worst, gradeOverrides)}` : "–"} icon={Leaf} detail={worst?.product_name ?? "No lower-grade product yet"} tone={worst && getScanGradeScore(worst, gradeOverrides) < 40 ? "red" : "amber"} />
+              <StatCard label={text.bestHealthGrade} value={best ? `${text.grade} ${getScanGrade(best, gradeOverrides)}` : "–"} icon={Trophy} detail={best?.product_name ?? text.noBest} tone="green" />
+              <StatCard label={text.lowestHealthGrade} value={worst ? `${text.grade} ${getScanGrade(worst, gradeOverrides)}` : "–"} icon={Leaf} detail={worst?.product_name ?? text.noWorst} tone={worst && getScanGradeScore(worst, gradeOverrides) < 40 ? "red" : "amber"} />
             </section>
 
             <section className="mt-4 grid w-full min-w-0 gap-4 sm:mt-6 lg:grid-cols-[0.9fr_1.1fr]">
               <div className="min-w-0 overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-glass backdrop-blur-xl">
                 <div className="flex min-w-0 items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="type-section-label text-forest">Milestones</p>
-                    <h2 className="type-heading-2 mt-1 text-ink">Badges</h2>
+                    <p className="type-section-label text-forest">{text.milestones}</p>
+                    <h2 className="type-heading-2 mt-1 text-ink">{text.badges}</h2>
                   </div>
                   <span className="type-body-sm rounded-full bg-leaf-50 px-3 py-1 font-bold text-forest">{earnedBadges}/{badges.length}</span>
                 </div>
@@ -257,7 +343,14 @@ export default function DashboardPage() {
                   {badges.map((badge) => {
                     const earned = badge.test(scans);
                     return (
-                      <BadgeCard key={badge.name} name={badge.name} earned={earned} icon={Award} />
+                      <BadgeCard
+                        key={badge.nameEn}
+                        name={lang === "no" ? badge.nameNo : badge.nameEn}
+                        earned={earned}
+                        earnedLabel={text.earned}
+                        lockedLabel={text.locked}
+                        icon={Award}
+                      />
                     );
                   })}
                 </div>
@@ -266,8 +359,8 @@ export default function DashboardPage() {
               <div className="min-w-0 overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-glass backdrop-blur-xl">
                 <div className="flex min-w-0 items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="type-section-label text-forest">Latest products</p>
-                    <h2 className="type-heading-2 mt-1 text-ink">Recent scans</h2>
+                    <p className="type-section-label text-forest">{text.latestProducts}</p>
+                    <h2 className="type-heading-2 mt-1 text-ink">{text.recentScans}</h2>
                   </div>
                   <BarChart3 className="h-5 w-5 text-forest" />
                 </div>
@@ -288,7 +381,7 @@ export default function DashboardPage() {
                         <div className="min-w-0 flex-1">
                           <p className="type-heading-3 truncate text-soil-900">{scan.product_name}</p>
                           <p className="type-body-sm truncate text-soil-600">{scan.brand || scan.barcode}</p>
-                          <p className="type-caption mt-1 text-soil-500">{formatDate(scan.created_at)}</p>
+                          <p className="type-caption mt-1 text-soil-500">{formatDate(scan.created_at, lang, text.noDate)}</p>
                         </div>
                         <span className={`type-grade grid h-11 w-11 shrink-0 place-items-center rounded-full border-[4px] text-lg ${recentTone.text}`} style={{ borderColor: recentTone.ring }}>
                           {grade}

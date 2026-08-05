@@ -16,6 +16,68 @@ import { SkarenMark, SkarenWordmark } from "@/components/SkarenLogo";
 import { SupabaseNotice } from "@/components/SupabaseNotice";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { signOutEverywhere } from "@/lib/auth";
+import { useLang } from "@/lib/language-context";
+
+const loginCopy = {
+  en: {
+    skip: "Skip login",
+    welcome: "Welcome back",
+    signInTitle: "Sign in to Skaren",
+    dest: { account: "your account", stats: "your stats", history: "your history", app: "Skaren" },
+    continueTo: (d: string) => `Continue to ${d} and keep your product reports synced.`,
+    loggedIn: "Logged in",
+    continueButton: (d: string) => `Continue to ${d}`,
+    signOut: "Sign out",
+    connecting: "Connecting...",
+    withApple: "Continue with Apple",
+    withGoogle: "Continue with Google",
+    or: "or",
+    email: "Email",
+    password: "Password",
+    sending: "Sending...",
+    forgot: "Forgot password?",
+    hidePassword: "Hide password",
+    showPassword: "Show password",
+    loggingIn: "Logging in...",
+    logIn: "Log in",
+    emailConfirmed: "Email confirmed. You can log in now.",
+    newHere: "New to Skaren?",
+    createAccount: "Create an account",
+    notConfigured: "Supabase is not configured yet.",
+    wrongCredentials: "The email or password is incorrect.",
+    enterEmailFirst: "Enter your email address first.",
+    resetSent: "Password reset link sent. Check your email.",
+  },
+  no: {
+    skip: "Hopp over innlogging",
+    welcome: "Velkommen tilbake",
+    signInTitle: "Logg inn på Skaren",
+    dest: { account: "kontoen din", stats: "statistikken din", history: "historikken din", app: "Skaren" },
+    continueTo: (d: string) => `Fortsett til ${d} og hold produktrapportene dine synkronisert.`,
+    loggedIn: "Logget inn",
+    continueButton: (d: string) => `Fortsett til ${d}`,
+    signOut: "Logg ut",
+    connecting: "Kobler til...",
+    withApple: "Fortsett med Apple",
+    withGoogle: "Fortsett med Google",
+    or: "eller",
+    email: "E-post",
+    password: "Passord",
+    sending: "Sender...",
+    forgot: "Glemt passord?",
+    hidePassword: "Skjul passord",
+    showPassword: "Vis passord",
+    loggingIn: "Logger inn...",
+    logIn: "Logg inn",
+    emailConfirmed: "E-post bekreftet. Du kan logge inn nå.",
+    newHere: "Ny hos Skaren?",
+    createAccount: "Opprett en konto",
+    notConfigured: "Supabase er ikke konfigurert ennå.",
+    wrongCredentials: "E-posten eller passordet er feil.",
+    enterEmailFirst: "Skriv inn e-postadressen din først.",
+    resetSent: "Lenke for tilbakestilling av passord sendt. Sjekk e-posten din.",
+  },
+} as const;
 
 function GoogleIcon() {
   return (
@@ -45,10 +107,15 @@ function LoginContent() {
       ? requestedNext
       : "/account";
   const confirmed = searchParams.get("confirmed") === "1";
+  const { lang } = useLang();
+  const tx = loginCopy[lang];
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
+  // Track message tone explicitly instead of matching English text, so the
+  // success/error styling survives translation.
+  const [messageIsSuccess, setMessageIsSuccess] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -56,12 +123,12 @@ function LoginContent() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
   const destinationLabel = next.startsWith("/account")
-    ? "your account"
+    ? tx.dest.account
     : next.startsWith("/stats")
-      ? "your stats"
+      ? tx.dest.stats
       : next.startsWith("/history")
-        ? "your history"
-        : "Skaren";
+        ? tx.dest.history
+        : tx.dest.app;
 
   useEffect(() => {
     let active = true;
@@ -95,7 +162,8 @@ function LoginContent() {
     setPasswordError("");
 
     if (!supabase) {
-      setMessage("Supabase is not configured yet.");
+      setMessage(tx.notConfigured);
+      setMessageIsSuccess(false);
       setLoading(false);
       return;
     }
@@ -118,6 +186,7 @@ function LoginContent() {
 
     if (error) {
       setMessage(error.message);
+      setMessageIsSuccess(false);
       setLoading(false);
       return;
     }
@@ -157,9 +226,10 @@ function LoginContent() {
         errorText.includes("credential") ||
         errorText.includes("password")
       ) {
-        setPasswordError("The email or password is incorrect.");
+        setPasswordError(tx.wrongCredentials);
       } else {
         setMessage(action.error.message);
+        setMessageIsSuccess(false);
       }
       return;
     }
@@ -175,21 +245,22 @@ function LoginContent() {
     setMessage("");
     setEmailError("");
     if (!email.trim()) {
-      setEmailError("Enter your email address first.");
+      setEmailError(tx.enterEmailFirst);
       return;
     }
 
     setResettingPassword(true);
     const { error } = (await supabase?.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: `${window.location.origin}/reset-password`
-    })) ?? { error: new Error("Supabase is not configured yet.") };
+    })) ?? { error: new Error(tx.notConfigured) };
     setResettingPassword(false);
 
     if (error) {
       setEmailError(error.message);
       return;
     }
-    setMessage("Password reset link sent. Check your email.");
+    setMessage(tx.resetSent);
+    setMessageIsSuccess(true);
   }
 
   return (
@@ -204,7 +275,7 @@ function LoginContent() {
             href="/scan"
             className="focus-ring inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[12px] font-bold text-forest"
           >
-            Skip login
+            {tx.skip}
             <ArrowLeft className="h-4 w-4 rotate-180" />
           </Link>
         </div>
@@ -213,10 +284,10 @@ function LoginContent() {
       <main className="page-fade-up mx-auto w-full max-w-[430px] px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-5">
         <section className="mx-auto w-full max-w-[24rem]">
           <div className="mb-5">
-            <p className="type-section-label text-forest">Welcome back</p>
-            <h1 className="type-heading-1 mt-1.5 text-ink">Sign in to Skaren</h1>
+            <p className="type-section-label text-forest">{tx.welcome}</p>
+            <h1 className="type-heading-1 mt-1.5 text-ink">{tx.signInTitle}</h1>
             <p className="type-body-sm mt-2 text-soil-600">
-              Continue to {destinationLabel} and keep your product reports synced.
+              {tx.continueTo(destinationLabel)}
             </p>
           </div>
 
@@ -236,7 +307,7 @@ function LoginContent() {
                 <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-white text-forest shadow-sm">
                   <CheckCircle2 className="h-6 w-6" />
                 </span>
-                <p className="type-section-label mt-3 text-soil-500">Logged in</p>
+                <p className="type-section-label mt-3 text-soil-500">{tx.loggedIn}</p>
                 <p className="type-heading-3 mt-1 truncate text-ink">{signedInEmail}</p>
               </div>
               <div className="mt-5 grid gap-3">
@@ -245,7 +316,7 @@ function LoginContent() {
                 className="focus-ring tap-feedback type-button inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 text-white shadow-phone"
                 >
                   <UserRound className="h-5 w-5" />
-                  Continue to {destinationLabel}
+                  {tx.continueButton(destinationLabel)}
                 </Link>
                 <button
                   type="button"
@@ -253,7 +324,7 @@ function LoginContent() {
                   className="focus-ring tap-feedback type-button inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-white px-5 py-4 text-soil-700 shadow-sm"
                 >
                   <LogOut className="h-5 w-5" />
-                  Sign out
+                  {tx.signOut}
                 </button>
               </div>
             </div>
@@ -266,7 +337,7 @@ function LoginContent() {
                 className="focus-ring tap-feedback type-button inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-full bg-black px-5 py-4 text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <AppleIcon />
-                {loading ? "Connecting..." : "Continue with Apple"}
+                {loading ? tx.connecting : tx.withApple}
               </button>
 
               <button
@@ -276,18 +347,18 @@ function LoginContent() {
                 className="focus-ring tap-feedback type-button inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-full bg-white px-5 py-4 text-ink shadow-sm ring-1 ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <GoogleIcon />
-                {loading ? "Connecting..." : "Continue with Google"}
+                {loading ? tx.connecting : tx.withGoogle}
               </button>
 
               <div className="type-section-label flex items-center gap-3 text-soil-400">
                 <span className="h-px flex-1 bg-black/10" />
-                or
+                {tx.or}
                 <span className="h-px flex-1 bg-black/10" />
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <label className="type-body-sm block font-bold text-soil-900">
-                  Email
+                  {tx.email}
                   <input
                     className={`focus-ring mt-2 min-h-12 w-full rounded-2xl border bg-white px-4 py-3 font-medium ${
                       emailError ? "border-rose-400" : "border-black/10"
@@ -313,7 +384,7 @@ function LoginContent() {
                 <div>
                   <div className="flex items-center justify-between gap-3">
                     <label htmlFor="login-password" className="type-body-sm font-bold text-soil-900">
-                      Password
+                      {tx.password}
                     </label>
                     <button
                       type="button"
@@ -321,7 +392,7 @@ function LoginContent() {
                       disabled={loading || resettingPassword || !isSupabaseConfigured}
                       className="focus-ring min-h-9 text-[11px] font-bold text-forest disabled:opacity-50"
                     >
-                      {resettingPassword ? "Sending..." : "Forgot password?"}
+                      {resettingPassword ? tx.sending : tx.forgot}
                     </button>
                   </div>
                   <div className="relative mt-2">
@@ -347,7 +418,7 @@ function LoginContent() {
                       type="button"
                       onClick={() => setShowPassword((shown) => !shown)}
                       className="focus-ring absolute right-1 top-1 grid h-10 w-10 place-items-center rounded-xl text-soil-500"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      aria-label={showPassword ? tx.hidePassword : tx.showPassword}
                       aria-pressed={showPassword}
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -364,14 +435,14 @@ function LoginContent() {
                   className="focus-ring tap-feedback type-button inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-4 text-white shadow-phone disabled:cursor-not-allowed disabled:bg-soil-600"
                 >
                   <LogIn className="h-5 w-5" />
-                  {loading ? "Logging in..." : "Log in"}
+                  {loading ? tx.loggingIn : tx.logIn}
                 </button>
               </form>
-              {confirmed ? <p className="rounded-2xl bg-leaf-50 p-4 text-sm font-bold text-forest">Email confirmed. You can log in now.</p> : null}
+              {confirmed ? <p className="rounded-2xl bg-leaf-50 p-4 text-sm font-bold text-forest">{tx.emailConfirmed}</p> : null}
               {message ? (
                 <p
                   className={`rounded-2xl p-4 text-sm font-bold ${
-                    message.startsWith("Password reset")
+                    messageIsSuccess
                       ? "bg-leaf-50 text-forest"
                       : "bg-rose-50 text-rose-700"
                   }`}
@@ -386,9 +457,9 @@ function LoginContent() {
 
           {!signedInEmail ? (
             <p className="mt-6 text-center text-sm font-medium text-soil-600">
-              New to Skaren?{" "}
+              {tx.newHere}{" "}
               <Link href="/auth" className="font-black text-forest underline decoration-leaf-300 decoration-2 underline-offset-4">
-                Create an account
+                {tx.createAccount}
               </Link>
             </p>
           ) : null}

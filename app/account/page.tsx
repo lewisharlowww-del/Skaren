@@ -57,8 +57,8 @@ const ACCOUNT_CACHE_KEY = "account-snapshot";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function getDisplayName(email?: string): string {
-  if (!email) return "Skaren user";
+function getDisplayName(email: string | undefined, lang: Language): string {
+  if (!email) return t('account_user_fallback', lang);
   const local = email.split("@")[0];
   return local
     .split(/[._-]/)
@@ -158,7 +158,7 @@ function MembershipCard({ isPremium, checkingPremium, lang }: { isPremium: boole
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p style={{ fontFamily: "var(--sk-font-brand)", fontSize: 17, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--sk-text-on-dark)" }}>
-            {isPremium ? "Skaren Pro" : t('account_free_member', lang)}
+            {isPremium ? t('account_pro_label', lang) : t('account_free_member', lang)}
           </p>
           {checkingPremium ? (
             <span className="h-4 w-14 animate-pulse rounded-full" style={{ background: "rgba(246,243,236,0.12)" }} />
@@ -526,7 +526,7 @@ export default function AccountPage() {
     }
   }
 
-  if (loading) return <SkarenLoader message="Loading account" />
+  if (loading) return <SkarenLoader message={t('account_loading', lang)} />
 
   const locale = lang === 'no' ? 'nb' : 'en';
   const joinedDate = user?.created_at
@@ -535,7 +535,7 @@ export default function AccountPage() {
       )
     : "";
 
-  const displayName = getDisplayName(user?.email);
+  const displayName = getDisplayName(user?.email, lang);
 
   return (
     <div className="min-h-screen bg-[var(--sk-brand-mist)]">
