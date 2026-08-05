@@ -128,6 +128,12 @@
   --sk-nav-sticker-fold: #DDD5C2;
   --sk-nav-idle: rgba(246, 243, 236, 0.45);
 
+  /* Inverse of Peel: on every non-Scan page the bar is beige paper and the
+     Scan button becomes the black sticker — the same shape, flipped. */
+  --sk-nav-cta-bg: #201D15;
+  --sk-nav-cta-fg: #F6F3EC;
+  --sk-nav-cta-fold: #100E09;
+
   /* ── Canvas-exact values ────────────────────────────────────────────────
      Colours that appear in the design canvas but had no token. Named after
      what they do, so dark mode can move them without touching components. */
@@ -288,6 +294,12 @@ html.dark,
   --sk-nav-sticker-fg: #201D15;
   --sk-nav-sticker-fold: #C9C1AE;
   --sk-nav-idle: rgba(240, 236, 224, 0.42);
+
+  /* Inverse-Peel on dark: the beige bar becomes a recessed surface and the
+     Scan CTA stays the lighter slab so it still reads as raised. */
+  --sk-nav-cta-bg: #2E2A20;
+  --sk-nav-cta-fg: #F0ECE0;
+  --sk-nav-cta-fold: #100E09;
 
   /* Canvas-exact values, lifted for dark per the same rules as the accents. */
   --sk-additive-watch-border: #4A2E23;

@@ -68,14 +68,22 @@ export function BottomNav() {
     startTransition(() => router.push(href));
   };
 
+  // Two states of the same bar:
+  //   Scan page  → Peel: dark slab, Scan is the cream sticker.
+  //   elsewhere  → inverse: beige paper bar, Scan is the black sticker, and
+  //                the tab you are on is a soft pill on the paper.
+  const scanActive = isActive("/scan", true);
+
   return (
     <nav
       className="sk-nav fixed inset-x-0 bottom-0 z-50 flex sm:hidden"
       style={{
         alignItems: "flex-end",
-        background: "var(--sk-nav-bar-bg)",
+        background: scanActive ? "var(--sk-nav-bar-bg)" : "var(--sk-brand-mist-card)",
         borderRadius: "22px 22px 0 0",
+        borderTop: scanActive ? "none" : "1px solid var(--sk-border-default)",
         padding: "0 8px calc(24px + env(safe-area-inset-bottom))",
+        transition: "background-color 200ms ease-out",
       }}
       aria-label={t("nav_scan", lang)}
     >
@@ -83,6 +91,22 @@ export function BottomNav() {
         const itemPath = item.href.split("?")[0];
         const active = isActive(itemPath, item.primary);
         const { Icon } = item;
+
+        // A tab renders as a "sticker" (the raised label with a folded corner)
+        // when it is the Scan CTA off-Scan, or the active tab in Peel mode.
+        const isCta = !!item.primary && !scanActive;
+        const isSticker = isCta || (scanActive && active);
+
+        const stickerBg = isCta ? "var(--sk-nav-cta-bg)" : "var(--sk-nav-sticker-bg)";
+        const stickerFg = isCta ? "var(--sk-nav-cta-fg)" : "var(--sk-nav-sticker-fg)";
+        const stickerFold = isCta ? "var(--sk-nav-cta-fold)" : "var(--sk-nav-sticker-fold)";
+
+        // Non-sticker tabs. In Peel the bar is dark, so idle text is light; in
+        // inverse the bar is beige, so idle text is the muted paper ink and the
+        // active tab wears the soft pill from the original Skaren nav.
+        const idleColor = scanActive ? "var(--sk-nav-idle)" : "var(--sk-nav-inactive)";
+        const pill = !scanActive && active ? "var(--sk-nav-active-pill)" : "transparent";
+        const flatColor = !scanActive && active ? "var(--sk-text-primary)" : idleColor;
 
         return (
           <Link
@@ -102,24 +126,24 @@ export function BottomNav() {
               style={{
                 position: "relative",
                 overflow: "hidden",
-                width: active ? 78 : "100%",
+                width: isSticker ? 78 : "100%",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "flex-end",
                 gap: 6,
-                // Canvas 9A: the sticker has its own ground (11/10); an idle
-                // tab only carries the top lead-in, so both share a baseline.
-                padding: active ? "11px 0 10px" : "11px 0 0",
+                // Canvas 9A: the sticker has its own ground (11/10); a flat tab
+                // only carries the top lead-in, so both share a baseline.
+                padding: isSticker ? "11px 0 10px" : "11px 0 0",
                 minHeight: "var(--sk-min-tap)",
                 borderRadius: 16,
-                background: active ? "var(--sk-nav-sticker-bg)" : "transparent",
-                color: active ? "var(--sk-nav-sticker-fg)" : "var(--sk-nav-idle)",
+                background: isSticker ? stickerBg : pill,
+                color: isSticker ? stickerFg : flatColor,
                 transition: "background-color 180ms ease-out, color 180ms ease-out",
               }}
             >
-              {/* Merk's folded corner — only the stuck label has one. */}
-              {active ? (
+              {/* Merk's folded corner — only a stuck label has one. */}
+              {isSticker ? (
                 <span
                   aria-hidden
                   style={{
@@ -128,7 +152,7 @@ export function BottomNav() {
                     top: 0,
                     width: 15,
                     height: 15,
-                    background: "var(--sk-nav-sticker-fold)",
+                    background: stickerFold,
                     clipPath: "polygon(0 0, 100% 100%, 0 100%)",
                   }}
                 />
