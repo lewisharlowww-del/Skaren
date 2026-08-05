@@ -82,7 +82,7 @@ export function BottomNav() {
         background: scanActive ? "var(--sk-nav-bar-bg)" : "var(--sk-brand-mist-card)",
         borderRadius: "22px 22px 0 0",
         borderTop: scanActive ? "none" : "1px solid var(--sk-border-default)",
-        padding: "0 8px calc(24px + env(safe-area-inset-bottom))",
+        padding: "0 8px calc(14px + env(safe-area-inset-bottom))",
         transition: "background-color 200ms ease-out",
       }}
       aria-label={t("nav_scan", lang)}
@@ -126,15 +126,15 @@ export function BottomNav() {
               style={{
                 position: "relative",
                 overflow: "hidden",
-                width: isSticker ? 88 : "100%",
+                width: isSticker ? 76 : "100%",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "flex-end",
-                gap: 7,
-                // Canvas 9A: the sticker has its own ground (14/13); a flat tab
+                gap: 5,
+                // Canvas 9A: the sticker has its own ground (10/9); a flat tab
                 // only carries the top lead-in, so both share a baseline.
-                padding: isSticker ? "14px 0 13px" : "14px 0 0",
+                padding: isSticker ? "10px 0 9px" : "10px 0 0",
                 minHeight: "var(--sk-min-tap)",
                 borderRadius: 16,
                 background: isSticker ? stickerBg : pill,
@@ -150,15 +150,15 @@ export function BottomNav() {
                     position: "absolute",
                     right: 0,
                     top: 0,
-                    width: 17,
-                    height: 17,
+                    width: 15,
+                    height: 15,
                     background: stickerFold,
                     clipPath: "polygon(0 0, 100% 100%, 0 100%)",
                   }}
                 />
               ) : null}
-              <Icon size={22} />
-              <span style={{ fontFamily: "var(--sk-font-ui)", fontSize: 11, fontWeight: 500 }}>
+              <Icon size={19} />
+              <span style={{ fontFamily: "var(--sk-font-ui)", fontSize: 10, fontWeight: 500 }}>
                 {t(item.key, lang)}
               </span>
             </span>
