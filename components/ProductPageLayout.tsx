@@ -271,7 +271,19 @@ export function ProductPageLayout({
   const hasOfficialEcoData = hasEcoData(product);
   const ecoGrade = hasOfficialEcoData ? product.ecoGradeLetter ?? getEcoGrade(product) : null;
   const healthGrade = hasNutritionSignal(product) ? product.healthGrade : null;
-  const merkVerdict = getMerkVerdict(healthGrade, lang);
+  // Merk speaks. Prefer his AI-authored verdict about THIS product (he actually
+  // read its ingredients and numbers); fall back to the static grade map when
+  // there's no AI verdict (free users, model offline, or a data-poor product).
+  const staticVerdict = getMerkVerdict(healthGrade, lang);
+  const aiVerdict = product.merkVerdict ?? null;
+  const merkVerdict = aiVerdict
+    ? {
+        expression: aiVerdict.expression as MerkExpression,
+        headline: aiVerdict.headline,
+        eyebrow: null as string | null,
+        text: aiVerdict.text,
+      }
+    : staticVerdict;
   // Context line — the product's shelf. Prefer the first Kassalapp category,
   // fall back to the OFF category, then to a generic "shelf" word.
   const shelfContext = (() => {

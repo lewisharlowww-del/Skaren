@@ -3,13 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 import { getEcoGrade, getNutritionGrade, gradeLetterToScore, hasEcoData } from "@/lib/ecoscore";
 import { calculateHealthGrade, hasNokkelhullLabel, nutritionDataFromKassalapp } from "@/lib/healthscore";
 import { fetchKassalappProduct, getVerifiedDisplayImage } from "@/lib/kassalapp";
-import { generateAiSummary } from "@/lib/openai";
+import { generateAiSummary, generateMerkVerdict } from "@/lib/openai";
 import {
   fetchOpenFoodFactsProduct,
   normalizeOpenFoodFactsProduct
 } from "@/lib/openfoodfacts";
 import { getCachedAiAnalysis, saveCachedAiAnalysis } from "@/lib/productCache";
-import type { ProductResult } from "@/lib/types";
+import type { MerkVerdict, ProductResult } from "@/lib/types";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -80,8 +80,9 @@ export async function POST(request: Request) {
     const authHeader = request.headers.get("authorization");
     const token = authHeader?.replace("Bearer ", "") ?? null;
 
-    const body = (await request.json()) as { barcode?: string };
+    const body = (await request.json()) as { barcode?: string; lang?: string };
     const barcode = body.barcode?.trim();
+    const lang: "no" | "en" = body.lang === "no" ? "no" : "en";
 
     if (!barcode) {
       return NextResponse.json({ error: "Barcode is required." }, { status: 400 });
@@ -176,15 +177,45 @@ export async function POST(request: Request) {
     });
 
     let aiSummary = cachedAi?.aiSummary ?? [];
+    // Merk's verdict is language-specific, so the cache holds one per language.
+    // Serve a cached verdict in the requested language to everyone; only spend a
+    // fresh OpenAI call for premium users when this language isn't cached yet.
+    let merkVerdict: MerkVerdict | null = cachedAi?.merkVerdict?.[lang] ?? null;
 
-    if (!cachedAi && isPremium) {
-      aiSummary = await generateAiSummary(productWithGrades).catch((error) => {
-        console.error("[Scan] AI summary error:", error);
-        return [];
-      });
+    const needsSummary = !cachedAi && isPremium;
+    const needsVerdict = !merkVerdict && isPremium;
 
-      if (aiSummary.length > 0) {
-        await saveCachedAiAnalysis({ barcode: productWithGrades.barcode, aiSummary }).catch((error) => {
+    if (needsSummary || needsVerdict) {
+      const [freshSummary, freshVerdict] = await Promise.all([
+        needsSummary
+          ? generateAiSummary(productWithGrades).catch((error) => {
+              console.error("[Scan] AI summary error:", error);
+              return [];
+            })
+          : Promise.resolve(aiSummary),
+        needsVerdict
+          ? generateMerkVerdict(productWithGrades, lang).catch((error) => {
+              console.error("[Scan] Merk verdict error:", error);
+              return null;
+            })
+          : Promise.resolve(merkVerdict),
+      ]);
+
+      aiSummary = freshSummary;
+      if (freshVerdict) merkVerdict = freshVerdict;
+
+      // Persist both, merging the fresh verdict into the per-language map so we
+      // never clobber a verdict already cached in the other language.
+      if (aiSummary.length > 0 || freshVerdict) {
+        const verdictMap = {
+          ...(cachedAi?.merkVerdict ?? {}),
+          ...(freshVerdict ? { [lang]: freshVerdict } : {}),
+        };
+        await saveCachedAiAnalysis({
+          barcode: productWithGrades.barcode,
+          aiSummary,
+          merkVerdict: verdictMap,
+        }).catch((error) => {
           console.error("[Scan] AI cache save error:", error);
         });
       }
@@ -209,6 +240,7 @@ export async function POST(request: Request) {
         ...productWithGrades,
         ...imageData,
         aiSummary,
+        merkVerdict,
       }
     });
   } catch (error) {

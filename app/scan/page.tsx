@@ -183,7 +183,7 @@ export default function ScanPage() {
       const response = await fetch("/api/scan", {
         method: "POST",
         headers,
-        body: JSON.stringify({ barcode: cleanBarcode })
+        body: JSON.stringify({ barcode: cleanBarcode, lang })
       });
       const data = (await response.json()) as { product?: ProductResult; savedToHistory?: boolean; error?: string };
 

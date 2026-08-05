@@ -1,4 +1,4 @@
-import type { ProductInsight, ProductResult } from "@/lib/types";
+import type { ProductInsight, ProductResult, MerkVerdict, GradeLetter } from "@/lib/types";
 
 type OpenAiTextBlock = {
   type?: string;
@@ -246,5 +246,135 @@ Allergens: ${product.allergens.join(", ") || "none listed"}
       .slice(0, 3);
   } catch {
     return [];
+  }
+}
+
+// ── Merk's verdict ────────────────────────────────────────────────────────────
+// Merk is the label that decided to start helping. Every product has a label;
+// most people ignore it; this one explains food before you buy it. He does not
+// judge — he helps you understand. This is his single spoken line on the result
+// screen, authored from the real scanned product so he actually "knows" it.
+
+// The faces Merk can pull, mapped to what a face means so the model can only
+// pick a real expression and we can safely fall back if it invents one.
+const MERK_FACES = new Set([
+  "happy", "curious", "surprised", "unsure", "confident",
+  "celebration", "concern", "thinking", "scanning",
+] as const);
+
+function normalizeMerkExpression(
+  value: unknown,
+  grade: GradeLetter | null
+): MerkVerdict["expression"] {
+  if (typeof value === "string" && MERK_FACES.has(value as MerkVerdict["expression"])) {
+    return value as MerkVerdict["expression"];
+  }
+  // Fall back to a face that matches the grade rather than a flat default.
+  if (grade === "A") return "confident";
+  if (grade === "B") return "happy";
+  if (grade === "C") return "thinking";
+  if (grade === "D") return "curious";
+  if (grade === "E") return "concern";
+  return "unsure";
+}
+
+/**
+ * Ask Merk to look at one scanned product and say what he sees, in his own
+ * voice. Returns a structured verdict (face + headline + one explaining line)
+ * or null when the model is unavailable, so the caller can fall back to the
+ * static grade map. Never throws.
+ */
+export async function generateMerkVerdict(
+  product: ProductResult,
+  language: "no" | "en" = "en"
+): Promise<MerkVerdict | null> {
+  const grade = (product.healthGrade ?? null) as GradeLetter | null;
+  const no = language === "no";
+
+  const sugarValue = getSugarValue(product);
+  const sugarInIngredients = ingredientsContainSugar(product.ingredients);
+  const sugarContext = sugarValue !== "unknown"
+    ? `${sugarValue}g per 100g`
+    : sugarInIngredients
+      ? "exact value unavailable, but the ingredients list added sugars"
+      : "not listed";
+
+  const worstAdditives = product.additives
+    .filter((a) => a.risk === "avoid" || a.risk === "moderate")
+    .map((a) => `${a.code} ${a.name} (${a.risk})`)
+    .join(", ");
+
+  const systemPrompt = `You are Merk, the mascot and single voice of Skaren, a Norwegian food-scanning app.
+
+WHO YOU ARE
+Every product has a label. Most people ignore it. You are the one label that decided to start helping instead. You do not judge people or food — you help people understand what they are about to buy, in plain words, before they buy it. You are the knowledgeable friend who happens to be a food label: warm, calm, honest, never preachy, never alarmist.
+
+YOUR JOB
+Look at the ONE product below and say what you genuinely see. Ground every word in the real data given — you actually know this product, so be specific. If a shopper reads your verdict they should understand the single most important thing about this food and why.
+
+VOICE RULES
+- First person, as Merk ("I'd..."/"Jeg ville...") is allowed but do not overuse "I".
+- Never say the words judge, bad, good/dårlig, forbidden, or scold the shopper.
+- Never mention Skaren, Nutri-Score, Eco-Score, NOVA by name, or any numeric app score. Translate them into meaning.
+- Reference real numbers when they matter (e.g. "${no ? "1,2 g salt" : "1.2g salt"}", "${no ? "18 % fett" : "18% fat"}").
+- Never claim "no added sugar"/"sukkerfri"/"low sugar" if sugar is >= 5g/100g or the ingredients list sweeteners.
+- If a field is missing, say so briefly and move on — never output "N/A", "unknown", or "not listed" as text.
+- Write in ${no ? "Norwegian Bokmål" : "English"}.
+
+WHAT TO RETURN — a single JSON object, nothing else:
+{
+  "expression": one of "confident" | "happy" | "celebration" | "curious" | "thinking" | "unsure" | "surprised" | "concern",
+  "headline": ${no ? "3–6 words" : "3–6 words"}, the one sharpest fact in your words, sentence case, no trailing period,
+  "text": one sentence, max 22 words, that explains what it means for the shopper and what to do with it
+}
+
+CHOOSING YOUR FACE (match your words to your face)
+- confident / happy / celebration: a clean, strong product — little to worry about.
+- thinking / curious: a middle-of-the-shelf product — fine sometimes, one thing to notice.
+- unsure: you genuinely lack the data to speak with confidence.
+- concern: a real, specific issue worth flagging calmly (never anger).`;
+
+  const userMessage = `Product: ${product.name}
+Brand: ${product.brand || "unknown"}
+Overall grade (A best … E worst, for YOUR judgement only, never print it): ${grade ?? "no grade"}
+Category: ${product.categories || product.kassalappCategories.join(", ") || "unknown"}
+Processing (NOVA 1 unprocessed … 4 ultra-processed): ${product.novaGroup ?? "unknown"}
+Ingredients: ${product.ingredients || "not available"}
+Additives worth naming: ${worstAdditives || "none of concern"}
+All additive codes: ${product.additives.map((a) => a.code).join(", ") || "none detected"}
+Fat: ${getFatValue(product)}g per 100g
+Saturated fat: ${getNutritionValue(product, ["saturated", "mettede", "mettet"])}g per 100g
+Sugar: ${sugarContext}
+Protein: ${getNutritionValue(product, ["protein", "proteins"])}g per 100g
+Salt: ${getNutritionValue(product, ["salt", "sodium", "natrium"])}g per 100g
+Eco grade: ${product.ecoGrade ?? "not available"}
+Origin: ${product.origins || "not listed"}
+Allergens: ${product.allergens.join(", ") || "none listed"}`;
+
+  const raw = await callOpenAi(userMessage, 320, systemPrompt);
+  if (!raw) return null;
+
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
+
+  try {
+    const parsed = JSON.parse(jsonMatch[0]) as {
+      expression?: unknown;
+      headline?: unknown;
+      text?: unknown;
+    };
+
+    const headline = typeof parsed.headline === "string" ? parsed.headline.trim().replace(/[.!]+$/, "") : "";
+    const body = typeof parsed.text === "string" ? parsed.text.trim() : "";
+    if (!headline || !body) return null;
+
+    return {
+      expression: normalizeMerkExpression(parsed.expression, grade),
+      headline,
+      text: body,
+      source: "ai",
+    };
+  } catch {
+    return null;
   }
 }

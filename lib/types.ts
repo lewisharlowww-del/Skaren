@@ -7,6 +7,29 @@ export type ProductInsight = {
   text: string;
 };
 
+// Merk's spoken verdict about one scanned product. This is what he "says" on
+// the result screen: a single voice that explains, never judges. `expression`
+// picks his face; `headline` is the one sharp fact in his words; `text` is the
+// short explanation underneath. AI-authored when premium, falls back to the
+// static grade map otherwise. `source` records who wrote it so history can tell.
+export type MerkVerdictSource = "ai" | "static";
+export type MerkExpressionName =
+  | "happy"
+  | "curious"
+  | "surprised"
+  | "unsure"
+  | "confident"
+  | "celebration"
+  | "concern"
+  | "thinking"
+  | "scanning";
+export type MerkVerdict = {
+  expression: MerkExpressionName;
+  headline: string;
+  text: string;
+  source: MerkVerdictSource;
+};
+
 export type ScanRecord = {
   id?: string;
   user_id: string;
@@ -57,6 +80,9 @@ export type ProductResult = {
   additives: AdditiveAnalysis[];
   novaGroup: 1 | 2 | 3 | 4 | null;
   aiSummary: Array<string | ProductInsight>;
+  /* Merk's spoken verdict — his single voice about this product. AI-authored
+     for premium users, cached for everyone, static grade fallback otherwise. */
+  merkVerdict?: MerkVerdict | null;
   /* ── Scoring provenance ──────────────────────────────────────────────────
      Which engine produced the number, and which version of it. Persisted with
      every saved scan so a re-tune never silently rewrites a user's history. */

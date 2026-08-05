@@ -44,7 +44,8 @@ export function withProductDefaults(product: ProductResult): ProductResult {
     additives: product.additives ?? [],
     novaGroup: product.novaGroup ?? null,
     hasNokkelhull: product.hasNokkelhull ?? hasNokkelhullLabel(product.labels ?? []),
-    aiSummary: product.aiSummary ?? []
+    aiSummary: product.aiSummary ?? [],
+    merkVerdict: product.merkVerdict ?? null
   };
 
   return {
