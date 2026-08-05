@@ -126,15 +126,15 @@ export function BottomNav() {
               style={{
                 position: "relative",
                 overflow: "hidden",
-                width: isSticker ? 78 : "100%",
+                width: isSticker ? 88 : "100%",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "flex-end",
-                gap: 6,
-                // Canvas 9A: the sticker has its own ground (11/10); a flat tab
+                gap: 7,
+                // Canvas 9A: the sticker has its own ground (14/13); a flat tab
                 // only carries the top lead-in, so both share a baseline.
-                padding: isSticker ? "11px 0 10px" : "11px 0 0",
+                padding: isSticker ? "14px 0 13px" : "14px 0 0",
                 minHeight: "var(--sk-min-tap)",
                 borderRadius: 16,
                 background: isSticker ? stickerBg : pill,
@@ -150,15 +150,15 @@ export function BottomNav() {
                     position: "absolute",
                     right: 0,
                     top: 0,
-                    width: 15,
-                    height: 15,
+                    width: 17,
+                    height: 17,
                     background: stickerFold,
                     clipPath: "polygon(0 0, 100% 100%, 0 100%)",
                   }}
                 />
               ) : null}
-              <Icon size={18} />
-              <span style={{ fontFamily: "var(--sk-font-ui)", fontSize: 10, fontWeight: 500 }}>
+              <Icon size={22} />
+              <span style={{ fontFamily: "var(--sk-font-ui)", fontSize: 11, fontWeight: 500 }}>
                 {t(item.key, lang)}
               </span>
             </span>
