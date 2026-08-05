@@ -405,7 +405,7 @@ export default function StatsPage() {
             <h1 className="type-heading-1 mt-1">{text.rangeTitle[range]}</h1>
 
             <div
-              className="mt-5 grid grid-cols-3 rounded-[var(--sk-radius-pill)] border-[0.5px] border-[var(--sk-border-default)] bg-[var(--sk-brand-mist-dark)] p-1"
+              className="mt-5 flex gap-2"
               role="group"
               aria-label={text.label}
             >
@@ -415,10 +415,10 @@ export default function StatsPage() {
                   type="button"
                   onClick={() => setRange(option)}
                   aria-pressed={range === option}
-                  className={`focus-ring min-h-10 rounded-[var(--sk-radius-pill)] text-xs font-semibold transition ${
+                  className={`focus-ring min-h-10 rounded-full border px-4 text-[12.5px] transition ${
                     range === option
-                      ? "bg-[var(--sk-surface-white)] text-[var(--sk-brand-forest)] shadow-sm"
-                      : "text-[var(--sk-text-secondary)]"
+                      ? "border-[#201D15] bg-[#201D15] font-semibold text-[#F6F3EC]"
+                      : "border-[#E0D8C8] bg-[var(--sk-surface-white)] text-[#5C5546]"
                   }`}
                 >
                   {text.rangeTab[option]}

@@ -1015,8 +1015,8 @@ export default function ShoppingListPage() {
                   onClick={() => setActiveCategory(category)}
                   className={`focus-ring min-h-10 shrink-0 rounded-full border px-3 text-xs font-semibold transition ${
                     active
-                      ? "border-[var(--sk-brand-forest)] bg-[var(--sk-brand-forest)] text-white"
-                      : "border-[var(--sk-border-default)] bg-[var(--sk-surface-white)] text-[var(--sk-text-secondary)]"
+                      ? "border-[#201D15] bg-[#201D15] text-[#F6F3EC]"
+                      : "border-[#E0D8C8] bg-[var(--sk-surface-white)] text-[#5C5546]"
                   }`}
                 >
                   {category} · {count}
