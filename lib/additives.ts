@@ -38,8 +38,11 @@ export const ADDITIVES: Record<string, { name: string; risk: AdditiveRisk; descr
 };
 
 export function normalizeAdditiveCode(value: string) {
-  const match = value.toLowerCase().match(/e[\s-]?(\d{3,4})/);
-  return match ? `e${match[1]}` : null;
+  // Keep the letter suffix (E472a, E160a, E150c…): those are distinct additives
+  // with their own identity. lookupENumber handles both the specific variant
+  // and a bare parent code, so preserve whatever the label actually printed.
+  const match = value.toLowerCase().match(/e[\s-]?(\d{3,4})([a-z]?)/);
+  return match ? `e${match[1]}${match[2]}` : null;
 }
 
 export function analyzeAdditives(tags: string[] = []): AdditiveAnalysis[] {

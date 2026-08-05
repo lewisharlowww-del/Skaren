@@ -190,7 +190,7 @@ function getAllergenEmoji(name: string): string {
   if (/sesame|sesam/.test(lower)) return "🌿";
   if (/celery|selleri/.test(lower)) return "🌿";
   if (/mustard|sennep/.test(lower)) return "🟡";
-  if (/sulphite|sulfit|svovl/.test(lower)) return "⚗️";
+  if (/sulphite|sulfit|svovel/.test(lower)) return "⚗️";
   return "⚠️";
 }
 
