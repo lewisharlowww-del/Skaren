@@ -28,6 +28,9 @@ export type MerkVerdict = {
   headline: string;
   text: string;
   source: MerkVerdictSource;
+  /* Prompt version this verdict was authored under. Lets the cache retire
+     verdicts written by an older prompt without waiting out the TTL. */
+  v?: number;
 };
 
 export type ScanRecord = {

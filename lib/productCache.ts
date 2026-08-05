@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { MERK_VERDICT_VERSION } from "@/lib/openai";
 import type { MerkVerdict, ProductInsight } from "@/lib/types";
 
 // Merk's verdict is language-specific, so we cache one verdict per language
@@ -54,11 +55,15 @@ const MERK_FACE_VALUES = new Set([
 
 function isMerkVerdict(value: unknown): value is MerkVerdict {
   if (!value || typeof value !== "object") return false;
-  const v = value as { expression?: unknown; headline?: unknown; text?: unknown };
+  const v = value as { expression?: unknown; headline?: unknown; text?: unknown; v?: unknown };
   return (
     typeof v.expression === "string" && MERK_FACE_VALUES.has(v.expression) &&
     typeof v.headline === "string" && v.headline.trim().length > 0 &&
-    typeof v.text === "string" && v.text.trim().length > 0
+    typeof v.text === "string" && v.text.trim().length > 0 &&
+    // Only accept verdicts authored by the current prompt version. Older ones
+    // (e.g. v1, which recited nutrition numbers) are treated as a cache miss so
+    // a fresh scan regenerates them in the new voice.
+    v.v === MERK_VERDICT_VERSION
   );
 }
 
