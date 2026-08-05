@@ -129,6 +129,15 @@
   --sk-harmless-text: #5E8570;           /* "2 harmless" — quieter than forest */
   --sk-allergen-label: #AC8571;          /* allergen card's own label tint */
   --sk-rule-strong: #EDE7D8;             /* column divider in the nutrition table */
+
+  /* Merk's verdict card. This CANNOT be --sk-text-primary: that token inverts
+     to cream in dark mode, which would render the card cream-on-cream. The
+     canvas draws it as ink on light and a recessed surface on dark. */
+  --sk-verdict-bg: #201D15;
+  --sk-verdict-fold: #14120C;
+  --sk-verdict-text: #F6F3EC;
+  --sk-verdict-body: rgba(246, 243, 236, 0.72);
+  --sk-bar-harmless: #BFD5C6;            /* the sage half of the additive ratio */
 }
 
 .sk-bg-mist { background-color: var(--sk-brand-mist); }
@@ -271,6 +280,13 @@ html.dark,
   --sk-harmless-text: #8FBF9F;
   --sk-allergen-label: #C08D74;
   --sk-rule-strong: #2E2A20;
+
+  --sk-verdict-bg: #241F17;
+  --sk-verdict-fold: #100E09;
+  --sk-verdict-text: #F0ECE0;
+  --sk-verdict-body: rgba(240, 236, 224, 0.72);
+  --sk-bar-harmless: #3E6B4C;
+  --sk-harmless-text: #8FC79E;
 }
 
 /* ── Page & body ─────────────────────────────────────────────────────────── */

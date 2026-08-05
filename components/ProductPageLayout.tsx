@@ -463,7 +463,20 @@ export function ProductPageLayout({
             {score ?? "–"}
           </span>
         </div>
-        <span ref={scanResultRef} aria-hidden style={{ opacity: 0, pointerEvents: "none", width: 0 }} />
+        <span
+          ref={scanResultRef}
+          style={{
+            fontFamily: "var(--sk-font-ui)",
+            fontVariantNumeric: "tabular-nums",
+            fontSize: 10.5,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: "var(--sk-text-muted)",
+            willChange: "opacity"
+          }}
+        >
+          {shelfContext ?? ""}
+        </span>
         <div className="h-10 w-10" aria-hidden="true" />
       </div>
 
@@ -471,12 +484,6 @@ export function ProductPageLayout({
             spanning full width (no thumbnail — the label IS Merk). ────────── */}
       <div ref={heroRef} className="mx-5 mt-2" style={{ willChange: "opacity" }}>
         <div ref={heroContentRef} style={{ willChange: "opacity, transform" }}>
-          {/* Context line — where this sits on its shelf, mono uppercase. */}
-          {shelfContext ? (
-            <p style={{ fontFamily: "var(--sk-font-ui)", fontVariantNumeric: "tabular-nums", fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--sk-text-muted)", marginBottom: 6 }}>
-              {shelfContext}
-            </p>
-          ) : null}
           <h1
             style={{
               fontFamily: "var(--sk-font-ui)",
@@ -500,7 +507,7 @@ export function ProductPageLayout({
       </div>
 
       {/* ── SCORE CARD — the number, the shelf, and two grade tiles ──────── */}
-      <div className="mx-5 mt-3.5">
+      <div className="mx-5" style={{ marginTop: 14 }}>
         <ScoreCard
           score={score}
           nutriScore={product.nutritionGradeLetter ?? null}
@@ -515,12 +522,12 @@ export function ProductPageLayout({
       {/* ── MERK'S VERDICT — traced from the canvas: ink card, 26px folded
             corner, Merk at 94px aligned to the BOTTOM edge, one 17.5px cream
             headline carrying the sharpest single fact, then the sentence. ──── */}
-      <section className="mx-5 mt-3">
+      <section className="mx-5" style={{ marginTop: 12 }}>
         <div
           style={{
             position: "relative",
             overflow: "hidden",
-            background: "var(--sk-text-primary)",
+            background: "var(--sk-verdict-bg)",
             borderRadius: 22,
             padding: "18px 20px",
             display: "flex",
@@ -537,13 +544,13 @@ export function ProductPageLayout({
               right: 0,
               width: 26,
               height: 26,
-              background: "#14120c",
+              background: "var(--sk-verdict-fold)",
               clipPath: "polygon(0 0, 100% 100%, 0 100%)"
             }}
           />
           <Merk expression={merkVerdict.expression} size={94} limbs={false} aria-label="Merk" />
           <div style={{ flex: 1, minWidth: 0, paddingBottom: 5 }}>
-            <p style={{ fontSize: 17.5, fontWeight: 400, color: "var(--sk-text-on-dark)" }}>
+            <p style={{ fontSize: 17.5, fontWeight: 400, color: "var(--sk-verdict-text)" }}>
               {merkVerdict.eyebrow ?? merkVerdict.headline}
             </p>
             <p
@@ -551,7 +558,7 @@ export function ProductPageLayout({
                 fontFamily: "var(--sk-font-ui)",
                 fontSize: 13.5,
                 lineHeight: 1.45,
-                color: "rgba(246,243,236,.72)",
+                color: "var(--sk-verdict-body)",
                 marginTop: 4
               }}
             >
@@ -572,11 +579,11 @@ export function ProductPageLayout({
       />
 
       {/* ── SCROLLABLE CONTENT ──────────────────────────────────────────── */}
-      <div className="px-5 pb-4 pt-3">
+      <div className="px-5" style={{ paddingTop: 12, paddingBottom: 30 }}>
 
         {/* 2. PROCESSING LEVEL — four discrete steps, only the active one lit */}
         {product.novaGroup ? (
-          <div className="mb-4">
+          <div style={{ marginTop: 16 }}>
             {isPremium ? (
               <ProcessingLevel novaGroup={product.novaGroup} lang={lang} />
             ) : (
@@ -585,8 +592,8 @@ export function ProductPageLayout({
           </div>
         ) : null}
 
-        {/* 3. ALLERGENS — what it contains, then what it does not */}
-        <div className="mb-4">
+        {/* 3. ALLERGENS — sits tight under processing, 9px, as one thought */}
+        <div style={{ marginTop: 9 }}>
           {isPremium ? (
             <AllergenCard allergens={product.allergens} lang={lang} />
           ) : (
@@ -597,7 +604,7 @@ export function ProductPageLayout({
 
         {/* 3b. ADDITIVES — the marketing spearhead sits high, right under the
               verdict and above nutrition. */}
-        <div className="mb-4 flex flex-col gap-2.5">
+        <div className="flex flex-col" style={{ gap: 10 }}>
           <div className="flex items-baseline justify-between gap-3">
             <SectionLabel>{t('product_additives', lang)}</SectionLabel>
             <span style={{ fontSize: 12, color: "var(--sk-text-muted)" }}>
@@ -614,8 +621,7 @@ export function ProductPageLayout({
         {/* 4. NUTRITION — one merged section: grams as printed (left) +
               share of your day (right). Premium unlocks the % column. */}
         {nutritionRows.length > 0 && (
-          <div className="mb-4 flex flex-col gap-2.5">
-            <SectionLabel>{t('product_nutrition', lang)}</SectionLabel>
+          <div style={{ marginTop: 16 }}>
             {isPremium ? (
               <NutritionTable product={product} nutrition={product.kassalappNutrition} lang={lang} />
             ) : (
@@ -643,13 +649,13 @@ export function ProductPageLayout({
         {/* 6. KEY INSIGHTS — removed: the verdict now carries a single voice. */}
 
         {/* 7. WHAT WOULD MERK BUY — use-case advice, deliberately no numbers */}
-        <div className="mb-4">
+        <div style={{ marginTop: 16 }}>
           <MerkBuyNote grade={healthGrade} lang={lang} />
         </div>
 
         {/* 8. INGREDIENTS — free for all users */}
         {ingredients != null && (
-          <div className="mb-4 flex flex-col gap-2.5">
+          <div className="flex flex-col" style={{ marginTop: 14, gap: 9 }}>
             {/* Collapsed disclosure, exactly as the canvas draws it: a count,
                 a one-line reassurance, and a chevron. The list itself is rarely
                 what people want — knowing it is there is. */}
@@ -698,7 +704,7 @@ export function ProductPageLayout({
         )}
 
         {/* 9. ALTERNATIVES — opt-in, ranked on criteria, never sponsored */}
-        <div className="mb-4">
+        <div style={{ marginTop: 16 }}>
           <Alternatives
             product={product}
             clean={allAdditives.length === 0 && (healthGrade === "A" || healthGrade === "B")}

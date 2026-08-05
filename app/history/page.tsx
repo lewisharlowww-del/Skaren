@@ -256,33 +256,33 @@ function ScanRow({
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-[14px] font-bold text-[#33684A] truncate leading-tight">
+        <p
+          className="truncate"
+          style={{ fontSize: 14.5, color: "var(--sk-text-primary)", lineHeight: 1.2 }}
+        >
           {scan.product_name}
         </p>
-        <p className="text-[12px] text-[#948B76] mt-0.5">
+        <p style={{ fontSize: 12, color: "var(--sk-text-muted)", marginTop: 1 }}>
           {scan.brand ?? scan.barcode}
+          {time ? ` · ${time}` : ""}
         </p>
       </div>
 
       {/* The numeric score, right-aligned in its band colour. No grade letters
           and no additive callouts — those belong on the result page. */}
-      <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-        <span
-          style={{
-            fontFamily: 'var(--sk-font-ui)',
-            fontVariantNumeric: 'tabular-nums',
-            fontSize: 19,
-            lineHeight: 1.1,
-            color: scoreColour(scan.ecoscan_score ?? null),
-          }}
-        >
-          {scan.ecoscan_score ?? '–'}
-        </span>
-        <span className="text-[12px]" style={{ color: 'var(--sk-text-muted)' }}>
-          {count > 1 ? `${count} ${lang === 'no' ? 'visninger' : 'views'} · ` : ''}
-          {time}
-        </span>
-      </div>
+      <span
+        style={{
+          fontFamily: 'var(--sk-font-ui)',
+          fontVariantNumeric: 'tabular-nums',
+          fontSize: 19,
+          width: 26,
+          textAlign: 'right',
+          flexShrink: 0,
+          color: scoreColour(scan.ecoscan_score ?? null),
+        }}
+      >
+        {scan.ecoscan_score ?? '–'}
+      </span>
     </Link>
   )
 }

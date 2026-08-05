@@ -131,7 +131,7 @@ export function Additives({ additives, lang = "no" }: AdditivesProps) {
           <span style={{ fontSize: 12.5, color: "var(--sk-text-muted)" }}>{t("product_additives_total", lang)}</span>
         </div>
         <div
-          style={{ marginTop: 11, height: 10, borderRadius: 3, background: "var(--sk-border-green)" }}
+          style={{ marginTop: 11, height: 10, borderRadius: 3, background: "var(--sk-bar-harmless)" }}
           aria-hidden
         />
         <p style={{ marginTop: 7, fontSize: 11.5, color: "var(--sk-text-secondary)" }}>
@@ -183,7 +183,7 @@ export function Additives({ additives, lang = "no" }: AdditivesProps) {
                   flex: 1,
                   height: 10,
                   borderRadius: 3,
-                  background: item.risk === "safe" ? "var(--sk-border-green)" : "var(--sk-score-weak)"
+                  background: item.risk === "safe" ? "var(--sk-bar-harmless)" : "var(--sk-score-weak)"
                 }}
               />
             ))}
@@ -207,7 +207,7 @@ export function Additives({ additives, lang = "no" }: AdditivesProps) {
           gridTemplateColumns: "1fr 1fr",
           gap: 8,
           alignItems: "start",
-          marginTop: 10
+          marginTop: 9
         }}
       >
         {watch.map((item) => {

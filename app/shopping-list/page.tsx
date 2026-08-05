@@ -123,19 +123,19 @@ function ItemRow({
   onDelete: () => void;
   onEdit: () => void;
 }) {
-  const details = [
-    item.quantity ? `Quantity · ${item.quantity}` : null,
-    item.healthGrade ? "Health grade" : null
-  ]
+  // Canvas prints "brand · quantity" — the brand first, because that is what
+  // you look for on a shelf.
+  const details = [item.category ?? null, item.quantity ?? null]
     .filter(Boolean)
     .join(" · ");
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[var(--sk-border-default)] bg-white">
+    <div className="overflow-hidden" style={{ background: "var(--sk-surface-card)", borderRadius: 16 }}>
       <div
-        className={`flex min-h-[4.6rem] items-center gap-3 px-4 py-3 transition ${
+        className={`flex items-center transition ${
           item.checked ? "text-[var(--sk-text-muted)]" : "text-[var(--sk-text-primary)]"
         }`}
+        style={{ padding: "12px 15px", gap: 13, minHeight: "var(--sk-min-tap)" }}
       >
         <button
           type="button"
@@ -145,13 +145,17 @@ function ItemRow({
               ? `Mark ${item.name} as not done`
               : `Mark ${item.name} as done`
           }
-          className={`focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-full border transition ${
-            item.checked
-              ? "border-[var(--sk-brand-forest)] bg-[var(--sk-brand-forest)] text-white"
-              : "border-[var(--sk-border-default)] bg-white text-transparent"
-          }`}
+          className="focus-ring grid shrink-0 place-items-center transition"
+          style={{
+            width: 21,
+            height: 21,
+            borderRadius: 7,
+            border: item.checked ? "1.7px solid var(--sk-brand-forest)" : "1.7px solid #D8D0BE",
+            background: item.checked ? "var(--sk-brand-forest)" : "transparent",
+            color: item.checked ? "#fff" : "transparent"
+          }}
         >
-          <Check className="h-4 w-4" strokeWidth={2.5} />
+          <Check style={{ width: 13, height: 13 }} strokeWidth={2.5} />
         </button>
 
         <button
@@ -162,14 +166,13 @@ function ItemRow({
         >
           <span className="min-w-0 flex-1">
             <span
-              className={`block truncate text-[13px] font-bold ${
-                item.checked ? "line-through" : ""
-              }`}
+              className={`block truncate ${item.checked ? "line-through" : ""}`}
+              style={{ fontSize: 14.5, color: item.checked ? "#A79E8B" : "var(--sk-text-primary)" }}
             >
               {item.name}
             </span>
             {details ? (
-              <span className="mt-1 block text-[11px] text-[var(--sk-text-muted)]">
+              <span style={{ display: "block", fontSize: 12, color: "var(--sk-text-muted)", marginTop: 1 }}>
                 {details}
               </span>
             ) : null}
@@ -183,6 +186,7 @@ function ItemRow({
                 fontFamily: "var(--sk-font-ui)",
                 fontVariantNumeric: "tabular-nums",
                 fontSize: 17,
+                flexShrink: 0,
                 color: LIST_GRADE_COLOUR[item.healthGrade],
               }}
               aria-label={`Score ${item.healthGrade}`}
