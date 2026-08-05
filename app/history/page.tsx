@@ -434,8 +434,8 @@ export default function HistoryPage() {
         <div className="flex items-start justify-between gap-4 px-5 pb-3">
           <div>
             <h1
-              className="text-[28px] font-semibold text-[#33684A] tracking-tight"
-              style={{ fontFamily: 'var(--font-familjen), sans-serif', letterSpacing: '-0.03em' }}
+              className="text-[32px] font-semibold text-[#201D15] tracking-tight"
+              style={{ fontFamily: 'var(--font-familjen), sans-serif', letterSpacing: '-0.03em', lineHeight: 1 }}
             >
               {t('history_title', lang)}
             </h1>
@@ -489,10 +489,10 @@ export default function HistoryPage() {
             <button
               key={key}
               onClick={() => setActiveFilter(key)}
-              className={`px-4 py-1.5 rounded-full text-[13px] font-semibold border transition-colors whitespace-nowrap flex-shrink-0 ${
+              className={`px-4 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeFilter === key
-                  ? 'bg-[#33684A] text-[#E4EEE7] border-[#33684A]'
-                  : 'bg-white text-[#948B76] border-[#E6E0D0]'
+                  ? 'bg-[#201D15] text-[#F6F3EC] border-[#201D15]'
+                  : 'bg-white text-[#5C5546] border-[#E0D8C8]'
               }`}
             >
               {t(translationKey, lang)}
