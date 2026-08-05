@@ -546,15 +546,15 @@ export default function AccountPage() {
         <div className="px-4 pt-2">
           <div className="flex items-center gap-3.5">
             <div
-              className="grid h-14 w-14 shrink-0 place-items-center rounded-full"
-              style={{ background: "var(--sk-text-primary)", color: "var(--sk-text-on-dark)", fontFamily: "var(--sk-font-ui)", fontSize: 18, fontWeight: 700, letterSpacing: "0.02em" }}
+              className="grid h-[60px] w-[60px] shrink-0 place-items-center rounded-full"
+              style={{ background: "var(--sk-text-primary)", color: "var(--sk-text-on-dark)", fontFamily: "var(--sk-font-brand)", fontSize: 21, fontWeight: 700, letterSpacing: "0.01em" }}
             >
               {getInitials(displayName)}
             </div>
             <div className="min-w-0 flex-1">
               <p
                 className="truncate"
-                style={{ fontFamily: "var(--sk-font-ui)", fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--sk-text-primary)" }}
+                style={{ fontFamily: "var(--sk-font-ui)", fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--sk-text-primary)", lineHeight: 1.1 }}
               >
                 {displayName}
               </p>
