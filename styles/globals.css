@@ -119,6 +119,15 @@
   --sk-nav-active-pill: rgba(32, 29, 21, 0.07);
   --sk-nav-inactive: #A79E8B;
 
+  /* ── Peel bar (canvas 9A) ───────────────────────────────────────────────
+     The bar is a dark floating slab; the active tab is a cream sticker with
+     Merk's folded corner. Switching tabs peels one off and sticks the next. */
+  --sk-nav-bar-bg: #14120C;
+  --sk-nav-sticker-bg: #F6F3EC;
+  --sk-nav-sticker-fg: #201D15;
+  --sk-nav-sticker-fold: #DDD5C2;
+  --sk-nav-idle: rgba(246, 243, 236, 0.45);
+
   /* ── Canvas-exact values ────────────────────────────────────────────────
      Colours that appear in the design canvas but had no token. Named after
      what they do, so dark mode can move them without touching components. */
@@ -271,6 +280,14 @@ html.dark,
   --sk-nav-scan-fg: #F0ECE0;
   --sk-nav-active-pill: rgba(240, 236, 224, 0.08);
   --sk-nav-inactive: #8E8676;
+
+  /* Peel bar on dark: the slab lifts slightly so its edge reads against the
+     page, and the sticker stays cream — it is a label, not a surface. */
+  --sk-nav-bar-bg: #100E09;
+  --sk-nav-sticker-bg: #EFEADC;
+  --sk-nav-sticker-fg: #201D15;
+  --sk-nav-sticker-fold: #C9C1AE;
+  --sk-nav-idle: rgba(240, 236, 224, 0.42);
 
   /* Canvas-exact values, lifted for dark per the same rules as the accents. */
   --sk-additive-watch-border: #4A2E23;
