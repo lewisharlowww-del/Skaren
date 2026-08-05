@@ -170,23 +170,11 @@ public class NativeBarcodeScannerPlugin: CAPPlugin, CAPBridgedPlugin, AVCaptureM
             if device.isFocusModeSupported(.continuousAutoFocus) {
                 device.focusMode = .continuousAutoFocus
             }
-            // Do NOT restrict the focus range. `.near` locks the lens to close-up
-            // only, which forces the user to jam the phone against the barcode
-            // and leaves normal arm's-length scanning permanently blurry. `.none`
-            // lets continuous AF sweep the whole range and lock at any distance.
             if device.isAutoFocusRangeRestrictionSupported {
-                device.autoFocusRangeRestriction = .none
-            }
-            // Bias exposure metering to the centre where the barcode sits, so a
-            // dark package or bright store light doesn't wash out the code.
-            if device.isExposurePointOfInterestSupported {
-                device.exposurePointOfInterest = CGPoint(x: 0.5, y: 0.5)
+                device.autoFocusRangeRestriction = .near
             }
             if device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposureMode = .continuousAutoExposure
-            }
-            if device.isFocusPointOfInterestSupported {
-                device.focusPointOfInterest = CGPoint(x: 0.5, y: 0.5)
             }
             device.unlockForConfiguration()
         } catch {
@@ -309,11 +297,9 @@ public class NativeBarcodeScannerPlugin: CAPPlugin, CAPBridgedPlugin, AVCaptureM
         guard let obj = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
               let value = obj.stringValue, !value.isEmpty else { return }
 
-        // Debounce duplicate emissions (the hardware fires rapidly). 0.6s is
-        // enough to avoid double-firing one code without adding a felt lag
-        // before the first successful read is reported.
+        // Debounce duplicate emissions (the hardware fires rapidly).
         let now = Date().timeIntervalSince1970
-        if now - lastEmittedAt < 0.6 { return }
+        if now - lastEmittedAt < 1.2 { return }
         lastEmittedAt = now
 
         notifyListeners("barcodeScanned", data: [
