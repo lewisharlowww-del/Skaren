@@ -164,6 +164,8 @@ html.sk-native-cam-active .sk-native-cam-host {
   }
 
   .type-section-label {
+    font-family: var(--sk-font-ui);
+    font-variant-numeric: tabular-nums;
     font-size: var(--sk-type-label);
     font-weight: 600;
     line-height: var(--type-caption-line);

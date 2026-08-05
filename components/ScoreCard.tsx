@@ -1,18 +1,19 @@
 "use client";
 
 /**
- * ScoreCard — D1 "The Shelf", step 3.
+ * ScoreCard — traced 1:1 from the D1 "The Shelf" canvas frame.
  *
- * The score, where it sits on its own shelf, and two grade tiles. Three rules:
+ * Every size, weight, radius and colour below is read literally off the
+ * 402px-wide phone frame in `Skaren 2026 - Three Visions.dc.html`. Where the
+ * handoff README and the HTML disagreed, the HTML won — per the README's own
+ * tie-breaker. The most consequential case: the uppercase tracked labels are
+ * DM Sans with tabular figures and weight 600, NOT JetBrains Mono. Mono is used
+ * only for the two grade-tile labels and the status bar.
  *
+ * Rules the layout encodes:
  *   1. The number carries the band colour; everything else stays ink.
- *   2. The shelf median replaces endorsement — "shelf median · 51" says where
- *      this product sits without Merk having to praise anything.
- *   3. "why?" is a real 44px control, not a 10px link. It is the affordance the
- *      entire number depends on.
- *
- * The two tiles are Nutri-Score and Eco. The old Health tile is gone: it
- * duplicated the score sitting right above it.
+ *   2. The shelf median replaces endorsement.
+ *   3. "why?" is a real 44px control.
  */
 
 import type { GradeLetter } from "@/lib/types";
@@ -20,12 +21,9 @@ import { t, type Language } from "@/lib/i18n";
 
 type ScoreCardProps = {
   score: number | null;
-  /** Band colour follows the score, not the grade letter. */
   nutriScore: GradeLetter | null;
   ecoGrade: GradeLetter | null;
-  /** Median of this product's own category, 0-100, when we have enough data. */
   shelfMedian?: number | null;
-  /** False when the score came from the absolute fallback. */
   confident?: boolean;
   lang: Language;
   onWhy: () => void;
@@ -47,7 +45,7 @@ function gradeColour(grade: GradeLetter | null): string {
   return "var(--sk-score-weak)";
 }
 
-/** Absolute descriptors. Never shelf comparisons — those live on the slider. */
+/** Absolute descriptors: A Excellent · B Good · C Average · D Poor · E Weak. */
 export function verdictWord(grade: GradeLetter | null, lang: Language): string {
   if (!grade) return t("product_no_data", lang);
   const key = {
@@ -60,20 +58,28 @@ export function verdictWord(grade: GradeLetter | null, lang: Language): string {
   return t(key, lang);
 }
 
-/**
- * One tile: an oversized ghost letter, the category label, a solid letter chip,
- * the verdict word in INK, and a five-step dot scale. The dot count is the
- * accessibility fallback — meaning never rides on hue alone.
- */
+/** Eco has its own vocabulary in the canvas — "High footprint", not "Poor". */
+function ecoWord(grade: GradeLetter | null, lang: Language): string {
+  if (!grade) return t("product_no_data", lang);
+  const key = {
+    A: "eco_verdict_a",
+    B: "eco_verdict_b",
+    C: "eco_verdict_c",
+    D: "eco_verdict_d",
+    E: "eco_verdict_e"
+  }[grade] as Parameters<typeof t>[0];
+  return t(key, lang);
+}
+
 function GradeTile({
   label,
   grade,
-  lang,
+  word,
   caption
 }: {
   label: string;
   grade: GradeLetter | null;
-  lang: Language;
+  word: string;
   caption?: string;
 }) {
   const colour = gradeColour(grade);
@@ -82,81 +88,84 @@ function GradeTile({
   return (
     <div
       style={{
+        flex: 1,
         position: "relative",
         overflow: "hidden",
-        flex: 1,
         background: "var(--sk-surface-card)",
-        border: "0.5px solid var(--sk-border-default)",
+        border: "1px solid var(--sk-border-default)",
         borderRadius: 18,
-        padding: "13px 15px 14px"
+        padding: "14px 16px 13px"
       }}
     >
       {/* Ghost letter bleeding off the top-right */}
-      <span
+      <div
         aria-hidden
         style={{
           position: "absolute",
-          right: -6,
+          right: -14,
           top: -18,
           fontFamily: "var(--sk-font-brand)",
-          fontSize: 76,
+          fontSize: 84,
+          fontWeight: 400,
           lineHeight: 1,
           color: "var(--sk-text-primary)",
           opacity: 0.05
         }}
       >
         {grade ?? "?"}
-      </span>
+      </div>
 
-      <span
-        style={{
-          fontFamily: "var(--sk-font-data)",
-          fontSize: 10,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color: "var(--sk-text-muted)"
-        }}
-      >
-        {label}
-      </span>
-
-      <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 9 }}>
-        <span
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div
           style={{
-            display: "grid",
-            placeItems: "center",
+            fontFamily: "var(--sk-font-data)",
+            fontSize: 10,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: "var(--sk-text-muted)"
+          }}
+        >
+          {label}
+        </div>
+        <div
+          style={{
             width: 26,
             height: 26,
             borderRadius: 9,
             background: colour,
-            color: "#fff",
-            fontFamily: "var(--sk-font-ui)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "var(--sk-font-brand)",
             fontSize: 14,
-            fontWeight: 600,
-            flexShrink: 0
+            fontWeight: 400,
+            color: "#fff"
           }}
         >
           {grade ?? "–"}
-        </span>
-        {/* Verdict word stays INK, never the grade colour. */}
-        <span
-          style={{
-            fontFamily: "var(--sk-font-brand)",
-            fontSize: 17,
-            letterSpacing: "-0.015em",
-            color: "var(--sk-text-primary)"
-          }}
-        >
-          {verdictWord(grade, lang)}
-        </span>
+        </div>
+      </div>
+
+      {/* Verdict word stays ink, never the grade colour. */}
+      <div
+        style={{
+          fontFamily: "var(--sk-font-brand)",
+          fontSize: 17,
+          fontWeight: 400,
+          letterSpacing: "-0.015em",
+          color: "var(--sk-text-primary)",
+          marginTop: 8
+        }}
+      >
+        {word}
       </div>
 
       {caption ? (
-        <p style={{ fontSize: 11, color: "var(--sk-text-muted)", marginTop: 8 }}>{caption}</p>
+        <div style={{ fontSize: 11, color: "var(--sk-text-muted)", marginTop: 9 }}>{caption}</div>
       ) : (
-        <div style={{ display: "flex", gap: 2.5, marginTop: 10 }} aria-hidden>
+        <div style={{ display: "flex", gap: 2.5, marginTop: 9 }} aria-hidden>
           {GRADES.map((_, index) => (
-            <span
+            <div
               key={index}
               style={{
                 flex: 1,
@@ -185,117 +194,113 @@ export function ScoreCard({
   const position = Math.max(0, Math.min(100, score ?? 0));
 
   return (
-    <section>
-      <div
-        style={{
-          background: "var(--sk-surface-card)",
-          border: "0.5px solid var(--sk-border-default)",
-          borderRadius: 22,
-          padding: 20
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 18 }}>
-          <div style={{ flexShrink: 0 }}>
+    <div style={{ background: "var(--sk-surface-card)", borderRadius: 22, padding: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div
+            style={{
+              fontFamily: "var(--sk-font-ui)",
+              fontVariantNumeric: "tabular-nums",
+              fontSize: 40,
+              fontWeight: 400,
+              lineHeight: 1,
+              color: colour
+            }}
+          >
+            {score ?? "–"}
+          </div>
+          <div
+            style={{
+              fontFamily: "var(--sk-font-ui)",
+              fontVariantNumeric: "tabular-nums",
+              fontSize: 10,
+              fontWeight: 600,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "var(--sk-text-muted)",
+              marginTop: 4
+            }}
+          >
+            {t("product_score", lang)}
+          </div>
+          <button
+            type="button"
+            onClick={onWhy}
+            className="focus-ring"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: 44,
+              marginTop: 7,
+              padding: "0 14px",
+              borderRadius: 999,
+              background: "var(--sk-grade-a-bg)",
+              fontFamily: "var(--sk-font-ui)",
+              fontSize: 12.5,
+              color: "var(--sk-grade-a-text)"
+            }}
+          >
+            {t("product_why", lang)}
+          </button>
+        </div>
+
+        {shelfMedian != null ? (
+          <div style={{ flex: 1 }}>
+            <div style={{ position: "relative", height: 9, borderRadius: 5, background: "var(--sk-brand-mist-dark)" }}>
+              <div
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  left: `${shelfMedian}%`,
+                  top: -4,
+                  width: 2,
+                  height: 17,
+                  background: "var(--sk-text-muted)"
+                }}
+              />
+              <div
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  left: `calc(${position}% - 7px)`,
+                  top: -3,
+                  width: 15,
+                  height: 15,
+                  borderRadius: "50%",
+                  background: colour,
+                  border: "3px solid var(--sk-surface-card)"
+                }}
+              />
+            </div>
             <div
               style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginTop: 10,
                 fontFamily: "var(--sk-font-ui)",
                 fontVariantNumeric: "tabular-nums",
-                fontSize: 40,
-                lineHeight: 1,
-                color: colour
+                fontSize: 11.5,
+                color: "var(--sk-text-muted)"
               }}
             >
-              {score ?? "–"}
-            </div>
-            <div
-              style={{
-                fontFamily: "var(--sk-font-data)",
-                fontSize: 10,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                color: "var(--sk-text-muted)",
-                marginTop: 6
-              }}
-            >
-              {t("product_score", lang)}
-            </div>
-            {/* The weakest trust affordance in the old app was a 10px link. */}
-            <button
-              type="button"
-              onClick={onWhy}
-              className="focus-ring"
-              style={{
-                marginTop: 8,
-                minHeight: "var(--sk-min-tap)",
-                padding: "0 16px",
-                borderRadius: 999,
-                background: "var(--sk-grade-a-bg)",
-                color: "var(--sk-grade-a-text)",
-                fontSize: 13
-              }}
-            >
-              {t("product_why", lang)}
-            </button>
-          </div>
-
-          {/* Where this sits on its own shelf */}
-          {shelfMedian != null ? (
-            <div style={{ flex: 1, paddingTop: 10 }}>
-              <div
-                style={{ position: "relative", height: 9, borderRadius: 5, background: "var(--sk-brand-mist-dark)" }}
-              >
-                <span
-                  aria-hidden
-                  style={{
-                    position: "absolute",
-                    left: `${shelfMedian}%`,
-                    top: -3,
-                    width: 2,
-                    height: 15,
-                    background: "var(--sk-text-muted)"
-                  }}
-                />
-                <span
-                  aria-hidden
-                  style={{
-                    position: "absolute",
-                    left: `calc(${position}% - 7.5px)`,
-                    top: -3,
-                    width: 15,
-                    height: 15,
-                    borderRadius: "50%",
-                    background: colour,
-                    boxShadow: "0 0 0 3px var(--sk-surface-card)"
-                  }}
-                />
-              </div>
-              <p
-                style={{
-                  textAlign: "right",
-                  marginTop: 9,
-                  fontSize: 11.5,
-                  color: "var(--sk-text-muted)",
-                  fontVariantNumeric: "tabular-nums"
-                }}
-              >
+              <div>
                 {t("product_shelf_median", lang)} · {shelfMedian}
-              </p>
+              </div>
             </div>
-          ) : null}
-        </div>
-
-        {/* Two tiles. Never a tinted fill — tint is reserved for flagged
-            additives, so "grade" and "warning" can never look alike. */}
-        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-          <GradeTile
-            label={t("product_nutriscore", lang)}
-            grade={nutriScore}
-            lang={lang}
-            caption={confident ? undefined : t("product_limited_data_caption", lang)}
-          />
-          <GradeTile label={t("product_eco", lang)} grade={ecoGrade} lang={lang} />
-        </div>
+          </div>
+        ) : null}
       </div>
-    </section>
+
+      <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+        <GradeTile
+          label={t("product_nutriscore", lang)}
+          grade={nutriScore}
+          word={verdictWord(nutriScore, lang)}
+          caption={confident ? undefined : t("product_limited_data_caption", lang)}
+        />
+        <GradeTile label={t("product_eco", lang)} grade={ecoGrade} word={ecoWord(ecoGrade, lang)} />
+      </div>
+    </div>
   );
 }

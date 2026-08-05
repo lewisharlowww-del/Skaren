@@ -4,7 +4,7 @@
  * ScoreMethodSheet — "how this scored 22", the black box opened.
  *
  * A bottom sheet over the result screen, not a navigation: you never lose the
- * product. It starts at 100, itemises every deduction with its reason, names
+ * product. It starts at the model's real baseline, itemises every deduction with its reason, names
  * the engine that produced the number, prints the model version and date, and
  * offers a route to report an error. This is what earns the right to be trusted
  * over a score somebody else publishes.
@@ -28,10 +28,12 @@ type Props = {
   product: ProductResult;
   score: number | null;
   deductions: Deduction[];
+  /** The model's real starting point. The canvas mock showed 100; ours is 50. */
+  baseline: number;
   lang: Language;
 };
 
-export function ScoreMethodSheet({ open, onClose, product, score, deductions, lang }: Props) {
+export function ScoreMethodSheet({ open, onClose, product, score, deductions, baseline, lang }: Props) {
   // A sheet that traps the page behind it is a navigation in disguise; this one
   // only stops the body scrolling while it is up.
   useEffect(() => {
@@ -110,7 +112,7 @@ export function ScoreMethodSheet({ open, onClose, product, score, deductions, la
               <Row
                 label={t("product_starting_score", lang)}
                 reason=""
-                value="100"
+                value={String(baseline)}
                 colour="var(--sk-text-primary)"
                 first
               />
@@ -132,7 +134,8 @@ export function ScoreMethodSheet({ open, onClose, product, score, deductions, la
             <p
               style={{
                 marginTop: 6,
-                fontFamily: "var(--sk-font-data)",
+                fontFamily: "var(--sk-font-ui)",
+          fontVariantNumeric: "tabular-nums",
                 fontSize: 10,
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",

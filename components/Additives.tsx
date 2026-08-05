@@ -93,7 +93,7 @@ function CautionMeter({ filled }: { filled: number }) {
             width: index < filled ? 4.5 : 5,
             height: index < filled ? 4.5 : 5,
             borderRadius: "50%",
-            background: index < filled ? "var(--sk-score-weak)" : "var(--sk-grade-e-bg)"
+            background: index < filled ? "var(--sk-score-weak)" : "var(--sk-additive-meter-empty)"
           }}
         />
       ))}
@@ -112,7 +112,6 @@ export function Additives({ additives, lang = "no" }: AdditivesProps) {
       <div
         style={{
           background: "var(--sk-surface-card)",
-          border: "0.5px solid var(--sk-border-default)",
           borderRadius: 18,
           padding: "14px 18px"
         }}
@@ -151,21 +150,21 @@ export function Additives({ additives, lang = "no" }: AdditivesProps) {
       <div
         style={{
           background: "var(--sk-surface-card)",
-          border: "0.5px solid var(--sk-border-default)",
           borderRadius: 18,
           padding: "14px 18px",
           display: "flex",
           alignItems: "center",
-          gap: 16
+          gap: 14
         }}
       >
-        <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 5, flexShrink: 0 }}>
           <span
             style={{
               fontFamily: "var(--sk-font-brand)",
               fontSize: 34,
+              fontWeight: 400,
               letterSpacing: "-0.04em",
-              lineHeight: 1,
+              lineHeight: 0.9,
               fontVariantNumeric: "tabular-nums",
               color: "var(--sk-text-primary)"
             }}
@@ -194,7 +193,7 @@ export function Additives({ additives, lang = "no" }: AdditivesProps) {
             <span style={{ color: "var(--sk-score-weak)" }}>
               {watch.length} {t("product_worth_watching", lang)}
             </span>
-            <span style={{ color: "var(--sk-status-positive)" }}>
+            <span style={{ color: "var(--sk-harmless-text)" }}>
               {safe.length} {t("product_harmless", lang)}
             </span>
           </div>
@@ -224,9 +223,9 @@ export function Additives({ additives, lang = "no" }: AdditivesProps) {
                 overflow: "hidden",
                 textAlign: "left",
                 background: "var(--sk-surface-card)",
-                border: "1px solid var(--sk-grade-e-border)",
-                borderRadius: 16,
-                padding: "11px 13px",
+                border: "1px solid var(--sk-additive-watch-border)",
+                borderRadius: 15,
+                padding: "10px 12px 9px",
                 minHeight: "var(--sk-min-tap)",
                 gridColumn: isOpen ? "span 2" : undefined
               }}
@@ -239,9 +238,10 @@ export function Additives({ additives, lang = "no" }: AdditivesProps) {
               <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span
                   style={{
-                    fontFamily: "var(--sk-font-data)",
+                    fontFamily: "var(--sk-font-ui)",
                     fontVariantNumeric: "tabular-nums",
-                    fontSize: 14,
+                    fontSize: 12.5,
+                    fontWeight: 400,
                     color: "var(--sk-text-primary)"
                   }}
                 >
@@ -251,19 +251,21 @@ export function Additives({ additives, lang = "no" }: AdditivesProps) {
               </span>
               {item.functionWord ? (
                 <span
-                  style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--sk-text-primary)", marginTop: 5 }}
+                  style={{ display: "block", fontSize: 11.5, fontWeight: 400, color: "var(--sk-text-primary)", marginTop: 5 }}
                 >
                   {item.functionWord}
                 </span>
               ) : null}
-              <span style={{ display: "block", fontSize: 10.5, color: "var(--sk-text-muted)", marginTop: 1 }}>
+              <span style={{ display: "block", fontSize: 9.5, color: "var(--sk-text-muted)", marginTop: 1 }}>
                 {item.name}
               </span>
               <span
                 style={{
                   display: "block",
-                  fontFamily: "var(--sk-font-data)",
+                  fontFamily: "var(--sk-font-ui)",
+                  fontVariantNumeric: "tabular-nums",
                   fontSize: 9,
+                  fontWeight: 400,
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
                   color: "var(--sk-score-weak)",
@@ -301,8 +303,8 @@ export function Additives({ additives, lang = "no" }: AdditivesProps) {
                 position: "relative",
                 overflow: "hidden",
                 textAlign: "left",
-                background: "var(--sk-brand-mist)",
-                border: "1px solid var(--sk-border-default)",
+                background: "var(--sk-additive-safe-bg)",
+                border: "1px solid var(--sk-additive-safe-border)",
                 borderRadius: 15,
                 padding: "11px 13px",
                 minHeight: "var(--sk-min-tap)",
@@ -317,7 +319,7 @@ export function Additives({ additives, lang = "no" }: AdditivesProps) {
               <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                 <span
                   style={{
-                    fontFamily: "var(--sk-font-data)",
+                    fontFamily: "var(--sk-font-ui)",
                     fontVariantNumeric: "tabular-nums",
                     fontSize: 12.5,
                     color: "var(--sk-text-secondary)"
@@ -327,8 +329,10 @@ export function Additives({ additives, lang = "no" }: AdditivesProps) {
                 </span>
                 <span
                   style={{
-                    fontFamily: "var(--sk-font-data)",
+                    fontFamily: "var(--sk-font-ui)",
+                    fontVariantNumeric: "tabular-nums",
                     fontSize: 9,
+                    fontWeight: 400,
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
                     color: "var(--sk-grade-a-text)",

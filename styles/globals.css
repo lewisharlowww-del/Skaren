@@ -118,6 +118,17 @@
   --sk-nav-scan-fg: #F6F3EC;
   --sk-nav-active-pill: rgba(32, 29, 21, 0.07);
   --sk-nav-inactive: #A79E8B;
+
+  /* ── Canvas-exact values ────────────────────────────────────────────────
+     Colours that appear in the design canvas but had no token. Named after
+     what they do, so dark mode can move them without touching components. */
+  --sk-additive-watch-border: #EDD3C4;   /* watch tile hairline */
+  --sk-additive-meter-empty: #F7E4D9;    /* unfilled caution dot */
+  --sk-additive-safe-bg: #FBFAF6;        /* safe tile ground */
+  --sk-additive-safe-border: #E9E3D4;    /* safe tile hairline */
+  --sk-harmless-text: #5E8570;           /* "2 harmless" — quieter than forest */
+  --sk-allergen-label: #AC8571;          /* allergen card's own label tint */
+  --sk-rule-strong: #EDE7D8;             /* column divider in the nutrition table */
 }
 
 .sk-bg-mist { background-color: var(--sk-brand-mist); }
@@ -128,6 +139,8 @@
 .sk-border-green { border: 0.5px solid var(--sk-border-green); }
 .sk-border-amber { border: 0.5px solid var(--sk-border-amber); }
 .sk-label {
+  font-family: var(--sk-font-ui);
+  font-variant-numeric: tabular-nums;
   color: var(--sk-text-faint);
   font-size: 11px;
   font-weight: 600;
@@ -249,6 +262,15 @@ html.dark,
   --sk-nav-scan-fg: #F0ECE0;
   --sk-nav-active-pill: rgba(240, 236, 224, 0.08);
   --sk-nav-inactive: #8E8676;
+
+  /* Canvas-exact values, lifted for dark per the same rules as the accents. */
+  --sk-additive-watch-border: #4A2E23;
+  --sk-additive-meter-empty: #3A2A22;
+  --sk-additive-safe-bg: #191510;
+  --sk-additive-safe-border: #2E2A20;
+  --sk-harmless-text: #8FBF9F;
+  --sk-allergen-label: #C08D74;
+  --sk-rule-strong: #2E2A20;
 }
 
 /* ── Page & body ─────────────────────────────────────────────────────────── */

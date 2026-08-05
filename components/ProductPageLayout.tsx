@@ -253,6 +253,7 @@ export function ProductPageLayout({
 
   const [gradeHelpOpen, setGradeHelpOpen] = useState(false);
   const [methodOpen, setMethodOpen] = useState(false);
+  const [ingredientsOpen, setIngredientsOpen] = useState(false);
   // The shelf median is a second network call, so it arrives after the score
   // and the slider simply does not render until it does.
   const [shelfMedian, setShelfMedian] = useState<number | null>(null);
@@ -282,6 +283,9 @@ export function ProductPageLayout({
   })();
   const nutritionRows = getNutritionRows(product);
   const ingredients = visibleIngredients(product);
+  const ingredientCount = ingredients
+    ? ingredients.split(/,(?![^(]*\))/).filter((part) => part.trim().length > 1).length
+    : 0;
 
   // Build additive list: use product.additives if present, otherwise parse from ingredients text
   const rawAdditives = product.additives ?? [];
@@ -465,11 +469,11 @@ export function ProductPageLayout({
 
       {/* ── PRODUCT HEADER — context line, then the product name is the title,
             spanning full width (no thumbnail — the label IS Merk). ────────── */}
-      <div ref={heroRef} className="mx-4 mt-2" style={{ willChange: "opacity" }}>
+      <div ref={heroRef} className="mx-5 mt-2" style={{ willChange: "opacity" }}>
         <div ref={heroContentRef} style={{ willChange: "opacity, transform" }}>
           {/* Context line — where this sits on its shelf, mono uppercase. */}
           {shelfContext ? (
-            <p style={{ fontFamily: "var(--sk-font-data)", fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--sk-text-muted)", marginBottom: 6 }}>
+            <p style={{ fontFamily: "var(--sk-font-ui)", fontVariantNumeric: "tabular-nums", fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--sk-text-muted)", marginBottom: 6 }}>
               {shelfContext}
             </p>
           ) : null}
@@ -496,7 +500,7 @@ export function ProductPageLayout({
       </div>
 
       {/* ── SCORE CARD — the number, the shelf, and two grade tiles ──────── */}
-      <div className="mx-4 mt-3">
+      <div className="mx-5 mt-3.5">
         <ScoreCard
           score={score}
           nutriScore={product.nutritionGradeLetter ?? null}
@@ -508,41 +512,49 @@ export function ProductPageLayout({
         />
       </div>
 
-      {/* ── MERK'S VERDICT — dark ink card, folded corner, green eyebrow line
-            carrying the sharpest fact, then the verdict sentence (spec §2.4). ── */}
-      <section className="mx-4 mt-3">
+      {/* ── MERK'S VERDICT — traced from the canvas: ink card, 26px folded
+            corner, Merk at 94px aligned to the BOTTOM edge, one 17.5px cream
+            headline carrying the sharpest single fact, then the sentence. ──── */}
+      <section className="mx-5 mt-3">
         <div
           style={{
             position: "relative",
+            overflow: "hidden",
             background: "var(--sk-text-primary)",
             borderRadius: 22,
             padding: "18px 20px",
-            overflow: "hidden",
             display: "flex",
-            alignItems: "flex-start",
-            gap: 14,
+            alignItems: "flex-end",
+            gap: 13
           }}
         >
-          {/* Folded top-right corner — his silhouette signature. */}
+          {/* His silhouette signature. The fold shows the page beneath. */}
           <span
             aria-hidden
             style={{
-              position: "absolute", top: 0, right: 0, width: 34, height: 34,
-              background: "var(--sk-brand-mist)",
-              clipPath: "polygon(100% 0, 100% 100%, 0 0)",
-              opacity: 0.16,
+              position: "absolute",
+              top: 0,
+              right: 0,
+              width: 26,
+              height: 26,
+              background: "#14120c",
+              clipPath: "polygon(0 0, 100% 100%, 0 100%)"
             }}
           />
-          <div style={{ flexShrink: 0, marginTop: 2 }}>
-            <Merk expression={merkVerdict.expression} size={64} limbs={false} aria-label="Merk" />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {/* Sharpest single fact, bold cream — this is the headline. */}
-            <p style={{ fontFamily: "var(--sk-font-brand)", fontSize: 19, fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.15, color: "var(--sk-text-on-dark)" }}>
+          <Merk expression={merkVerdict.expression} size={94} limbs={false} aria-label="Merk" />
+          <div style={{ flex: 1, minWidth: 0, paddingBottom: 5 }}>
+            <p style={{ fontSize: 17.5, fontWeight: 400, color: "var(--sk-text-on-dark)" }}>
               {merkVerdict.eyebrow ?? merkVerdict.headline}
             </p>
-            {/* The verdict paragraph, muted cream. */}
-            <p style={{ fontSize: 14, lineHeight: 1.5, color: "var(--sk-text-on-dark-muted)", marginTop: 6 }}>
+            <p
+              style={{
+                fontFamily: "var(--sk-font-ui)",
+                fontSize: 13.5,
+                lineHeight: 1.45,
+                color: "rgba(246,243,236,.72)",
+                marginTop: 4
+              }}
+            >
               {merkVerdict.text}
             </p>
           </div>
@@ -555,13 +567,12 @@ export function ProductPageLayout({
         product={product}
         score={score}
         deductions={deductions}
+        baseline={HEALTH_SCORE_BASELINE}
         lang={lang}
       />
 
       {/* ── SCROLLABLE CONTENT ──────────────────────────────────────────── */}
-      <div
-        className="px-4 pb-4 pt-1"
-      >
+      <div className="px-5 pb-4 pt-3">
 
         {/* 2. PROCESSING LEVEL — four discrete steps, only the active one lit */}
         {product.novaGroup ? (
@@ -639,10 +650,50 @@ export function ProductPageLayout({
         {/* 8. INGREDIENTS — free for all users */}
         {ingredients != null && (
           <div className="mb-4 flex flex-col gap-2.5">
-            <SectionLabel>{t('product_ingredients', lang)}</SectionLabel>
-            <div style={{ background: CARD_BG, borderRadius: 14, border: `0.5px solid ${CARD_BORDER}`, padding: "12px 14px" }}>
-              <p style={{ fontSize: 13, color: "var(--sk-text-secondary)", lineHeight: 1.6 }}>{ingredients}</p>
-            </div>
+            {/* Collapsed disclosure, exactly as the canvas draws it: a count,
+                a one-line reassurance, and a chevron. The list itself is rarely
+                what people want — knowing it is there is. */}
+            <button
+              type="button"
+              onClick={() => setIngredientsOpen((open) => !open)}
+              className="focus-ring w-full"
+              aria-expanded={ingredientsOpen}
+              style={{
+                background: "var(--sk-surface-card)",
+                borderRadius: 18,
+                padding: "14px 18px",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                textAlign: "left",
+                minHeight: "var(--sk-min-tap)"
+              }}
+            >
+              <span style={{ flex: 1 }}>
+                <span style={{ display: "block", fontSize: 14.5, color: "var(--sk-text-primary)" }}>
+                  {t('product_ingredients', lang)} · {ingredientCount}
+                </span>
+                <span style={{ display: "block", fontSize: 12, color: "var(--sk-text-muted)", marginTop: 2 }}>
+                  {t('product_ingredients_sub', lang)}
+                </span>
+              </span>
+              <span
+                aria-hidden
+                style={{
+                  fontSize: 15,
+                  color: "var(--sk-text-muted)",
+                  transform: ingredientsOpen ? "rotate(180deg)" : undefined,
+                  transition: "transform 180ms ease-out"
+                }}
+              >
+                ⌄
+              </span>
+            </button>
+            {ingredientsOpen ? (
+              <div style={{ background: "var(--sk-surface-card)", borderRadius: 18, padding: "14px 18px" }}>
+                <p style={{ fontSize: 13, color: "var(--sk-text-secondary)", lineHeight: 1.6 }}>{ingredients}</p>
+              </div>
+            ) : null}
           </div>
         )}
 

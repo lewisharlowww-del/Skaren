@@ -122,7 +122,8 @@ export function WatchlistRanking({
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <span
           style={{
-            fontFamily: "var(--sk-font-data)",
+            fontFamily: "var(--sk-font-ui)",
+          fontVariantNumeric: "tabular-nums",
             fontSize: 9.5,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
@@ -163,8 +164,8 @@ export function WatchlistRanking({
           <div key={item.code} style={{ display: "flex", alignItems: "center", gap: 11 }}>
             <span
               style={{
-                fontFamily: "var(--sk-font-data)",
-                fontVariantNumeric: "tabular-nums",
+                fontFamily: "var(--sk-font-ui)",
+          fontVariantNumeric: "tabular-nums",
                 fontSize: 12.5,
                 color: "var(--sk-text-primary)",
                 width: 52,

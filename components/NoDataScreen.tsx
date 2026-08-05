@@ -83,7 +83,8 @@ export function NoDataScreen({ barcode, lang, onRetry }: Props) {
         <div style={{ padding: "13px 15px 2px" }}>
           <span
             style={{
-              fontFamily: "var(--sk-font-data)",
+              fontFamily: "var(--sk-font-ui)",
+          fontVariantNumeric: "tabular-nums",
               fontSize: 9.5,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
@@ -94,8 +95,8 @@ export function NoDataScreen({ barcode, lang, onRetry }: Props) {
           </span>
           <div
             style={{
-              fontFamily: "var(--sk-font-data)",
-              fontVariantNumeric: "tabular-nums",
+              fontFamily: "var(--sk-font-ui)",
+          fontVariantNumeric: "tabular-nums",
               fontSize: 16,
               color: "var(--sk-text-primary)",
               marginTop: 6,

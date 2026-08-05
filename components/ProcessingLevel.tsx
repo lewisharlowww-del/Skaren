@@ -43,7 +43,6 @@ export function ProcessingLevel({ novaGroup, lang }: Props) {
     <div
       style={{
         background: "var(--sk-surface-card)",
-        border: "0.5px solid var(--sk-border-default)",
         borderRadius: 18,
         padding: "15px 18px 14px"
       }}
@@ -51,8 +50,10 @@ export function ProcessingLevel({ novaGroup, lang }: Props) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span
           style={{
-            fontFamily: "var(--sk-font-data)",
+            fontFamily: "var(--sk-font-ui)",
+            fontVariantNumeric: "tabular-nums",
             fontSize: 9.5,
+            fontWeight: 600,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
             color: "var(--sk-text-muted)"
@@ -76,6 +77,7 @@ export function ProcessingLevel({ novaGroup, lang }: Props) {
         style={{
           fontFamily: "var(--sk-font-brand)",
           fontSize: 20,
+          fontWeight: 400,
           letterSpacing: "-0.02em",
           lineHeight: 1,
           color: "var(--sk-text-primary)",
@@ -85,21 +87,21 @@ export function ProcessingLevel({ novaGroup, lang }: Props) {
         {t(NAME_KEYS[novaGroup - 1], lang)}
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginTop: 12 }} aria-hidden>
+      <div style={{ display: "flex", gap: 4, marginTop: 14 }} aria-hidden>
         {[1, 2, 3, 4].map((step) => (
           <span
             key={step}
             style={{
               flex: 1,
               height: 9,
-              borderRadius: 3,
-              background: step === novaGroup ? accent : "var(--sk-brand-mist-dark)"
+              borderRadius: 5,
+              background: step === novaGroup ? accent : "var(--sk-border-default)"
             }}
           />
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginTop: 7 }}>
+      <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
         {STEP_KEYS.map((key, index) => {
           const active = index + 1 === novaGroup;
           return (
@@ -110,7 +112,7 @@ export function ProcessingLevel({ novaGroup, lang }: Props) {
                 fontSize: 10.5,
                 textAlign: index === 0 ? "left" : index === 3 ? "right" : "center",
                 color: active ? accent : "var(--sk-text-muted)",
-                fontWeight: active ? 600 : 400
+                fontWeight: 400
               }}
             >
               {t(key, lang)}
@@ -127,50 +129,89 @@ export function ProcessingLevel({ novaGroup, lang }: Props) {
  * underneath. The negative list is the reassuring half and is easy to forget.
  */
 export function AllergenCard({ allergens, lang }: { allergens: string[]; lang: Language }) {
-  const COMMON = ["nuts", "gluten", "soy", "egg", "fish", "milk"];
+  const COMMON = ["nuts", "gluten", "soy", "egg"];
   const present = allergens.map((a) => a.toLowerCase());
   const absent = COMMON.filter((item) => !present.some((p) => p.includes(item)));
+  const clay = allergens.length > 0;
 
   return (
     <div
       style={{
         background: "var(--sk-surface-card)",
-        border: "0.5px solid var(--sk-border-default)",
+        border: `1px solid ${clay ? "var(--sk-additive-watch-border)" : "var(--sk-border-default)"}`,
         borderRadius: 18,
-        padding: "15px 18px 14px"
+        padding: "13px 16px",
+        display: "flex",
+        alignItems: "center",
+        gap: 11
       }}
     >
       <span
+        aria-hidden
         style={{
-          fontFamily: "var(--sk-font-data)",
-          fontSize: 9.5,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color: "var(--sk-text-muted)"
+          width: 9,
+          height: 9,
+          borderRadius: "50%",
+          background: clay ? "var(--sk-score-weak)" : "var(--sk-border-green)",
+          flexShrink: 0
         }}
-      >
-        {t("product_allergens", lang)}
-      </span>
+      />
 
-      <div
-        style={{
-          fontFamily: "var(--sk-font-brand)",
-          fontSize: 20,
-          letterSpacing: "-0.02em",
-          lineHeight: 1.15,
-          marginTop: 4,
-          color: allergens.length ? "var(--sk-score-weak)" : "var(--sk-status-positive)"
-        }}
-      >
-        {allergens.length
-          ? `${t("product_contains", lang)} ${allergens.join(", ").toLowerCase()}`
-          : t("product_no_allergens", lang)}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontFamily: "var(--sk-font-ui)",
+            fontVariantNumeric: "tabular-nums",
+            fontSize: 9.5,
+            fontWeight: 600,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: clay ? "var(--sk-allergen-label)" : "var(--sk-text-muted)"
+          }}
+        >
+          {t("product_allergens", lang)}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--sk-font-brand)",
+            fontSize: 20,
+            fontWeight: 400,
+            letterSpacing: "-0.02em",
+            lineHeight: 1.1,
+            marginTop: 4,
+            color: clay ? "var(--sk-score-weak)" : "var(--sk-status-positive)"
+          }}
+        >
+          {clay
+            ? `${t("product_contains", lang)} ${allergens.join(", ").toLowerCase()}`
+            : t("product_no_allergens", lang)}
+        </div>
       </div>
 
+      {/* The negative list is the reassuring half, and easy to forget. */}
       {absent.length ? (
-        <p style={{ fontSize: 12, color: "var(--sk-text-muted)", marginTop: 8 }}>
-          {t("product_no_prefix", lang)} {absent.slice(0, 4).join(" · ")}
-        </p>
+        <div
+          style={{
+            fontFamily: "var(--sk-font-ui)",
+            fontVariantNumeric: "tabular-nums",
+            fontSize: 9.5,
+            color: "var(--sk-text-muted)",
+            textAlign: "right",
+            lineHeight: 1.5,
+            flexShrink: 0
+          }}
+        >
+          {absent.slice(0, 2).length ? (
+            <div>
+              {t("product_no_prefix", lang)} {absent.slice(0, 2).join(" · ")}
+            </div>
+          ) : null}
+          {absent.slice(2, 4).length ? (
+            <div>
+              {t("product_no_prefix", lang)} {absent.slice(2, 4).join(" · ")}
+            </div>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

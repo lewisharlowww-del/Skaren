@@ -10,7 +10,6 @@
  */
 
 import { useState } from "react";
-import { ChevronRight } from "lucide-react";
 import { t, type Language } from "@/lib/i18n";
 import type { ProductResult } from "@/lib/types";
 
@@ -68,25 +67,29 @@ export function Alternatives({ product, clean, lang, onShelfMedian }: Props) {
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 12,
+          gap: 13,
           textAlign: "left",
           minHeight: "var(--sk-min-tap)",
-          padding: "13px 16px",
-          borderRadius: 16,
-          border: "1px solid var(--sk-border-default)",
+          padding: "15px 20px",
+          borderRadius: 20,
+          /* 1.5px ink, not a hairline — this is the one outlined control on the
+             page, and the canvas gives it real weight. */
+          border: "1.5px solid var(--sk-text-primary)",
           background: "transparent",
           opacity: clean ? 0.65 : 1
         }}
       >
         <span style={{ flex: 1 }}>
-          <span style={{ display: "block", fontSize: 14, color: "var(--sk-text-primary)" }}>
+          <span style={{ display: "block", fontSize: 15.5, fontWeight: 600, color: "var(--sk-text-primary)" }}>
             {clean ? t("product_add_to_list", lang) : t("product_find_alternatives", lang)}
           </span>
-          <span style={{ display: "block", fontSize: 11.5, color: "var(--sk-brand-forest)", marginTop: 2 }}>
+          <span style={{ display: "block", fontSize: 12.5, color: "var(--sk-brand-forest)" }}>
             {clean ? t("product_nothing_to_replace", lang) : t("product_alternatives_sub", lang)}
           </span>
         </span>
-        {!clean ? <ChevronRight className="h-4 w-4" style={{ color: "var(--sk-text-muted)" }} /> : null}
+        {!clean ? (
+          <span aria-hidden style={{ fontSize: 18, color: "var(--sk-text-primary)" }}>→</span>
+        ) : null}
       </button>
 
       {state === "loading" ? (
@@ -180,7 +183,8 @@ export function MerkBuyNote({ grade, lang }: { grade: string | null; lang: Langu
     >
       <p
         style={{
-          fontFamily: "var(--sk-font-data)",
+          fontFamily: "var(--sk-font-ui)",
+          fontVariantNumeric: "tabular-nums",
           fontSize: 9.5,
           letterSpacing: "0.14em",
           textTransform: "uppercase",
