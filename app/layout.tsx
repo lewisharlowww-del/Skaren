@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Familjen_Grotesk, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { CapacitorDeepLink } from "@/components/CapacitorDeepLink";
+import { BootSplash } from "@/components/BootSplash";
 import { PwaShell } from "@/components/PwaShell";
 import { RevenueCatInitializer } from "@/components/RevenueCatInitializer";
 import { ThemeScript } from "@/components/ThemeScript";
@@ -91,6 +92,7 @@ export default function RootLayout({
       <body className="min-h-screen antialiased bg-[#F6F3EC] dark:bg-[#14120C]" suppressHydrationWarning>
         <ThemeProvider>
           <LanguageProvider>
+            <BootSplash />
             <CapacitorDeepLink />
             <RevenueCatInitializer />
             <PwaShell />
