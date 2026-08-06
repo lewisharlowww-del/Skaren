@@ -158,7 +158,10 @@ export function NutritionTable({ product, nutrition, lang = "no" }: NutritionTab
                         flex: 1,
                         height: 5,
                         borderRadius: 3,
-                        background: "var(--sk-brand-mist-card)",
+                        // Canvas track: #F0EBDD light / #241F17 dark. That is
+                        // --sk-surface-insight, not --sk-brand-mist-card (which
+                        // is #1C1811 in dark and reads too dark under the bar).
+                        background: "var(--sk-surface-insight)",
                         overflow: "hidden"
                       }}
                       role="img"
