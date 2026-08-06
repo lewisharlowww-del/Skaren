@@ -9,36 +9,22 @@ import { AppSplash } from '@/components/AppSplash'
  *
  * iOS launch screens are a static image (they cannot animate). This overlay
  * takes over the moment the web layer is alive, so the sequence the user sees
- * is: static launch image (dark, assembled Merk) → this animation seamlessly
- * continues it → fade to the app.
- *
- * Shows once per cold launch: a sessionStorage flag stops it replaying on
- * client-side navigation or React remounts within the same session.
+ * is: static launch image (solid ink black) → this animation continues it →
+ * fade to the app. It renders from the first frame so the app is never seen
+ * before the animation. Plays once per cold launch (the root layout mounts
+ * once; tab navigation does not remount it).
  */
 const HOLD_MS = 2000 // let the ~1.9s assemble sequence finish
 const FADE_MS = 420
-const SEEN_KEY = 'skaren:boot-splash-shown'
 
 export function BootSplash() {
-  const [phase, setPhase] = useState<'hidden' | 'showing' | 'fading'>('hidden')
+  // Start visible on the very first frame (server + client render identically,
+  // so no hydration flash and no "app then splash" pop-in). The root layout
+  // only mounts once per cold launch — client-side tab navigation does NOT
+  // remount it — so this plays on launch and never on menu switches.
+  const [phase, setPhase] = useState<'showing' | 'fading' | 'hidden'>('showing')
 
   useEffect(() => {
-    // Only on a true cold launch, and never during SSR.
-    let alreadyShown = false
-    try {
-      alreadyShown = sessionStorage.getItem(SEEN_KEY) === '1'
-    } catch {
-      /* private mode / storage blocked — just show it */
-    }
-    if (alreadyShown) return
-
-    try {
-      sessionStorage.setItem(SEEN_KEY, '1')
-    } catch {
-      /* ignore */
-    }
-
-    setPhase('showing')
     // Hide the native iOS splash so our animation is visible beneath it.
     hideNativeSplash()
 
