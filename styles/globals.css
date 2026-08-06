@@ -514,10 +514,8 @@ html.dark .sk-product-topbar {
   background: rgba(26, 23, 20, 0.94) !important;
 }
 
-/* Full-screen loading splash (SkarenLoader) — inline #faf7f2 background. */
-html.dark .sk-loader-screen {
-  background: #14120C !important;
-}
+/* Full-screen loading splash (SkarenLoader, design 19A) is always ink #14120C
+   in both themes — the background is set inline on the component. */
 
 /* Pricing page: loading-state heading + assorted hardcoded hex text/surfaces
    that were not in the earlier text override list. */
