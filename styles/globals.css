@@ -431,6 +431,10 @@ html.dark .text-\[\#5a4a38\] {
 html.dark .bg-\[\#fdf0f0\] {
   background-color: #2a1010 !important;
 }
+/* Danger text (error copy + "Clear history" action) needs lighter salmon on dark */
+html.dark .text-\[\#C0603C\] {
+  color: #E0916F !important;
+}
 
 /* ── Premium banner ─────────────────────────────────────────────────────── */
 html.dark .bg-\[\#fff8e6\] {
