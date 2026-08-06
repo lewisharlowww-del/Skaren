@@ -331,10 +331,19 @@ export default function ScanPage() {
           {t("scan_hold_steady", lang)}
         </p>
 
-        {/* Merk waits at the bottom edge, only his upper body in frame. Kept
-            compact so the viewfinder above gets the room. */}
-        <div className="relative mt-1 h-[70px] overflow-hidden" aria-hidden>
-          <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: -104 }}>
+        {/* Merk waits at the bottom edge, only his upper body in frame. The top
+            is masked to a soft fade so his rounded head-corners never read as a
+            hard clipped edge, and he sits low enough that the scan-line and
+            folded corner stay out of the crop. */}
+        <div
+          className="relative mt-1 h-[64px] overflow-hidden"
+          aria-hidden
+          style={{
+            WebkitMaskImage: "linear-gradient(to bottom, transparent 0, rgba(0,0,0,0.5) 30px, #000 46px)",
+            maskImage: "linear-gradient(to bottom, transparent 0, rgba(0,0,0,0.5) 30px, #000 46px)",
+          }}
+        >
+          <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: -118 }}>
             <Merk expression="scanning" size={172} limbs={false} />
           </div>
         </div>
