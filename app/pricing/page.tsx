@@ -274,7 +274,7 @@ export default function PricingPage() {
         <span className="mb-2.5 inline-flex items-center gap-1.5 rounded-full bg-[#f6ecd2] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.13em] text-[#b8923e]">
           {isNo ? "Oppgrader til Pro" : "Upgrade to Pro"}
         </span>
-        <h1 className="text-[26px] font-black leading-[1.08] tracking-tight text-[#201D15]">
+        <h1 className="text-[26px] font-black leading-[1.08] tracking-tight text-[var(--sk-text-primary)]">
           {isNo ? (
             <>Vit <span className="text-[#33684A]">nøyaktig</span> hva<br />som er i maten din</>
           ) : (
@@ -293,11 +293,11 @@ export default function PricingPage() {
         {(isNo ? proFeatures.no : proFeatures.en).map((f, i, arr) => (
           <div
             key={f}
-            className={`flex items-center gap-3 py-2.5 text-[13.5px] font-semibold leading-tight text-[#201D15] ${
+            className={`flex items-center gap-3 py-2.5 text-[13.5px] font-semibold leading-tight text-[var(--sk-text-primary)] ${
               i < arr.length - 1 ? "border-b border-black/[0.08]" : ""
             }`}
           >
-            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-[#E4EEE7] text-[#33684A]">
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-[var(--sk-grade-a-bg)] text-[#33684A]">
               <Check className="h-3.5 w-3.5" strokeWidth={3} />
             </span>
             <span className="min-w-0 flex-1">{f}</span>
@@ -307,10 +307,10 @@ export default function PricingPage() {
 
       {/* Plan picker label */}
       <div className="mb-2.5 flex items-center justify-between">
-        <p className="text-[12.5px] font-extrabold text-[#201D15]">
+        <p className="text-[12.5px] font-extrabold text-[var(--sk-text-primary)]">
           {isNo ? "Velg plan" : "Choose your plan"}
         </p>
-        <span className="rounded-full bg-[#E4EEE7] px-2.5 py-1 text-[11px] font-bold text-[#33684A]">
+        <span className="rounded-full bg-[var(--sk-grade-a-bg)] px-2.5 py-1 text-[11px] font-bold text-[#33684A]">
           {isNo ? "7 dager gratis" : "7 days free"}
         </span>
       </div>
@@ -335,13 +335,13 @@ export default function PricingPage() {
             {selectedPlan === "monthly" && <span className="h-[7px] w-[7px] rounded-full bg-white" />}
           </span>
           <span className="flex-1">
-            <span className="block text-[15px] font-extrabold text-[#201D15]">{planLabel("monthly")}</span>
+            <span className="block text-[15px] font-extrabold text-[var(--sk-text-primary)]">{planLabel("monthly")}</span>
             <span className="mt-0.5 block text-[12px] font-medium text-[#786858]">
               {isNo ? `Belastes ${monthlyPrice} hver måned` : `Billed ${monthlyPrice} every month`}
             </span>
           </span>
           <span className="text-right">
-            <span className="block text-[17px] font-black tracking-tight text-[#201D15]">{monthlyPrice}</span>
+            <span className="block text-[17px] font-black tracking-tight text-[var(--sk-text-primary)]">{monthlyPrice}</span>
             <span className="mt-0.5 block text-[11px] font-semibold text-[#8a7a68]">
               {isNo ? "per måned" : "per month"}
             </span>
@@ -369,13 +369,13 @@ export default function PricingPage() {
             {selectedPlan === "yearly" && <span className="h-[7px] w-[7px] rounded-full bg-white" />}
           </span>
           <span className="flex-1">
-            <span className="block text-[15px] font-extrabold text-[#201D15]">{planLabel("yearly")}</span>
+            <span className="block text-[15px] font-extrabold text-[var(--sk-text-primary)]">{planLabel("yearly")}</span>
             <span className="mt-0.5 block text-[12px] font-medium text-[#786858]">
               {isNo ? `Belastes ${yearlyPrice} én gang i året` : `Billed ${yearlyPrice} once a year`}
             </span>
           </span>
           <span className="text-right">
-            <span className="block text-[17px] font-black tracking-tight text-[#201D15]">{yearlyPrice}</span>
+            <span className="block text-[17px] font-black tracking-tight text-[var(--sk-text-primary)]">{yearlyPrice}</span>
             {yearlyPerMonth && (
               <span className="mt-0.5 block text-[11px] font-semibold text-[#8a7a68]">
                 {isNo ? `≈ ${yearlyPerMonth}/mnd` : `≈ ${yearlyPerMonth}/mo`}
@@ -408,7 +408,7 @@ export default function PricingPage() {
         </button>
 
         {/* Guideline 3.1.2 disclosure: exact plan, charge, auto-renew + cancel */}
-        <p className="mt-2.5 px-1.5 text-center text-[10.5px] leading-relaxed text-[#948B76]">
+        <p className="mt-2.5 px-1.5 text-center text-[10.5px] leading-relaxed text-[var(--sk-text-muted)]">
           {isNo ? "Du valgte " : "You selected "}
           <b className="text-[#33684A]">{planLabel(selectedPlan)}</b>
           {": "}

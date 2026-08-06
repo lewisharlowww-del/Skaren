@@ -12,21 +12,21 @@ export default function LanguagePage() {
   return (
     <main
       className="mx-auto w-full max-w-[430px] overflow-x-hidden pb-32 pt-4 sm:max-w-lg sm:pt-8"
-      style={{ background: "#F6F3EC", minHeight: "100dvh" }}
+      style={{ background: "var(--sk-brand-mist)", minHeight: "100dvh" }}
     >
       {/* Header */}
       <div className="flex items-center gap-3 px-4 pb-5">
         <button
           type="button"
           onClick={() => router.back()}
-          className="flex h-9 w-9 items-center justify-center rounded-full active:bg-[#E6E0D0] transition-colors"
-          style={{ background: "#ffffff", border: "0.5px solid #E6E0D0" }}
+          className="flex h-9 w-9 items-center justify-center rounded-full transition-colors"
+          style={{ background: "var(--sk-surface-white)", border: "0.5px solid var(--sk-border-default)" }}
         >
           <ChevronLeft className="h-5 w-5 text-[#33684A]" />
         </button>
         <h1
-          className="text-[22px] font-black text-[#33684A] tracking-tight"
-          style={{ fontFamily: "var(--font-familjen), sans-serif" }}
+          className="text-[22px] font-black tracking-tight"
+          style={{ fontFamily: "var(--font-familjen), sans-serif", color: "var(--sk-brand-forest)" }}
         >
           {t("language_title", lang)}
         </h1>
@@ -34,15 +34,15 @@ export default function LanguagePage() {
 
       {/* Options */}
       <div className="px-4">
-        <div className="overflow-hidden rounded-2xl border border-[#E6E0D0] bg-white">
+        <div className="overflow-hidden rounded-2xl border border-[var(--sk-border-default)] bg-white">
           {/* Norwegian */}
           <button
             type="button"
             onClick={() => setLang("no")}
-            className="flex w-full items-center gap-4 px-5 py-4 text-left active:bg-[#F6F3EC] transition-colors border-b border-[#F3EEE2]"
+            className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors border-b border-[var(--sk-border-muted)]"
           >
             <span className="text-[22px]">🇳🇴</span>
-            <span className="flex-1 text-[15px] font-bold text-[#201D15]">
+            <span className="flex-1 text-[15px] font-bold text-[var(--sk-text-primary)]">
               {t("language_norwegian", lang)}
             </span>
             {lang === "no" && (
@@ -61,10 +61,10 @@ export default function LanguagePage() {
           <button
             type="button"
             onClick={() => setLang("en")}
-            className="flex w-full items-center gap-4 px-5 py-4 text-left active:bg-[#F6F3EC] transition-colors"
+            className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors"
           >
             <span className="text-[22px]">🇬🇧</span>
-            <span className="flex-1 text-[15px] font-bold text-[#201D15]">
+            <span className="flex-1 text-[15px] font-bold text-[var(--sk-text-primary)]">
               {t("language_english", lang)}
             </span>
             {lang === "en" && (
