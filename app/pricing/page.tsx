@@ -8,6 +8,7 @@ import { Spinner } from "@/components/Spinner";
 import { useLang } from "@/lib/language-context";
 import { configurePurchases, getSubscriptionPlans, purchaseMonthly, purchaseYearly, restorePurchases } from "@/lib/revenuecat";
 import type { SubscriptionPlanInfo, SubscriptionPlans, SubscriptionTrial } from "@/lib/revenuecat";
+import { usePremium } from "@/hooks/usePremium";
 
 const proFeatures = {
   en: [
@@ -118,6 +119,11 @@ export default function PricingPage() {
   const [toast, setToast] = useState<Toast>(null);
   const [plans, setPlans] = useState<SubscriptionPlans | null>(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
+  // Detect a member who is ALREADY Pro (not just someone who just purchased),
+  // so tapping the membership banner shows their active plan instead of the
+  // paywall. The hook reads the cached entitlement synchronously.
+  const { isPremium: alreadyPremium } = usePremium();
+  const showActive = purchaseSuccess || alreadyPremium;
 
   useEffect(() => {
     let cancelled = false;
@@ -191,11 +197,11 @@ export default function PricingPage() {
     }
   }
 
-  if (purchaseSuccess) {
+  if (showActive) {
     return (
       <main
-      className="sk-pricing-bg relative mx-auto flex w-full max-w-[430px] flex-col items-center justify-center px-6 text-center sm:max-w-2xl"
-        style={{ background: "#F6F3EC", minHeight: "100dvh", paddingTop: "calc(env(safe-area-inset-top) + 20px)" }}
+      className="sk-pricing-bg relative mx-auto flex w-full max-w-[430px] flex-col items-center px-6 text-center sm:max-w-2xl"
+        style={{ background: "#F6F3EC", minHeight: "100dvh", paddingTop: "calc(env(safe-area-inset-top) + 40px)", paddingBottom: "calc(env(safe-area-inset-bottom) + 24px)" }}
       >
         <div className="relative mb-6 grid h-24 w-24 place-items-center rounded-full bg-[#33684A]">
           <Sparkles className="absolute -right-1 -top-1 h-6 w-6 text-amber-300" />
@@ -207,23 +213,55 @@ export default function PricingPage() {
           {isNo ? "Skaren Pro er aktivt" : "Skaren Pro is active"}
         </span>
 
-        <h1 className="text-[1.9rem] font-black leading-tight tracking-tight text-[#1A2410]">
-          {isNo ? "Du er klar!" : "You're all set!"}
+        <h1 className="text-[1.9rem] font-black leading-tight tracking-tight text-[var(--sk-text-primary)]">
+          {purchaseSuccess
+            ? (isNo ? "Du er klar!" : "You're all set!")
+            : (isNo ? "Ditt Pro-medlemskap" : "Your Pro membership")}
         </h1>
-        <p className="mt-3 max-w-sm text-sm font-medium text-[#7a6e5e]">
-          {isNo
-            ? "Takk for at du oppgraderte. Alle Pro-funksjonene er nå låst opp."
-            : "Thanks for upgrading. All Pro features are now unlocked."}
+        <p className="mt-3 max-w-sm text-sm font-medium text-[var(--sk-text-muted)]">
+          {purchaseSuccess
+            ? (isNo ? "Takk for at du oppgraderte. Dette har du nå:" : "Thanks for upgrading. Here's what you have:")
+            : (isNo ? "Dette er inkludert i Pro:" : "Here's what Pro includes:")}
         </p>
+
+        {/* Remind Pro members exactly what their plan unlocks. */}
+        <div className="mt-6 w-full max-w-sm rounded-[20px] border border-black/[0.08] bg-white px-4 py-1 shadow-[0_8px_24px_rgba(40,33,22,0.05)]">
+          {(isNo ? proFeatures.no : proFeatures.en).map((f, i, arr) => (
+            <div
+              key={f}
+              className={`flex items-center gap-3 py-2.5 text-left text-[13.5px] font-semibold leading-tight text-[var(--sk-text-primary)] ${
+                i < arr.length - 1 ? "border-b border-black/[0.08]" : ""
+              }`}
+            >
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-[var(--sk-grade-a-bg)] text-[#33684A]">
+                <Check className="h-3.5 w-3.5" strokeWidth={3} />
+              </span>
+              <span className="min-w-0 flex-1">{f}</span>
+            </div>
+          ))}
+        </div>
 
         <button
           type="button"
           onClick={() => router.replace("/scan")}
-          className="mt-9 flex h-13 w-full max-w-sm items-center justify-center gap-2 rounded-2xl bg-[#33684A] py-3.5 text-sm font-bold text-white"
+          className="mt-7 flex h-13 w-full max-w-sm items-center justify-center gap-2 rounded-2xl bg-[#33684A] py-3.5 text-sm font-bold text-white"
         >
           <Crown className="h-4 w-4" />
           {isNo ? "Begynn å skanne" : "Start scanning"}
         </button>
+
+        {/* Plan changes (monthly <-> yearly) and cancellation are handled by
+            Apple/Google, not in-app, so we deep-link to the OS subscription
+            settings rather than fake an in-app switch. */}
+        <a
+          href="https://apps.apple.com/account/subscriptions"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 flex h-11 w-full max-w-sm items-center justify-center gap-2 rounded-2xl border border-black/[0.1] text-sm font-bold text-[var(--sk-text-primary)]"
+        >
+          <RotateCcw className="h-4 w-4" />
+          {isNo ? "Administrer abonnement" : "Manage subscription"}
+        </a>
 
         <Link
           href="/account"
