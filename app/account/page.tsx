@@ -180,7 +180,9 @@ function MembershipCard({ isPremium, checkingPremium, lang }: { isPremium: boole
     </div>
   );
 
-  if (isPremium) return inner;
+  // The card always carries a chevron, so it must always be tappable. Free
+  // users go to the paywall; Pro users go to the same page, which renders the
+  // "subscription active" state (restore / manage / plan details).
   return (
     <Link href="/pricing" className="block transition active:scale-[0.99]">
       {inner}
