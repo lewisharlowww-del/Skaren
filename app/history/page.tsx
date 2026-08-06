@@ -434,12 +434,12 @@ export default function HistoryPage() {
         <div className="flex items-start justify-between gap-4 px-5 pb-3">
           <div>
             <h1
-              className="text-[32px] font-semibold text-[#201D15] tracking-tight"
-              style={{ fontFamily: 'var(--font-familjen), sans-serif', letterSpacing: '-0.03em', lineHeight: 1 }}
+              className="text-[32px] font-semibold tracking-tight"
+              style={{ fontFamily: 'var(--font-familjen), sans-serif', letterSpacing: '-0.03em', lineHeight: 1, color: 'var(--sk-text-primary)' }}
             >
               {t('history_title', lang)}
             </h1>
-            <p className="text-[12px] text-[#948B76] mt-0.5" style={{ fontFamily: "var(--font-dm-sans), sans-serif" }}>
+            <p className="text-[12px] mt-0.5" style={{ fontFamily: "var(--font-dm-sans), sans-serif", color: 'var(--sk-text-muted)' }}>
               {monthlyCount > 0
                 ? `${monthlyCount} ${lang === 'no' ? 'produktvisninger denne måneden' : 'product views this month'}`
                 : lang === 'no'
@@ -489,11 +489,12 @@ export default function HistoryPage() {
             <button
               key={key}
               onClick={() => setActiveFilter(key)}
-              className={`px-4 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors whitespace-nowrap flex-shrink-0 ${
+              className="px-4 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors whitespace-nowrap flex-shrink-0"
+              style={
                 activeFilter === key
-                  ? 'bg-[#201D15] text-[#F6F3EC] border-[#201D15]'
-                  : 'bg-white text-[#5C5546] border-[#E0D8C8]'
-              }`}
+                  ? { background: 'var(--sk-pill-active-bg)', color: 'var(--sk-pill-active-fg)', borderColor: 'var(--sk-pill-active-bg)' }
+                  : { background: 'var(--sk-pill-idle-bg)', color: 'var(--sk-pill-idle-fg)', borderColor: 'var(--sk-pill-idle-border)' }
+              }
             >
               {t(translationKey, lang)}
             </button>

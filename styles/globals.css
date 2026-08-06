@@ -134,6 +134,15 @@
   --sk-nav-cta-fg: #F6F3EC;
   --sk-nav-cta-fold: #100E09;
 
+  /* Filter / range pills (History, List, Stats). Light: ink sticker active,
+     paper hairline idle. These are tokenised so dark mode inverts them
+     instead of leaving a near-invisible ink pill on the dark ground. */
+  --sk-pill-active-bg: #201D15;
+  --sk-pill-active-fg: #F6F3EC;
+  --sk-pill-idle-bg: #FFFFFF;
+  --sk-pill-idle-fg: #5C5546;
+  --sk-pill-idle-border: #E0D8C8;
+
   /* ── Canvas-exact values ────────────────────────────────────────────────
      Colours that appear in the design canvas but had no token. Named after
      what they do, so dark mode can move them without touching components. */
@@ -300,6 +309,15 @@ html.dark,
   --sk-nav-cta-bg: #2E2A20;
   --sk-nav-cta-fg: #F0ECE0;
   --sk-nav-cta-fold: #100E09;
+
+  /* Filter / range pills — dark. Active is the cream sticker (light on ink,
+     the exact inverse of the light theme); idle is a recessed card with a warm
+     hairline and muted text, so the active pill separates cleanly on #14120C. */
+  --sk-pill-active-bg: #F0ECE0;
+  --sk-pill-active-fg: #14120C;
+  --sk-pill-idle-bg: #1C1811;
+  --sk-pill-idle-fg: #8E8676;
+  --sk-pill-idle-border: #2E2A20;
 
   /* Canvas-exact values, lifted for dark per the same rules as the accents. */
   --sk-additive-watch-border: #4A2E23;

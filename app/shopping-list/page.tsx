@@ -1013,11 +1013,12 @@ export default function ShoppingListPage() {
                   key={category}
                   type="button"
                   onClick={() => setActiveCategory(category)}
-                  className={`focus-ring min-h-10 shrink-0 rounded-full border px-3 text-xs font-semibold transition ${
+                  className="focus-ring min-h-10 shrink-0 rounded-full border px-3 text-xs font-semibold transition"
+                  style={
                     active
-                      ? "border-[#201D15] bg-[#201D15] text-[#F6F3EC]"
-                      : "border-[#E0D8C8] bg-[var(--sk-surface-white)] text-[#5C5546]"
-                  }`}
+                      ? { background: 'var(--sk-pill-active-bg)', color: 'var(--sk-pill-active-fg)', borderColor: 'var(--sk-pill-active-bg)' }
+                      : { background: 'var(--sk-pill-idle-bg)', color: 'var(--sk-pill-idle-fg)', borderColor: 'var(--sk-pill-idle-border)' }
+                  }
                 >
                   {category} · {count}
                 </button>

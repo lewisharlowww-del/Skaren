@@ -415,11 +415,12 @@ export default function StatsPage() {
                   type="button"
                   onClick={() => setRange(option)}
                   aria-pressed={range === option}
-                  className={`focus-ring min-h-10 rounded-full border px-4 text-[12.5px] transition ${
+                  className="focus-ring min-h-10 rounded-full border px-4 text-[12.5px] transition"
+                  style={
                     range === option
-                      ? "border-[#201D15] bg-[#201D15] font-semibold text-[#F6F3EC]"
-                      : "border-[#E0D8C8] bg-[var(--sk-surface-white)] text-[#5C5546]"
-                  }`}
+                      ? { background: 'var(--sk-pill-active-bg)', color: 'var(--sk-pill-active-fg)', borderColor: 'var(--sk-pill-active-bg)', fontWeight: 600 }
+                      : { background: 'var(--sk-pill-idle-bg)', color: 'var(--sk-pill-idle-fg)', borderColor: 'var(--sk-pill-idle-border)' }
+                  }
                 >
                   {text.rangeTab[option]}
                 </button>
