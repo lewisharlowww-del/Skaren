@@ -1061,7 +1061,7 @@ export default function ShoppingListPage() {
             <div className="mt-7 space-y-8">
               <section>
                 <p className="type-section-label text-[var(--sk-text-faint)]">
-                  To buy · {toBuy.length}
+                  {lang === 'no' ? 'Å kjøpe' : 'To buy'} · {toBuy.length}
                 </p>
                 <div className="mt-3 space-y-2">
                   {toBuy.map((item) => (
@@ -1087,14 +1087,14 @@ export default function ShoppingListPage() {
                 <section>
                   <div className="flex items-center justify-between">
                     <p className="type-section-label text-[var(--sk-text-faint)]">
-                      Done · {done.length}
+                      {lang === 'no' ? 'Ferdig' : 'Done'} · {done.length}
                     </p>
                     <button
                       type="button"
                       onClick={() => void removeChecked()}
                       className="focus-ring min-h-10 rounded-full px-3 text-[11px] font-semibold text-[var(--sk-text-secondary)]"
                     >
-                      Clear done
+                      {lang === 'no' ? 'Tøm ferdige' : 'Clear done'}
                     </button>
                   </div>
                   <div className="mt-2 space-y-2">
