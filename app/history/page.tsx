@@ -235,12 +235,12 @@ function ScanRow({
   return (
     <Link
       href={`/product/${scan.barcode}`}
-      className={`flex items-center gap-3 px-4 py-3.5 active:bg-[#F6F3EC] transition-colors ${
-        !isLast ? 'border-b border-[#F3EEE2]' : ''
+      className={`flex items-center gap-3 px-4 py-3.5 active:bg-[var(--sk-brand-mist-dark)] transition-colors ${
+        !isLast ? 'border-b border-[var(--sk-border-muted)]' : ''
       }`}
     >
       {/* Thumbnail */}
-      <div className="w-10 h-10 rounded-xl bg-[#E4EEE7] flex items-center justify-center flex-shrink-0 overflow-hidden">
+      <div className="w-10 h-10 rounded-xl bg-[var(--sk-grade-a-bg)] flex items-center justify-center flex-shrink-0 overflow-hidden">
         {image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -250,7 +250,7 @@ function ScanRow({
             loading="lazy"
           />
         ) : (
-          <span className="text-[15px] font-black text-[#33684A]">{initial}</span>
+          <span className="text-[15px] font-black text-[var(--sk-brand-forest)]">{initial}</span>
         )}
       </div>
 
@@ -290,21 +290,21 @@ function ScanRow({
 function SkeletonGroup() {
   return (
     <div>
-      <div className="h-3 w-16 rounded bg-[#E6E0D0] mb-2 mx-1 animate-pulse" />
-      <div className="bg-white rounded-2xl border border-[#E6E0D0] overflow-hidden">
+      <div className="h-3 w-16 rounded bg-[var(--sk-brand-mist-dark)] mb-2 mx-1 animate-pulse" />
+      <div className="bg-white rounded-2xl border border-[var(--sk-border-default)] overflow-hidden">
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className={`flex items-center gap-3 px-4 py-3.5 animate-pulse ${i < 3 ? 'border-b border-[#F3EEE2]' : ''}`}
+            className={`flex items-center gap-3 px-4 py-3.5 animate-pulse ${i < 3 ? 'border-b border-[var(--sk-border-muted)]' : ''}`}
           >
-            <div className="w-10 h-10 rounded-xl bg-[#E4EEE7] flex-shrink-0" />
+            <div className="w-10 h-10 rounded-xl bg-[var(--sk-grade-a-bg)] flex-shrink-0" />
             <div className="flex-1 space-y-2">
               <div className="h-3.5 w-36 rounded bg-[#e8e2d8]" />
-              <div className="h-2.5 w-20 rounded bg-[#E4EEE7]" />
+              <div className="h-2.5 w-20 rounded bg-[var(--sk-grade-a-bg)]" />
             </div>
             <div className="flex gap-1.5">
               <div className="w-7 h-7 rounded-lg bg-[#e8e2d8]" />
-              <div className="w-7 h-7 rounded-lg bg-[#E4EEE7]" />
+              <div className="w-7 h-7 rounded-lg bg-[var(--sk-grade-a-bg)]" />
             </div>
           </div>
         ))}
@@ -451,7 +451,7 @@ export default function HistoryPage() {
             <button
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
-              className="focus-ring flex h-11 w-11 items-center justify-center rounded-full border border-[#E6E0D0] bg-white text-[#33684A]"
+              className="focus-ring flex h-11 w-11 items-center justify-center rounded-full border border-[var(--sk-border-default)] bg-white text-[var(--sk-brand-forest)]"
               aria-label={t('history_options', lang)}
               aria-expanded={menuOpen}
               aria-haspopup="menu"
@@ -461,7 +461,7 @@ export default function HistoryPage() {
             {menuOpen ? (
               <div
                 role="menu"
-                className="absolute right-0 top-12 z-30 w-48 rounded-xl border border-[#E6E0D0] bg-white p-1.5 shadow-lg"
+                className="absolute right-0 top-12 z-30 w-48 rounded-xl border border-[var(--sk-border-default)] bg-white p-1.5 shadow-lg"
               >
                 <button
                   type="button"
@@ -521,10 +521,10 @@ export default function HistoryPage() {
           {groupedScans.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
               <span className="text-5xl">🌿</span>
-              <p className="text-[15px] font-bold text-[#33684A]">
+              <p className="text-[15px] font-bold text-[var(--sk-brand-forest)]">
                 {lang === 'no' ? 'Ingen produktvisninger funnet' : 'No product views found'}
               </p>
-              <p className="text-[13px] text-[#948B76] max-w-[240px]">
+              <p className="text-[13px] text-[var(--sk-text-muted)] max-w-[240px]">
                 {activeFilter === 'all'
                   ? lang === 'no'
                     ? 'Skann eller søk etter produkter for å bygge historikken.'
@@ -553,7 +553,7 @@ export default function HistoryPage() {
                     </span>
                   </div>
                 </div>
-                <div className="bg-white rounded-2xl border border-[#E6E0D0] overflow-hidden">
+                <div className="bg-white rounded-2xl border border-[var(--sk-border-default)] overflow-hidden">
                   {group.scans.map((item, i) => (
                     <ScanRow
                       key={item.scan.id ?? `${item.scan.barcode}-${item.scan.created_at}`}
@@ -581,14 +581,14 @@ export default function HistoryPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="clear-history-title"
-            className="w-full max-w-sm rounded-2xl border border-[#E6E0D0] bg-white p-5 shadow-xl"
+            className="w-full max-w-sm rounded-2xl border border-[var(--sk-border-default)] bg-white p-5 shadow-xl"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 id="clear-history-title" className="text-[20px] font-bold text-[#201D15]">
+                <h2 id="clear-history-title" className="text-[20px] font-bold text-[var(--sk-text-primary)]">
                   {t('history_clear_title', lang)}
                 </h2>
-                <p className="mt-2 text-[13px] leading-relaxed text-[#948B76]">
+                <p className="mt-2 text-[13px] leading-relaxed text-[var(--sk-text-muted)]">
                   {t('history_clear_body', lang)}
                 </p>
               </div>
@@ -596,7 +596,7 @@ export default function HistoryPage() {
                 type="button"
                 onClick={() => setConfirmClear(false)}
                 disabled={clearing}
-                className="focus-ring flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F6F3EC] text-[#5C5546]"
+                className="focus-ring flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--sk-brand-mist-dark)] text-[var(--sk-text-secondary)]"
                 aria-label={t('cancel', lang)}
               >
                 <X className="h-4 w-4" />
@@ -612,7 +612,7 @@ export default function HistoryPage() {
                 type="button"
                 onClick={() => setConfirmClear(false)}
                 disabled={clearing}
-                className="focus-ring rounded-xl border border-[#E6E0D0] px-4 py-3 text-[13px] font-semibold text-[#5C5546]"
+                className="focus-ring rounded-xl border border-[var(--sk-border-default)] px-4 py-3 text-[13px] font-semibold text-[var(--sk-text-secondary)]"
               >
                 {t('cancel', lang)}
               </button>
