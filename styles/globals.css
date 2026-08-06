@@ -360,7 +360,13 @@ html.dark body {
 
 /* ── White surface overrides (cards, panels, inputs) ────────────────────── */
 html.dark .bg-white,
-html.dark .bg-white\/90 {
+html.dark .bg-white\/90,
+html.dark .bg-white\/95,
+html.dark .bg-white\/85,
+html.dark .bg-white\/80,
+html.dark .bg-white\/75,
+html.dark .bg-white\/70,
+html.dark .bg-white\/65 {
   background-color: #1C1811 !important;
 }
 
