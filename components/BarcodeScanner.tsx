@@ -26,9 +26,11 @@ const supportedFormats: Html5QrcodeSupportedFormats[] = [
   Html5QrcodeSupportedFormats.EAN_8,
   Html5QrcodeSupportedFormats.UPC_A,
   Html5QrcodeSupportedFormats.UPC_E,
-  Html5QrcodeSupportedFormats.CODE_128,
-  Html5QrcodeSupportedFormats.CODE_39,
-  Html5QrcodeSupportedFormats.ITF
+  // Industrial 1D formats (Code 128/39, ITF) are intentionally omitted: they
+  // do not appear on grocery food, but letting the decoder consider them makes
+  // it lock onto a fragment of a normal EAN and return a wrong short number
+  // (e.g. "07701092" for a product whose real barcode is 7035620029837), which
+  // then 404s against Kassalapp even though the product exists.
 ];
 
 /**

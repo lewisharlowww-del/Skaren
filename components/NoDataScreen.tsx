@@ -51,9 +51,12 @@ export function NoDataScreen({ barcode, lang, onRetry }: Props) {
   const checksumOk = isValidEan(barcode);
 
   return (
-    <div className="mx-auto w-full max-w-[430px] px-5 pb-28 pt-6">
+    <div
+      className="mx-auto w-full max-w-[430px] px-5 pb-28"
+      style={{ paddingTop: "calc(24px + env(safe-area-inset-top))" }}
+    >
       <div className="flex flex-col items-center text-center">
-        <Merk expression="unsure" size={140} limbs={false} aria-label="Merk" />
+        <Merk expression="unsure" size={132} limbs={false} aria-label="Merk" />
         <h1
           style={{
             fontFamily: "var(--sk-font-brand)",

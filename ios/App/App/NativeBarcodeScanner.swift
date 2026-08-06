@@ -33,9 +33,16 @@ public class NativeBarcodeScannerPlugin: CAPPlugin, CAPBridgedPlugin, AVCaptureM
     private var lastEmittedAt: TimeInterval = 0
     private var isScanning = false
 
-    // Barcode symbologies relevant to grocery products + common extras.
+    // Restrict to the RETAIL product symbologies (EAN-13, and the shorter
+    // EAN-8 / UPC-E used on small packages). We deliberately drop the
+    // industrial 1D formats — Code 39, Code 93, Code 128, ITF-14 and
+    // Interleaved-2of5 — because they do not appear on grocery food but DO
+    // let the decoder lock onto a fragment of a normal barcode and return a
+    // wrong short number (e.g. "07701092" instead of the real
+    // 7035620029837), which then 404s against Kassalapp even though the
+    // product exists.
     private let metadataTypes: [AVMetadataObject.ObjectType] = [
-        .ean13, .ean8, .upce, .code128, .code39, .code93, .itf14, .interleaved2of5
+        .ean13, .ean8, .upce
     ]
 
     // MARK: - Permission helpers

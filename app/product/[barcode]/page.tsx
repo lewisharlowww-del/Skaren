@@ -23,6 +23,7 @@ import {
 import type { ProductResult } from "@/lib/types";
 import { NoDataScreen } from "@/components/NoDataScreen";
 import { ProductPageLayout } from "@/components/ProductPageLayout";
+import { Merk } from "@/components/Merk";
 
 type ProductPageProps = {
   params: {
@@ -214,32 +215,15 @@ export default function ProductPage({ params }: ProductPageProps) {
       <main className="w-full">
         {loading ? (
           <div
-            className="min-h-screen"
+            className="flex min-h-screen flex-col"
             role="status"
             aria-live="polite"
             style={{ minHeight: "100dvh", background: "var(--sk-brand-mist)" }}
           >
-            <style>{`
-              @keyframes sk-sweep { 0%{transform:translateX(-130%)} 100%{transform:translateX(130%)} }
-              @keyframes sk-ringpulse { 0%,100%{transform:scale(0.85);opacity:0.7} 50%{transform:scale(1.1);opacity:0.28} }
-              .sk2 { position:relative; overflow:hidden; background:#ece6dc; border-radius:8px; }
-              .sk2::after {
-                content:""; position:absolute; inset:0; transform:translateX(-130%);
-                background:linear-gradient(90deg,transparent,rgba(255,255,255,0.85),transparent);
-                animation:sk-sweep 1.6s ease-in-out infinite;
-              }
-              .sk2-d1::after{animation-delay:0s}
-              .sk2-d2::after{animation-delay:.12s}
-              .sk2-d3::after{animation-delay:.24s}
-              @media (prefers-reduced-motion: reduce) {
-                .sk2::after, .sk-ring-el { animation: none !important; }
-              }
-            `}</style>
-
-            {/* Top bar — matches the real report (back arrow + status pill) */}
+            {/* Top bar — back arrow + a small barcode-pulse status label. */}
             <div
               className="sk-product-topbar sticky top-0 z-40 flex items-center justify-between px-4 pb-2"
-              style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))", background: "rgba(250,247,242,0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
+              style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))" }}
             >
               <Link
                 href="/scan"
@@ -250,7 +234,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                 <ArrowLeft className="h-5 w-5" />
               </Link>
               <span className="inline-flex items-center gap-2" style={{ color: "var(--sk-text-muted)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>
-                <span className="sk-barcode-loader" style={{ display: "inline-flex", alignItems: "flex-end", gap: 1.5, height: 12 }} aria-hidden>
+                <span style={{ display: "inline-flex", alignItems: "flex-end", gap: 1.5, height: 12 }} aria-hidden>
                   {[7, 5, 9, 5, 7].map((h, i) => (
                     <span key={i} style={{ width: 1.5, height: h, background: "var(--sk-brand-forest)", animation: "sk-barcode-pulse 1s ease-in-out infinite", animationDelay: `${i * 0.09}s` }} />
                   ))}
@@ -262,78 +246,33 @@ export default function ProductPage({ params }: ProductPageProps) {
               <div className="h-10 w-10" aria-hidden="true" />
             </div>
 
-            {/* Product header — context line, then name title (no thumbnail) */}
-            <div className="mx-4 mt-2">
-              <div className="sk2 sk2-d1 h-2.5 w-32 rounded-full" />
-              <div className="sk2 sk2-d1 mt-2.5 h-6 w-4/5 rounded-lg" />
-              <div className="sk2 sk2-d2 mt-2 h-3 w-2/5 rounded-full" />
-            </div>
-
-            {/* Score card — big number, why pill, two grade tiles */}
-            <section className="mx-4 mt-3">
-              <div className="overflow-hidden rounded-[22px] p-5" style={{ background: "var(--sk-surface-white)", border: "0.5px solid var(--sk-border-default)" }}>
-                <div className="flex items-start gap-4">
-                  <div>
-                    <div className="sk2 sk2-d1 h-9 w-14 rounded-lg" />
-                    <div className="sk2 sk2-d2 mt-2 h-2 w-10 rounded-full" />
-                    <div className="sk2 sk2-d3 mt-2.5 h-8 w-16 rounded-full" />
-                  </div>
-                  <div className="mt-2.5 flex-1">
-                    <div className="sk2 sk2-d2 h-2 w-full rounded-full" />
-                  </div>
-                </div>
-                <div className="mt-4 flex gap-2.5">
-                  {[0, 1].map((tile) => (
-                    <div key={tile} className={`sk2 sk2-d${tile + 1} h-20 flex-1 rounded-2xl`} />
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            {/* Merk verdict — dark card placeholder */}
-            <section className="mx-4 mt-3">
-              <div className="rounded-[22px]" style={{ background: "var(--sk-brand-mist-card)", height: 84 }} />
-            </section>
-
-            {/* Two section cards below (processing / nutrition placeholders) */}
-            <div className="px-4 pb-10 pt-1">
-              {[0, 1].map((block) => (
-                <div key={block} className="mb-4 flex flex-col gap-2.5">
-                  <div className="sk2 sk2-d1 ml-0.5 h-2.5 w-24 rounded-full" />
-                  <div className="rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "0.5px solid var(--sk-border-default)", padding: 16 }}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="sk2 sk2-d1 h-3.5 w-2/5 rounded-full" />
-                        <div className="sk2 sk2-d2 mt-2 h-2.5 w-3/5 rounded-full" />
-                      </div>
-                      <div className="sk2 sk2-d2 h-12 w-14 rounded-xl" />
-                    </div>
-                    <div className="mt-3 flex items-center gap-1.5">
-                      {[0, 1, 2, 3].map((seg) => (
-                        <div key={seg} className="sk2 sk2-d3 h-2 flex-1 rounded" />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
+            {/* Merk reads the label while you wait — never a skeleton. */}
+            <div className="flex flex-1 flex-col items-center justify-center px-8 pb-24 text-center">
+              <Merk expression="scanning" size={184} limbs={false} aria-label="Merk" />
+              <p
+                className="mt-8"
+                style={{ fontFamily: "var(--sk-font-brand)", fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--sk-text-primary)" }}
+              >
+                {loadingSlow
+                  ? (lang === "no" ? "Dette tar litt tid…" : "This is taking a moment…")
+                  : (lang === "no" ? "Leser etiketten" : "Reading the label")}
+              </p>
+              <p className="mt-2 max-w-[280px]" style={{ fontFamily: "var(--sk-font-ui)", fontSize: 14, lineHeight: 1.5, color: "var(--sk-text-muted)" }}>
+                {lang === "no"
+                  ? "Sjekker næring, ingredienser og karakterer."
+                  : "Checking nutrition, ingredients, and grades."}
+              </p>
 
               {loadingSlow ? (
-                <div className="flex flex-col items-center gap-3 rounded-2xl px-5 py-5 text-center" style={{ background: "var(--sk-surface-white)", border: "0.5px solid var(--sk-border-default)" }}>
-                  <p className="type-body-sm font-bold text-[var(--sk-text-primary)]">
-                    {lang === "no" ? "Dette tar lengre enn vanlig" : "This is taking longer than usual"}
-                  </p>
-                  <p className="type-body-sm max-w-xs text-[var(--sk-text-muted)]">
-                    {lang === "no" ? "Du kan prøve igjen eller gå tilbake." : "You can retry or return to the scanner."}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => void loadProduct({ skipCache: true })}
-                    className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--sk-border-default)] bg-white px-5 text-sm font-bold text-[var(--sk-brand-forest)]"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    {lang === "no" ? "Prøv igjen" : "Retry"}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => void loadProduct({ skipCache: true })}
+                  className="focus-ring mt-7 inline-flex min-h-11 items-center gap-2 rounded-full border px-5 text-sm font-bold"
+                  style={{ borderColor: "var(--sk-border-default)", background: "var(--sk-surface-white)", color: "var(--sk-brand-forest)" }}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  {lang === "no" ? "Prøv igjen" : "Retry"}
+                </button>
               ) : null}
             </div>
 
