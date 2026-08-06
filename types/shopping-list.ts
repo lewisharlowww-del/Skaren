@@ -4,6 +4,9 @@ export interface ShoppingListItem {
   quantity?: string;
   category?: string;
   healthGrade?: "A" | "B" | "C" | "D" | "E";
+  /** Numeric 0-100 score, shown on the list exactly like history/canvas.
+      Optional so older stored items (letter only) still render. */
+  healthScore?: number;
   addedFromScan: boolean;
   checked: boolean;
   createdAt: string;
@@ -11,5 +14,5 @@ export interface ShoppingListItem {
 
 export type NewShoppingListItem = Pick<
   ShoppingListItem,
-  "name" | "quantity" | "category" | "healthGrade" | "addedFromScan"
+  "name" | "quantity" | "category" | "healthGrade" | "healthScore" | "addedFromScan"
 >;

@@ -68,6 +68,13 @@ const LIST_GRADE_COLOUR: Record<string, string> = {
   E: "var(--sk-score-weak)"
 };
 
+/** Numeric score band, identical thresholds to History's scoreColour. */
+function listScoreColour(score: number): string {
+  if (score >= 60) return "var(--sk-score-good)";
+  if (score >= 40) return "var(--sk-score-mid)";
+  return "var(--sk-score-weak)";
+}
+
 const gradeStyles: Record<
   NonNullable<ShoppingListItem["healthGrade"]>,
   string
@@ -179,8 +186,23 @@ function ItemRow({
           </span>
 
           {/* Scanned items carry their score; unscanned ones say so plainly.
-              That turns the list into a scan to-do rather than a wish list. */}
-          {item.healthGrade ? (
+              That turns the list into a scan to-do rather than a wish list.
+              The canvas prints the NUMERIC score (92, 64…); fall back to the
+              grade letter for older items stored before scores were kept. */}
+          {typeof item.healthScore === "number" ? (
+            <span
+              style={{
+                fontFamily: "var(--sk-font-ui)",
+                fontVariantNumeric: "tabular-nums",
+                fontSize: 17,
+                flexShrink: 0,
+                color: listScoreColour(item.healthScore),
+              }}
+              aria-label={`Score ${item.healthScore}`}
+            >
+              {item.healthScore}
+            </span>
+          ) : item.healthGrade ? (
             <span
               style={{
                 fontFamily: "var(--sk-font-ui)",
@@ -189,7 +211,7 @@ function ItemRow({
                 flexShrink: 0,
                 color: LIST_GRADE_COLOUR[item.healthGrade],
               }}
-              aria-label={`Score ${item.healthGrade}`}
+              aria-label={`Grade ${item.healthGrade}`}
             >
               {item.healthGrade}
             </span>
@@ -215,7 +237,7 @@ function ItemRow({
             className="focus-ring inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-xs font-semibold text-[var(--sk-brand-forest)]"
           >
             <Pencil className="h-4 w-4" />
-            Edit
+            {lang === 'no' ? 'Rediger' : 'Edit'}
           </button>
           <button
             type="button"
@@ -223,7 +245,7 @@ function ItemRow({
             className="focus-ring inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-xs font-semibold text-[var(--sk-grade-e-text)]"
           >
             <Trash2 className="h-4 w-4" />
-            Remove
+            {lang === 'no' ? 'Fjern' : 'Remove'}
           </button>
         </div>
       ) : null}

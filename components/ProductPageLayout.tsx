@@ -757,6 +757,7 @@ export function ProductPageLayout({
               name: product.name,
               category: getShoppingCategory(product),
               healthGrade: healthGrade ?? undefined,
+              healthScore: score ?? undefined,
               addedFromScan: true,
             }).then(() => setAddedToList(true));
           }}
