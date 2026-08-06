@@ -82,7 +82,7 @@ export function BottomNav() {
         background: scanActive ? "var(--sk-nav-bar-bg)" : "var(--sk-brand-mist-card)",
         borderRadius: "22px 22px 0 0",
         borderTop: scanActive ? "none" : "1px solid var(--sk-border-default)",
-        padding: "0 8px calc(14px + env(safe-area-inset-bottom))",
+        padding: "0 8px calc(8px + env(safe-area-inset-bottom))",
         transition: "background-color 200ms ease-out",
       }}
       aria-label={t("nav_scan", lang)}
@@ -132,10 +132,10 @@ export function BottomNav() {
                 alignItems: "center",
                 justifyContent: "flex-end",
                 gap: 5,
-                // Canvas 9A: the sticker has its own ground (10/9); a flat tab
+                // Canvas 9A: the sticker has its own ground (9/8); a flat tab
                 // only carries the top lead-in, so both share a baseline.
-                padding: isSticker ? "10px 0 9px" : "10px 0 0",
-                minHeight: "var(--sk-min-tap)",
+                padding: isSticker ? "9px 0 8px" : "9px 0 0",
+                minHeight: 42,
                 borderRadius: 16,
                 background: isSticker ? stickerBg : pill,
                 color: isSticker ? stickerFg : flatColor,
@@ -157,8 +157,8 @@ export function BottomNav() {
                   }}
                 />
               ) : null}
-              <Icon size={19} />
-              <span style={{ fontFamily: "var(--sk-font-ui)", fontSize: 10, fontWeight: 500 }}>
+              <Icon size={18} />
+              <span style={{ fontFamily: "var(--sk-font-ui)", fontSize: 9.5, fontWeight: 500 }}>
                 {t(item.key, lang)}
               </span>
             </span>

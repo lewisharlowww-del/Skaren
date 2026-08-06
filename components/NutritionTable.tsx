@@ -44,13 +44,16 @@ const WATCH_WHEN_HIGH = new Set(["Saturated fat", "Salt", "Sugars"]);
 
 function toneFor(matchKey: string, percent: number): { bar: string; strong: boolean } {
   if (HIGHER_IS_BETTER.has(matchKey)) {
-    return percent >= 20 ? { bar: "var(--sk-status-positive)", strong: true } : { bar: "var(--sk-border-muted)", strong: false };
+    return percent >= 20 ? { bar: "var(--sk-status-positive)", strong: true } : { bar: "var(--sk-text-muted)", strong: false };
   }
   if (WATCH_WHEN_HIGH.has(matchKey)) {
     if (percent >= 35) return { bar: "var(--sk-score-weak)", strong: true };
     if (percent >= 20) return { bar: "var(--sk-score-mid)", strong: true };
   }
-  return { bar: "var(--sk-brand-mist-dark)", strong: false };
+  // Neutral rows (Energy, Fat, Carbs, and low-% watch/good rows). The canvas
+  // fills these muted grey (#948B76 / #8E8676) — NOT the track colour, which
+  // would make the bar invisible against its own track.
+  return { bar: "var(--sk-text-muted)", strong: false };
 }
 
 
