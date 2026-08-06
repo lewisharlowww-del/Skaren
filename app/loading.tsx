@@ -1,5 +1,5 @@
-import { SkarenLoader } from "@/components/SkarenLoader";
+import { AppSplash } from "@/components/AppSplash";
 
 export default function Loading() {
-  return <SkarenLoader />;
+  return <AppSplash />;
 }
