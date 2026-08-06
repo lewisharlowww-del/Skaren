@@ -430,6 +430,13 @@ html.dark .bg-\[\#fdf0f0\] {
 html.dark .bg-\[\#fff8e6\] {
   background-color: #2a2416 !important;
 }
+/* Tailwind bg-amber-100 empty-state icon tiles (shopping-list / search
+   premium-locked states). The design darkens amber tints in dark mode (see
+   the premium banner above); these raw Tailwind tiles had no override and
+   stayed bright, so pin them to the same recessed amber. */
+html.dark .bg-amber-100 {
+  background-color: #2a2416 !important;
+}
 html.dark .border-\[\#e8d080\] {
   border-color: #3a3010 !important;
 }
