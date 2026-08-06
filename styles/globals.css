@@ -457,6 +457,19 @@ html.dark .bg-\[\#e8e2d8\] {
 html.dark .text-ink {
   color: var(--sk-text-primary) !important;
 }
+/* soil-900 = text.primary, soil-600 = text.secondary in tailwind.config, but
+   Tailwind bakes the light hex into the class, so they stayed dark-on-dark
+   (e.g. the login Email/Password labels). Pin them to the inverting tokens. */
+html.dark .text-soil-900 {
+  color: var(--sk-text-primary) !important;
+}
+html.dark .text-soil-600 {
+  color: var(--sk-text-secondary) !important;
+}
+html.dark .text-soil-500,
+html.dark .text-soil-400 {
+  color: var(--sk-text-muted) !important;
+}
 
 /* ── Active filter pill / CTA buttons ──────────────────────────────────── */
 html.dark .bg-\[\#2d4a26\] {

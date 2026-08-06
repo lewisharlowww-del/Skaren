@@ -25,7 +25,7 @@ export function AdditivesIndex({
   const sortedGroups = Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
 
   return (
-    <div className="min-h-screen bg-[var(--sk-brand-mist)]">
+    <div className="min-h-screen bg-[#F6F3EC]">
       <div className="mx-auto max-w-3xl px-5 pb-24 pt-10">
         <header>
           <h1 className="text-4xl font-extrabold tracking-tight text-ink">{t.indexH1}</h1>
