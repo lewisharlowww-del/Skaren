@@ -141,12 +141,14 @@ function MembershipCard({ isPremium, checkingPremium, lang }: { isPremium: boole
   const inner = (
     <div
       className="relative flex items-center gap-3.5 overflow-hidden"
-      style={{ background: "var(--sk-text-primary)", borderRadius: 18, padding: "16px 18px" }}
+      style={{ background: "var(--sk-verdict-bg)", borderRadius: 18, padding: "16px 18px" }}
     >
-      {/* Folded top-right corner — his silhouette signature. */}
+      {/* Folded top-right corner — his silhouette signature. Uses the verdict
+          fold token so it stays a darker notch in BOTH themes (the old
+          --sk-brand-mist made it a light triangle on dark). */}
       <span
         aria-hidden
-        style={{ position: "absolute", top: 0, right: 0, width: 30, height: 30, background: "var(--sk-brand-mist)", clipPath: "polygon(100% 0, 100% 100%, 0 0)", opacity: 0.16 }}
+        style={{ position: "absolute", top: 0, right: 0, width: 30, height: 30, background: "var(--sk-verdict-fold)", clipPath: "polygon(100% 0, 100% 100%, 0 0)", opacity: 0.85 }}
       />
       {/* Merk as the plan mark. */}
       <div
@@ -157,24 +159,24 @@ function MembershipCard({ isPremium, checkingPremium, lang }: { isPremium: boole
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p style={{ fontFamily: "var(--sk-font-brand)", fontSize: 17, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--sk-text-on-dark)" }}>
+          <p style={{ fontFamily: "var(--sk-font-brand)", fontSize: 17, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--sk-verdict-text)" }}>
             {isPremium ? t('account_pro_label', lang) : t('account_free_member', lang)}
           </p>
           {checkingPremium ? (
             <span className="h-4 w-14 animate-pulse rounded-full" style={{ background: "rgba(246,243,236,0.12)" }} />
           ) : isPremium ? (
             <span
-              style={{ fontFamily: "var(--sk-font-data)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", background: "var(--sk-brand-forest)", color: "var(--sk-text-on-dark)", borderRadius: 999, padding: "3px 8px" }}
+              style={{ fontFamily: "var(--sk-font-data)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", background: "var(--sk-brand-forest)", color: "#F6F3EC", borderRadius: 999, padding: "3px 8px" }}
             >
               {t('account_pro_member', lang)}
             </span>
           ) : null}
         </div>
-        <p className="mt-0.5 truncate text-[12.5px]" style={{ color: "var(--sk-text-on-dark-muted)" }}>
+        <p className="mt-0.5 truncate text-[12.5px]" style={{ color: "var(--sk-verdict-body)" }}>
           {isPremium ? t('account_pro_sub', lang) : t('account_upgrade_sub', lang)}
         </p>
       </div>
-      <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--sk-text-on-dark-muted)" }} />
+      <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--sk-verdict-body)" }} />
     </div>
   );
 
@@ -547,7 +549,7 @@ export default function AccountPage() {
           <div className="flex items-center gap-3.5">
             <div
               className="grid h-[60px] w-[60px] shrink-0 place-items-center rounded-full"
-              style={{ background: "var(--sk-text-primary)", color: "var(--sk-text-on-dark)", fontFamily: "var(--sk-font-brand)", fontSize: 21, fontWeight: 700, letterSpacing: "0.01em" }}
+              style={{ background: "var(--sk-verdict-bg)", color: "var(--sk-verdict-text)", fontFamily: "var(--sk-font-brand)", fontSize: 21, fontWeight: 700, letterSpacing: "0.01em" }}
             >
               {getInitials(displayName)}
             </div>

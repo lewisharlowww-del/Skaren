@@ -268,11 +268,13 @@ export default function ScanPage() {
           )}
         </div>
 
-        {/* Viewfinder — camera feed inside static brackets, one sweeping line */}
-        <div className="flex flex-1 items-center justify-center px-10">
+        {/* Viewfinder — camera feed inside static brackets, one sweeping line.
+            Fills the available column: wider (px-5) and taller (the flex-1
+            parent gives it the height), so there's no dead space. */}
+        <div className="flex flex-1 items-stretch justify-center px-5 py-3">
           <div
             className="relative w-full overflow-hidden"
-            style={{ aspectRatio: "1.35", borderRadius: 20, background: "rgba(246,243,236,.04)" }}
+            style={{ borderRadius: 24, background: "rgba(246,243,236,.04)" }}
           >
             <div className="absolute inset-0">
               {useNativeScanner ? (
@@ -329,10 +331,11 @@ export default function ScanPage() {
           {t("scan_hold_steady", lang)}
         </p>
 
-        {/* Merk waits at the bottom edge, only his upper body in frame */}
-        <div className="relative mt-1.5 h-[118px] overflow-hidden" aria-hidden>
-          <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: -96 }}>
-            <Merk expression="scanning" size={190} limbs={false} />
+        {/* Merk waits at the bottom edge, only his upper body in frame. Kept
+            compact so the viewfinder above gets the room. */}
+        <div className="relative mt-1 h-[70px] overflow-hidden" aria-hidden>
+          <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: -104 }}>
+            <Merk expression="scanning" size={172} limbs={false} />
           </div>
         </div>
 

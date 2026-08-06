@@ -278,8 +278,8 @@ function AdditiveDisclosure({
   const header = (
     <>
       <span
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/70"
-        style={{ color }}
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-full"
+        style={{ color, background: "var(--sk-surface-white)" }}
       >
         <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
       </span>
@@ -292,8 +292,8 @@ function AdditiveDisclosure({
         </span>
       </span>
       <span
-        className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/65 transition-transform duration-200 group-open:rotate-180"
-        style={{ color }}
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-full transition-transform duration-200 group-open:rotate-180"
+        style={{ color, background: "var(--sk-surface-white)" }}
       >
         <ChevronDown className="h-4 w-4" aria-hidden="true" />
       </span>
