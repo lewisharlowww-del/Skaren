@@ -6,9 +6,10 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Check, Crown, RotateCcw, Sparkles } from "lucide-react";
 import { Spinner } from "@/components/Spinner";
 import { useLang } from "@/lib/language-context";
-import { configurePurchases, getSubscriptionPlans, purchaseMonthly, purchaseYearly, restorePurchases } from "@/lib/revenuecat";
-import type { SubscriptionPlanInfo, SubscriptionPlans, SubscriptionTrial } from "@/lib/revenuecat";
+import { configurePurchases, getActiveSubscription, getSubscriptionPlans, purchaseMonthly, purchaseYearly, restorePurchases } from "@/lib/revenuecat";
+import type { ActiveSubscription, SubscriptionPlanInfo, SubscriptionPlans, SubscriptionTrial } from "@/lib/revenuecat";
 import { usePremium } from "@/hooks/usePremium";
+import { ProSubscriber } from "@/components/ProSubscriber";
 
 const proFeatures = {
   en: [
@@ -124,6 +125,7 @@ export default function PricingPage() {
   // paywall. The hook reads the cached entitlement synchronously.
   const { isPremium: alreadyPremium } = usePremium();
   const showActive = purchaseSuccess || alreadyPremium;
+  const [subscription, setSubscription] = useState<ActiveSubscription | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -135,6 +137,12 @@ export default function PricingPage() {
       .catch((error) => {
         console.warn("[RevenueCat][Skaren] Failed to load live pricing", error);
       });
+    // Live plan + renewal date for the subscriber page (native only; null on web).
+    void getActiveSubscription()
+      .then((sub) => {
+        if (!cancelled && sub) setSubscription(sub);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -195,6 +203,13 @@ export default function PricingPage() {
     } finally {
       setPendingAction(null);
     }
+  }
+
+  // An existing Pro member who opened this from the account card gets the
+  // subscriber page (canvas 21A) — usage first, plan + manage, never a paywall.
+  // A brand-new purchase keeps the brief celebratory confirmation below.
+  if (alreadyPremium && !purchaseSuccess) {
+    return <ProSubscriber subscription={subscription} />;
   }
 
   if (showActive) {

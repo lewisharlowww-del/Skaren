@@ -253,3 +253,44 @@ export async function restorePurchases() {
   if (!configured) await configurePurchases();
   return Purchases.restorePurchases();
 }
+
+export interface ActiveSubscription {
+  /** Which plan is live, inferred from the active entitlement's product id. */
+  plan: SubscriptionPlan | null;
+  /** ISO renewal/expiry date string, or null if unknown (e.g. lifetime). */
+  renewsAtISO: string | null;
+  /** True when the sub is set to NOT renew (cancelled but still in period). */
+  willRenew: boolean;
+}
+
+/**
+ * The subscriber's live plan + next renewal date, read from the active
+ * "Skaren Pro" entitlement. Returns null on web (no StoreKit) so callers fall
+ * back to neutral copy. Never throws — a lookup failure resolves to null.
+ */
+export async function getActiveSubscription(): Promise<ActiveSubscription | null> {
+  if (!Capacitor.isNativePlatform()) return null;
+  try {
+    if (!configured) await configurePurchases();
+    const { customerInfo } = await Purchases.getCustomerInfo();
+    const ent = customerInfo.entitlements.active["Skaren Pro"];
+    if (!ent) return null;
+
+    const productId = String(ent.productIdentifier ?? "").toLowerCase();
+    let plan: SubscriptionPlan | null = null;
+    if (productId.includes(PRODUCT_IDS.yearly.toLowerCase()) || productId.includes("year") || productId.includes("annual")) {
+      plan = "yearly";
+    } else if (productId.includes(PRODUCT_IDS.monthly.toLowerCase()) || productId.includes("month")) {
+      plan = "monthly";
+    }
+
+    return {
+      plan,
+      renewsAtISO: ent.expirationDate ? String(ent.expirationDate) : null,
+      willRenew: ent.willRenew !== false,
+    };
+  } catch (error) {
+    logRevenueCatDiagnostic("getActiveSubscription failed", { error: String(error) });
+    return null;
+  }
+}
