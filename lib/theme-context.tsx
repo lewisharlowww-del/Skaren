@@ -41,11 +41,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Initialise from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    const stored: ThemePreference = saved === "dark" ? "dark" : "light";
+    const stored: ThemePreference =
+      saved === "dark" ? "dark" : saved === "system" ? "system" : "light";
     if (saved !== stored) localStorage.setItem(STORAGE_KEY, stored);
+    const res = stored === "system" ? getSystemTheme() : stored;
     setPreferenceState(stored);
-    setResolved(stored);
-    applyTheme(stored);
+    setResolved(res);
+    applyTheme(res);
   }, []);
 
   // Listen for system theme changes when preference is "system"

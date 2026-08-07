@@ -15,16 +15,15 @@ import {
   Lock,
   LogOut,
   Mail,
-  Moon,
   ScanBarcode,
   ShieldCheck,
-  Sun,
   Trash2,
   TriangleAlert,
   X,
 } from "lucide-react";
 import { BadgesSection } from "@/components/BadgesSection";
 import { Merk } from "@/components/Merk";
+import { AppearanceIcon, AutoIcon, LanguageIcon, MoonIcon, SunIcon } from "@/components/SettingsIcons";
 import { BottomNav } from "@/components/BottomNav";
 import { SkarenLoader } from "@/components/SkarenLoader";
 import { computeBadges, earnedCount, type ScanSummary } from "@/lib/badges";
@@ -383,9 +382,7 @@ function DeleteDialog({
 export default function AccountPage() {
   const router = useRouter();
   const { lang, setLang } = useLang();
-  const { preference: themePref, setPreference: setThemePref } = useTheme();
-  const [langOpen, setLangOpen] = useState(false);
-  const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const { preference: themePref, resolved: resolvedTheme, setPreference: setThemePref } = useTheme();
   const [badgesOpen, setBadgesOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
@@ -640,65 +637,108 @@ export default function AccountPage() {
             <SectionLabel label={t('account_preferences', lang)} />
           </div>
           <div className="overflow-hidden rounded-2xl" style={{ background: "var(--sk-surface-white)", border: "1px solid var(--sk-border-default)" }}>
-            <Row
-              label={t('account_language', lang)}
-              value={lang === 'no' ? t('language_norwegian', lang) : t('language_english', lang)}
-              chevronRotated={langOpen}
-              onClick={() => setLangOpen((o) => !o)}
-            />
-            {langOpen ? (
-              <div className="px-5 pb-4 flex gap-3" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
-                {([
-                  { value: 'no' as const, flag: '\uD83C\uDDF3\uD83C\uDDF4', label: t('language_norwegian', lang) },
-                  { value: 'en' as const, flag: '\uD83C\uDDEC\uD83C\uDDE7', label: t('language_english', lang) },
-                ]).map((option) => {
-                  const active = lang === option.value;
+            {/* ── Language row (22A): Merk-with-Å icon, NO/EN text pill — never a flag ── */}
+            <div className="flex items-center justify-between gap-3 px-5 py-3.5">
+              <div className="flex min-w-0 items-center gap-3.5">
+                <span
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
+                  style={{ background: "var(--sk-brand-mist)", color: "var(--sk-text-primary)" }}
+                >
+                  <LanguageIcon size={22} />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-[15px] font-semibold leading-tight" style={{ color: "var(--sk-text-primary)" }}>
+                    {t('account_language', lang)}
+                  </div>
+                  <div className="mt-0.5 text-[12px] font-medium" style={{ color: "var(--sk-text-muted)" }}>
+                    {lang === 'no' ? 'Språk' : 'Language'}
+                  </div>
+                </div>
+              </div>
+              <div
+                className="flex shrink-0 items-center rounded-full p-1"
+                style={{ background: "var(--sk-brand-mist)" }}
+                role="radiogroup"
+                aria-label={t('account_language', lang)}
+              >
+                {(["no", "en"] as const).map((code) => {
+                  const active = lang === code;
                   return (
                     <button
-                      key={option.value}
+                      key={code}
                       type="button"
-                      onClick={() => { setLang(option.value); setLangOpen(false); }}
-                      className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold"
-                      style={{ background: active ? "var(--sk-brand-forest)" : "var(--sk-grade-a-bg)", color: active ? "#ffffff" : "var(--sk-text-primary)", border: active ? "none" : "1px solid var(--sk-border-default)", marginTop: 12 }}
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setLang(code)}
+                      className="rounded-full px-3.5 text-[11px] font-bold tracking-[0.08em]"
+                      style={{
+                        fontFamily: "var(--sk-font-data)",
+                        minHeight: 34,
+                        background: active ? "var(--sk-surface-white)" : "transparent",
+                        color: active ? "var(--sk-text-primary)" : "var(--sk-text-muted)",
+                        boxShadow: active ? "0 1px 4px rgba(32,29,21,0.14)" : "none",
+                      }}
                     >
-                      <span className="text-[15px] leading-none">{option.flag}</span>
-                      {option.label}
-                      {active && <Check size={13} />}
+                      {code.toUpperCase()}
                     </button>
                   );
                 })}
               </div>
-            ) : null}
+            </div>
             <Divider />
-            <Row
-              label={t('account_appearance', lang)}
-              value={themePref === "light" ? t('account_theme_light', lang) : t('account_theme_dark', lang)}
-              chevronRotated={appearanceOpen}
-              onClick={() => setAppearanceOpen((o) => !o)}
-            />
-            {appearanceOpen ? (
-              <div className="px-5 pb-4 flex gap-3" style={{ borderTop: "0.5px solid var(--sk-border-muted)" }}>
+            {/* ── Appearance row (22A): Merk silhouette (outlined=light, filled=dark),
+                 sun/moon/auto segmented control — the pill moves, nothing turns green ── */}
+            <div className="flex items-center justify-between gap-3 px-5 py-3.5">
+              <div className="flex min-w-0 items-center gap-3.5">
+                <span
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
+                  style={{ background: "var(--sk-brand-mist)", color: "var(--sk-text-primary)" }}
+                >
+                  <AppearanceIcon size={22} filled={resolvedTheme === "dark"} />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-[15px] font-semibold leading-tight" style={{ color: "var(--sk-text-primary)" }}>
+                    {t('account_appearance', lang)}
+                  </div>
+                  <div className="mt-0.5 text-[12px] font-medium" style={{ color: "var(--sk-text-muted)" }}>
+                    {lang === 'no' ? 'Utseende' : 'Appearance'}
+                  </div>
+                </div>
+              </div>
+              <div
+                className="flex shrink-0 items-center rounded-full p-1"
+                style={{ background: "var(--sk-brand-mist)" }}
+                role="radiogroup"
+                aria-label={t('account_appearance', lang)}
+              >
                 {([
-                  { value: "light" as const, label: t('account_theme_light', lang), icon: <Sun size={15} /> },
-                  { value: "dark" as const, label: t('account_theme_dark', lang), icon: <Moon size={15} /> },
+                  { value: "light" as const, label: t('account_theme_light', lang), icon: <SunIcon size={14} /> },
+                  { value: "dark" as const, label: t('account_theme_dark', lang), icon: <MoonIcon size={14} /> },
+                  { value: "system" as const, label: lang === 'no' ? 'Auto' : 'Auto', icon: <AutoIcon size={14} /> },
                 ]).map((opt) => {
                   const active = themePref === opt.value;
                   return (
                     <button
                       key={opt.value}
                       type="button"
+                      role="radio"
+                      aria-checked={active}
                       onClick={() => setThemePref(opt.value)}
-                      className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold"
-                      style={{ background: active ? "var(--sk-brand-forest)" : "var(--sk-grade-a-bg)", color: active ? "#ffffff" : "var(--sk-text-primary)", border: active ? "none" : "1px solid var(--sk-border-default)", marginTop: 12 }}
+                      className="flex items-center gap-1.5 rounded-full px-2.5 text-[12px] font-semibold"
+                      style={{
+                        minHeight: 34,
+                        background: active ? "var(--sk-surface-white)" : "transparent",
+                        color: active ? "var(--sk-text-primary)" : "var(--sk-text-muted)",
+                        boxShadow: active ? "0 1px 4px rgba(32,29,21,0.14)" : "none",
+                      }}
                     >
                       {opt.icon}
-                      {opt.label}
-                      {active && <Check size={13} />}
+                      {active ? opt.label : null}
                     </button>
                   );
                 })}
               </div>
-            ) : null}
+            </div>
           </div>
 
           {/* ── Data & privacy ── */}
