@@ -13,6 +13,7 @@ import { buildProductBrief } from "@/lib/merk/voice/brief";
 import { generateMerkCopy } from "@/lib/merk/voice/generate";
 import { briefCacheKey } from "@/lib/merk/voice/cache";
 import { MERK_VOICE_VERSION } from "@/lib/merk/voice/prompt";
+import { scoreProduct } from "@/lib/merk/scoreProduct";
 import type { MerkCopy } from "@/lib/merk/voice/copy";
 import type { MerkVerdict, ProductResult } from "@/lib/types";
 
@@ -148,6 +149,23 @@ export async function POST(request: Request) {
       hasNokkelhull: hasNokkelhullLabel(product.labels)
     };
     const imageData = getVerifiedDisplayImage(productWithGrades);
+
+    // ── Skaren Score — category-relative, "is this a good one of these?" ──
+    // Scored against the shipped category stats; attach it to the product so the
+    // result screen can show the number, its shelf median and the breakdown.
+    // Limited-data buckets return null and the UI shows a short line instead.
+    const scored = scoreProduct(productWithGrades as ProductResult);
+    const skarenFields =
+      scored.result.score !== null
+        ? {
+            skarenScore: scored.result.score,
+            skarenBucket: scored.bucket,
+            skarenShelfMedian: scored.result.shelfMedian,
+            skarenSampleSize: scored.result.n,
+            skarenBreakdown: scored.result.breakdown,
+          }
+        : { skarenScore: null as number | null, skarenBucket: scored.bucket, skarenBreakdown: null };
+    Object.assign(productWithGrades, skarenFields);
 
     // Resolve the authenticated user + premium status once. Reused below for both
     // AI gating and history saving so we only hit Supabase a single time.

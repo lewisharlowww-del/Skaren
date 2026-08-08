@@ -46,7 +46,10 @@ export function withProductDefaults(product: ProductResult): ProductResult {
     hasNokkelhull: product.hasNokkelhull ?? hasNokkelhullLabel(product.labels ?? []),
     aiSummary: product.aiSummary ?? [],
     merkVerdict: product.merkVerdict ?? null,
-    merkCopy: product.merkCopy ?? null
+    merkCopy: product.merkCopy ?? null,
+    skarenScore: product.skarenScore ?? undefined,
+    skarenShelfMedian: product.skarenShelfMedian ?? null,
+    skarenBreakdown: product.skarenBreakdown ?? null
   };
 
   return {

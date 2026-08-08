@@ -320,11 +320,17 @@ export function ProductPageLayout({
       : extractAdditivesFromIngredients(ingredients ?? "");
 
   // ── Score + provenance ────────────────────────────────────────────────────
-  // healthScore is only present once the resolver is on; before that the grade
-  // letter is all we have, so the card shows its band midpoint rather than
-  // inventing precision it does not have.
+  // Prefer the Skaren Score (category-relative — "a good one of these?"). It is
+  // computed server-side against the shipped category stats. Fall back to the
+  // old health score, then to the grade-band midpoint when neither is present.
   const GRADE_MIDPOINT: Record<GradeLetter, number> = { A: 90, B: 70, C: 50, D: 30, E: 12 };
-  const score = product.healthScore ?? (healthGrade ? GRADE_MIDPOINT[healthGrade] : null);
+  const hasSkaren = typeof product.skarenScore === "number";
+  const score = hasSkaren
+    ? (product.skarenScore as number)
+    : product.healthScore ?? (healthGrade ? GRADE_MIDPOINT[healthGrade] : null);
+  // The shelf median chip prefers the Skaren shelf median; the Alternatives
+  // fetch can still supply one for products the category stats cannot place.
+  const skarenShelfMedian = product.skarenShelfMedian ?? null;
 
   const scoreFactors: ScoreFactor[] = explainHealthScore({
     nutrition: nutritionDataFromKassalapp(product.kassalappNutrition ?? []),
@@ -537,8 +543,8 @@ export function ProductPageLayout({
           score={score}
           nutriScore={product.nutritionGradeLetter ?? null}
           ecoGrade={hasOfficialEcoData ? ecoGrade : null}
-          shelfMedian={shelfMedian}
-          confident={product.healthConfident ?? true}
+          shelfMedian={skarenShelfMedian ?? shelfMedian}
+          confident={hasSkaren ? true : product.healthConfident ?? true}
           lang={lang}
           onWhy={() => setMethodOpen(true)}
         />

@@ -99,6 +99,21 @@ export type ProductResult = {
   healthModel?: string;
   healthBasis?: string;
   healthConfident?: boolean;
+  /* ── Skaren Score (category-relative, v1) ─────────────────────────────────
+     "Is this a good ONE OF THESE?" — scored against the product's own bucket.
+     Present when the shipped category stats can place it; null in limited-data
+     mode (thin/absent bucket), where the UI shows a short line, not a number. */
+  skarenScore?: number | null;
+  skarenBucket?: string;
+  skarenShelfMedian?: number | null;
+  skarenSampleSize?: number;
+  skarenBreakdown?: {
+    nutrition: number;
+    additivePenalty: number;
+    processingPenalty: number;
+    used: number;
+    percentiles: Partial<Record<"salt" | "satFat" | "sugar" | "protein" | "fibre", number>>;
+  } | null;
 };
 
 export type ProductStore = {
