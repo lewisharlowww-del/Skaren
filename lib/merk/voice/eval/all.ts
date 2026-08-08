@@ -18,6 +18,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const steps: Array<{ name: string; file: string; args?: string[] }> = [
   { name: "validator self-test", file: "validator.test.ts" },
   { name: "model-reply handling", file: "model-reply.test.ts" },
+  { name: "http call-site + control flow", file: "http.test.ts" },
   { name: "real-producers boundary", file: "producers.test.ts" },
   { name: "no-stats degraded path", file: "no-stats.test.ts" },
   { name: "degenerate inputs", file: "degenerate.test.ts" },

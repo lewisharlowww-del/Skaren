@@ -71,6 +71,7 @@ Runs, in sequence and failing non-zero on any error:
 |---|---|
 | `eval/validator.test.ts` | Each guardrail bites (banned term, tone, length, hallucinated number, bare comparison); clean copy passes. 6/6. |
 | `eval/model-reply.test.ts` | The parse+validate branches `generateMerkCopy` runs on a real reply: prose-wrapped JSON parses, missing slots reject, hallucinated numbers / banned terms / over-budget copy are caught (the retry+fallback triggers). 9/9. |
+| `eval/http.test.ts` | The real HTTP call site with `fetch` stubbed and a dummy key: request shape (endpoint, auth, model, temperature 0.4→0.2 on retry, 400-token cap, strict `merk_copy` schema, system + 3 few-shot pairs + brief) and every control-flow outcome (accept, retry-recover, double-fail→template, HTTP 500→template, network throw→template, malformed→template). 25/25. |
 | `eval/producers.test.ts` | The brief built from the app's real producers (`analyzeAdditives`), not fixtures. Proves the brief-as-firewall: a real additive description containing a banned term ("cancer risk" on E250) never reaches the brief the model sees. 15/15. |
 | `eval/no-stats.test.ts` | The degraded path real scans hit today (no `categoryStats.json` yet): `buildProductBrief(product)` with no stats. Drivers empty, `categoryN` 0, no invented shelf comparison; copy describes processing + additives instead. 13/13. |
 | `eval/degenerate.test.ts` | Dirty catalogue rows: negative grams, NaN, Infinity, unreadable nutrients on a populated shelf, empty product, 300-char name. Never throws, never emits copy its own validator rejects, never falsely claims "Only N products". 28/28. |
@@ -109,3 +110,11 @@ This engine is standalone and does not replace the existing single-line
 `generateMerkVerdict` (`lib/openai.ts`) on the result screen yet. Wiring the
 four slots into the UI and persisting cached copy per brief hash is the next
 step, deliberately left as a separate change.
+
+## Verification status
+
+Every code path reachable without a live network call is covered by the gated
+suite above, including the HTTP call site (via a stubbed `fetch`) and its full
+retry-then-fallback control flow. The only unverified path is the raw TLS
+request to OpenAI itself: set `OPENAI_API_KEY` and run
+`npx tsx lib/merk/voice/eval/run.ts --model` to exercise it against the real API.
