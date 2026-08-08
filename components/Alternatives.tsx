@@ -171,7 +171,7 @@ export function Alternatives({ product, clean, lang, onShelfMedian }: Props) {
  * it, because that depends on what you are making. This is use-case advice, so
  * it deliberately never quotes a figure.
  */
-export function MerkBuyNote({ grade, lang }: { grade: string | null; lang: Language }) {
+export function MerkBuyNote({ grade, lang, note }: { grade: string | null; lang: Language; note?: string | null }) {
   const strong = grade === "A" || grade === "B";
   return (
     <div
@@ -194,7 +194,7 @@ export function MerkBuyNote({ grade, lang }: { grade: string | null; lang: Langu
         {t("product_what_would_merk_buy", lang)}
       </p>
       <p style={{ fontSize: 14, lineHeight: 1.5, color: "var(--sk-text-primary)", marginTop: 8 }}>
-        {strong ? t("merk_buy_strong", lang) : t("merk_buy_weak", lang)}
+        {note?.trim() ? note : strong ? t("merk_buy_strong", lang) : t("merk_buy_weak", lang)}
       </p>
     </div>
   );

@@ -45,7 +45,8 @@ export function withProductDefaults(product: ProductResult): ProductResult {
     novaGroup: product.novaGroup ?? null,
     hasNokkelhull: product.hasNokkelhull ?? hasNokkelhullLabel(product.labels ?? []),
     aiSummary: product.aiSummary ?? [],
-    merkVerdict: product.merkVerdict ?? null
+    merkVerdict: product.merkVerdict ?? null,
+    merkCopy: product.merkCopy ?? null
   };
 
   return {

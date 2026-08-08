@@ -9,6 +9,11 @@ import {
   normalizeOpenFoodFactsProduct
 } from "@/lib/openfoodfacts";
 import { getCachedAiAnalysis, saveCachedAiAnalysis } from "@/lib/productCache";
+import { buildProductBrief } from "@/lib/merk/voice/brief";
+import { generateMerkCopy } from "@/lib/merk/voice/generate";
+import { briefCacheKey } from "@/lib/merk/voice/cache";
+import { MERK_VOICE_VERSION } from "@/lib/merk/voice/prompt";
+import type { MerkCopy } from "@/lib/merk/voice/copy";
 import type { MerkVerdict, ProductResult } from "@/lib/types";
 
 function getSupabaseAdmin() {
@@ -182,11 +187,25 @@ export async function POST(request: Request) {
     // fresh OpenAI call for premium users when this language isn't cached yet.
     let merkVerdict: MerkVerdict | null = cachedAi?.merkVerdict?.[lang] ?? null;
 
+    // ── Merk voice v1 — the four-slot copy ────────────────────────────────
+    // Compute the brief (deterministic, no model) and its hash. Serve cached
+    // copy only when it was written from THIS exact brief (so a rescore or a
+    // reformulation invalidates it). Generate fresh for premium on a miss.
+    const voiceLang: "en" | "nb" = lang === "no" ? "nb" : "en";
+    const brief = buildProductBrief(productWithGrades as ProductResult, {
+      score: productWithGrades.healthScore ?? undefined,
+    });
+    const briefHash = briefCacheKey(brief, voiceLang);
+    const cachedCopyEntry = cachedAi?.merkCopy?.[lang] ?? null;
+    let merkCopy: MerkCopy | null =
+      cachedCopyEntry && cachedCopyEntry.briefHash === briefHash ? cachedCopyEntry.copy : null;
+
     const needsSummary = !cachedAi && isPremium;
     const needsVerdict = !merkVerdict && isPremium;
+    const needsCopy = !merkCopy && isPremium;
 
-    if (needsSummary || needsVerdict) {
-      const [freshSummary, freshVerdict] = await Promise.all([
+    if (needsSummary || needsVerdict || needsCopy) {
+      const [freshSummary, freshVerdict, freshCopy] = await Promise.all([
         needsSummary
           ? generateAiSummary(productWithGrades).catch((error) => {
               console.error("[Scan] AI summary error:", error);
@@ -199,22 +218,36 @@ export async function POST(request: Request) {
               return null;
             })
           : Promise.resolve(merkVerdict),
+        needsCopy
+          ? generateMerkCopy(brief, voiceLang)
+              .then((r) => r.copy)
+              .catch((error) => {
+                console.error("[Scan] Merk copy error:", error);
+                return null;
+              })
+          : Promise.resolve(merkCopy),
       ]);
 
       aiSummary = freshSummary;
       if (freshVerdict) merkVerdict = freshVerdict;
+      if (freshCopy) merkCopy = freshCopy;
 
-      // Persist both, merging the fresh verdict into the per-language map so we
-      // never clobber a verdict already cached in the other language.
-      if (aiSummary.length > 0 || freshVerdict) {
+      // Persist all three, merging the fresh per-language entries so we never
+      // clobber the other language's cached copy.
+      if (aiSummary.length > 0 || freshVerdict || freshCopy) {
         const verdictMap = {
           ...(cachedAi?.merkVerdict ?? {}),
           ...(freshVerdict ? { [lang]: freshVerdict } : {}),
+        };
+        const copyMap = {
+          ...(cachedAi?.merkCopy ?? {}),
+          ...(freshCopy ? { [lang]: { copy: freshCopy, briefHash, v: MERK_VOICE_VERSION } } : {}),
         };
         await saveCachedAiAnalysis({
           barcode: productWithGrades.barcode,
           aiSummary,
           merkVerdict: verdictMap,
+          merkCopy: copyMap,
         }).catch((error) => {
           console.error("[Scan] AI cache save error:", error);
         });
@@ -241,6 +274,7 @@ export async function POST(request: Request) {
         ...imageData,
         aiSummary,
         merkVerdict,
+        merkCopy,
       }
     });
   } catch (error) {

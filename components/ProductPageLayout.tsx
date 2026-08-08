@@ -274,9 +274,22 @@ export function ProductPageLayout({
   // Merk speaks. Prefer his AI-authored verdict about THIS product (he actually
   // read its ingredients and numbers); fall back to the static grade map when
   // there's no AI verdict (free users, model offline, or a data-poor product).
+  //
+  // Voice precedence: the v1 four-slot copy (headline + verdict) is the richest
+  // and most tightly validated, so prefer it; then the single-line AI verdict;
+  // then the static grade map. The face comes from the AI verdict when present,
+  // else a grade-derived default.
   const staticVerdict = getMerkVerdict(healthGrade, lang);
   const aiVerdict = product.merkVerdict ?? null;
-  const merkVerdict = aiVerdict
+  const merkCopy = product.merkCopy ?? null;
+  const merkVerdict = merkCopy
+    ? {
+        expression: (aiVerdict?.expression ?? staticVerdict.expression) as MerkExpression,
+        headline: merkCopy.headline,
+        eyebrow: null as string | null,
+        text: merkCopy.verdict,
+      }
+    : aiVerdict
     ? {
         expression: aiVerdict.expression as MerkExpression,
         headline: aiVerdict.headline,
@@ -628,6 +641,21 @@ export function ProductPageLayout({
           ) : (
             <PremiumNudge label={t('product_additives', lang)} lang={lang} />
           )}
+          {/* Merk's one-line note on WHY this additive combination, in plain
+              words. Only rendered when the v1 copy supplies it. */}
+          {isPremium && merkCopy?.additiveNote ? (
+            <p
+              style={{
+                fontSize: 13,
+                lineHeight: 1.5,
+                color: "var(--sk-text-muted)",
+                fontStyle: "italic",
+                marginTop: 2,
+              }}
+            >
+              {merkCopy.additiveNote}
+            </p>
+          ) : null}
         </div>
 
         {/* 4. NUTRITION — one merged section: grams as printed (left) +
@@ -660,9 +688,10 @@ export function ProductPageLayout({
 
         {/* 6. KEY INSIGHTS — removed: the verdict now carries a single voice. */}
 
-        {/* 7. WHAT WOULD MERK BUY — use-case advice, deliberately no numbers */}
+        {/* 7. WHAT WOULD MERK BUY — use-case advice, deliberately no numbers.
+              Prefer the v1 copy's paragraph (premium) over the static line. */}
         <div style={{ marginTop: 16 }}>
-          <MerkBuyNote grade={healthGrade} lang={lang} />
+          <MerkBuyNote grade={healthGrade} lang={lang} note={isPremium ? merkCopy?.wouldMerkBuy ?? null : null} />
         </div>
 
         {/* 8. INGREDIENTS — free for all users */}

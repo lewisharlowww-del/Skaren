@@ -86,6 +86,11 @@ export type ProductResult = {
   /* Merk's spoken verdict — his single voice about this product. AI-authored
      for premium users, cached for everyone, static grade fallback otherwise. */
   merkVerdict?: MerkVerdict | null;
+  /* Merk voice engine v1 — his four-slot copy about this product (headline,
+     verdict, additiveNote, wouldMerkBuy). Computed from a judged ProductBrief
+     and validated server-side. Present for premium/cached; the UI falls back to
+     merkVerdict then the static grade map when absent. */
+  merkCopy?: import("@/lib/merk/voice/copy").MerkCopy | null;
   /* ── Scoring provenance ──────────────────────────────────────────────────
      Which engine produced the number, and which version of it. Persisted with
      every saved scan so a re-tune never silently rewrites a user's history. */
