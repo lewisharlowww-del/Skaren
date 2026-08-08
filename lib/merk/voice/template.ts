@@ -26,6 +26,13 @@ const BAND_WORD: Record<Lang, Record<ProductBrief["drivers"][number]["vsCategory
   nb: { highest: "mest", high: "høyt", typical: "vanlig", low: "lavt", lowest: "minst" },
 };
 
+// Processing label localised. The brief carries the English NOVA label; Merk
+// speaks the shopper's language, so translate it for the copy.
+const PROCESSING_WORD: Record<Lang, Record<1 | 2 | 3 | 4, string>> = {
+  en: { 1: "Unprocessed", 2: "A culinary ingredient", 3: "Processed food", 4: "Ultra-processed food" },
+  nb: { 1: "Ubearbeidet", 2: "En matlagingsingrediens", 3: "Bearbeidet mat", 4: "Sterkt bearbeidet mat" },
+};
+
 // A readable category name for the "for a X" clause. The bucket key is a slug
 // or "cat:1423"; strip the prefix and de-slug it. Not perfect, but honest.
 function categoryPhrase(brief: ProductBrief, lang: Lang): string {
@@ -61,6 +68,20 @@ export function templateCopy(brief: ProductBrief, lang: Lang = "en"): MerkCopy {
     const band = BAND_WORD[lang][top.vsCategory];
     const nutrient = NUTRIENT_WORD[lang][top.nutrient];
     headline = nb ? `${cap(band)} ${nutrient} for ${cat}` : `${cap(band)} ${nutrient} for a ${cat}`;
+  } else if (brief.categoryN === 0) {
+    // No shelf loaded yet — describe what we know, never compare.
+    headline =
+      brief.processing.nova === 4
+        ? nb
+          ? "Sterkt bearbeidet"
+          : "Ultra-processed"
+        : watch > 0
+          ? nb
+            ? `${watch} tilsetning${watch === 1 ? "" : "er"} å merke seg`
+            : `${watch} additive${watch === 1 ? "" : "s"} to note`
+          : nb
+            ? "Ren ingrediensliste"
+            : "A clean ingredient list";
   } else if (brief.categoryN < 12) {
     headline = nb ? "Lite å sammenligne med ennå" : "Not much to compare it against yet";
   } else {
@@ -87,6 +108,22 @@ export function templateCopy(brief: ProductBrief, lang: Lang = "en"): MerkCopy {
           ? " Ingen tilsetningsstoffer."
           : "";
     verdict = (nb ? factNb + addNb : factEn + addEn).trim();
+  } else if (brief.categoryN === 0) {
+    // No shelf loaded — state what the label shows, make no comparison.
+    const processing = PROCESSING_WORD[lang][brief.processing.nova];
+    const addEn =
+      watch > 0
+        ? `${watch} additive${watch === 1 ? "" : "s"} worth watching.`
+        : brief.additives.total === 0
+          ? "No additives on the label."
+          : `${brief.additives.total} additive${brief.additives.total === 1 ? "" : "s"}, none worth watching.`;
+    const addNb =
+      watch > 0
+        ? `${watch} tilsetning${watch === 1 ? "" : "er"} verdt å merke seg.`
+        : brief.additives.total === 0
+          ? "Ingen tilsetningsstoffer på etiketten."
+          : `${brief.additives.total} tilsetning${brief.additives.total === 1 ? "" : "er"}, ingen verdt å merke seg.`;
+    verdict = nb ? `${processing}. ${addNb}` : `${processing}. ${addEn}`;
   } else {
     verdict = nb
       ? `Bare ${brief.categoryN} produkter i denne kategorien så langt.`
