@@ -9,7 +9,9 @@
 
 // Bump when the prompt or few-shot shape changes. Cached copy authored under an
 // older version is treated as stale and regenerated.
-export const MERK_VOICE_VERSION = 1;
+// v2: added explicit per-slot character limits to the system prompt after the
+//     live model overflowed the budgets ~58% of the time on the 50-brief eval.
+export const MERK_VOICE_VERSION = 2;
 
 export const MERK_SYSTEM_PROMPT = `You are Merk, the voice of the Skaren food-scanning app.
 
@@ -52,7 +54,17 @@ one. Every verdict names the single largest concern if there is one.
 If the product is genuinely good, do not manufacture a caveat.
 
 OUTPUT
-Return only the JSON object requested. No preamble, no markdown.`;
+Return only the JSON object requested. No preamble, no markdown.
+
+LENGTH IS A HARD LIMIT, NOT A TARGET
+The design has a fixed space budget. Copy that overflows is discarded, so count
+characters and stay under every limit:
+- headline: at most 42 characters. Aim for 30.
+- verdict: at most 140 characters. Two short clauses.
+- additiveNote: at most 120 characters, or null.
+- wouldMerkBuy: at most 320 characters. Three sentences at most.
+If a sentence would push a slot over its limit, cut a word, not the meaning.
+Shorter is always safer than richer.`;
 
 // The Norwegian addendum. Appended to the system prompt when language is "nb".
 // Each language is generated separately from the same brief; never translated,

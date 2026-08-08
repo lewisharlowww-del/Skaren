@@ -75,6 +75,14 @@ const cases: Case[] = [
     copy: { ...clean, headline: "This is a headline that runs well beyond the forty-two character budget" },
     expect: "too-long",
   },
+  {
+    name: "naming an additive by its E-number is not a hallucinated number",
+    copy: {
+      ...clean,
+      additiveNote: "The E250 here is a preservative, safe in the amounts used.",
+    },
+    expect: "ok",
+  },
 ];
 
 let failures = 0;

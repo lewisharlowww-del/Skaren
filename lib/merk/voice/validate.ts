@@ -49,9 +49,12 @@ const fail = (reason: string, detail?: string): Validation => ({ ok: false, reas
 const ok = (copy: MerkCopy): Validation => ({ ok: true, copy });
 
 /** Pull every number-looking token out of a string, normalised so "2,1" and
- *  "2.1" compare equal and a trailing unit does not stick. */
+ *  "2.1" compare equal and a trailing unit does not stick. E-numbers (E250,
+ *  E-250, E471a) are additive identifiers, not figures, so they are stripped
+ *  first — their digits must not be mistaken for an invented number. */
 export function numbersIn(text: string): string[] {
-  const matches = text.match(/\d+(?:[.,]\d+)?/g) ?? [];
+  const withoutECodes = text.replace(/\bE-?\d{3,4}[a-z]?\b/gi, " ");
+  const matches = withoutECodes.match(/\d+(?:[.,]\d+)?/g) ?? [];
   return matches.map((m) => m.replace(",", "."));
 }
 
