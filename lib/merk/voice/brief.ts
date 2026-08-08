@@ -79,7 +79,10 @@ function readNutrient(product: ProductResult, nutrient: BriefNutrient): number |
     const text = `${entry.code} ${entry.displayName}`.toLowerCase();
     return include.some((t) => text.includes(t)) && !exclude.some((e) => text.includes(e));
   });
-  if (match && Number.isFinite(match.amount)) return match.amount;
+  // A finite, non-negative gram value. Negative grams/100 g is impossible; a
+  // bad row is treated as missing (a data gap) rather than surfaced as "-5 g",
+  // which the validator would rightly reject as an impossible number.
+  if (match && Number.isFinite(match.amount) && match.amount >= 0) return match.amount;
   return null;
 }
 

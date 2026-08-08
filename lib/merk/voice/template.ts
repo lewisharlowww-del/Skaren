@@ -63,13 +63,21 @@ export function templateCopy(brief: ProductBrief, lang: Lang = "en"): MerkCopy {
   const watch = brief.additives.watch.length;
 
   // headline — the leading driver's band, or a data-shy line.
+  // Three no-driver situations, kept distinct:
+  //   thin shelf   (1..11 products): honest "not much to compare against yet"
+  //   describe     (no shelf, or nutrients unreadable): state the label facts
+  const thinShelf = brief.categoryN > 0 && brief.categoryN < 12;
+  const describeOnly = !top && !thinShelf; // no driver and not a thin shelf
+
   let headline: string;
   if (top) {
     const band = BAND_WORD[lang][top.vsCategory];
     const nutrient = NUTRIENT_WORD[lang][top.nutrient];
     headline = nb ? `${cap(band)} ${nutrient} for ${cat}` : `${cap(band)} ${nutrient} for a ${cat}`;
-  } else if (brief.categoryN === 0) {
-    // No shelf loaded yet — describe what we know, never compare.
+  } else if (thinShelf) {
+    headline = nb ? "Lite å sammenligne med ennå" : "Not much to compare it against yet";
+  } else {
+    // describeOnly — describe what we know, never compare.
     headline =
       brief.processing.nova === 4
         ? nb
@@ -82,10 +90,6 @@ export function templateCopy(brief: ProductBrief, lang: Lang = "en"): MerkCopy {
           : nb
             ? "Ren ingrediensliste"
             : "A clean ingredient list";
-  } else if (brief.categoryN < 12) {
-    headline = nb ? "Lite å sammenligne med ennå" : "Not much to compare it against yet";
-  } else {
-    headline = nb ? `Vanlig for ${cat}` : `Typical for a ${cat}`;
   }
 
   // verdict — the leading fact, then additive count.
@@ -108,8 +112,14 @@ export function templateCopy(brief: ProductBrief, lang: Lang = "en"): MerkCopy {
           ? " Ingen tilsetningsstoffer."
           : "";
     verdict = (nb ? factNb + addNb : factEn + addEn).trim();
-  } else if (brief.categoryN === 0) {
-    // No shelf loaded — state what the label shows, make no comparison.
+  } else if (thinShelf) {
+    // Genuinely few products on the shelf — say so plainly.
+    verdict = nb
+      ? `Bare ${brief.categoryN} produkter i denne kategorien så langt.`
+      : `Only ${brief.categoryN} products in this category so far.`;
+  } else {
+    // describeOnly — no shelf, or nutrients unreadable. State the label, make
+    // no comparison.
     const processing = PROCESSING_WORD[lang][brief.processing.nova];
     const addEn =
       watch > 0
@@ -124,10 +134,6 @@ export function templateCopy(brief: ProductBrief, lang: Lang = "en"): MerkCopy {
           ? "Ingen tilsetningsstoffer på etiketten."
           : `${brief.additives.total} tilsetning${brief.additives.total === 1 ? "" : "er"}, ingen verdt å merke seg.`;
     verdict = nb ? `${processing}. ${addNb}` : `${processing}. ${addEn}`;
-  } else {
-    verdict = nb
-      ? `Bare ${brief.categoryN} produkter i denne kategorien så langt.`
-      : `Only ${brief.categoryN} products in this category so far.`;
   }
 
   // additiveNote — only when there is something to say.
@@ -145,7 +151,9 @@ export function templateCopy(brief: ProductBrief, lang: Lang = "en"): MerkCopy {
   // wouldMerkBuy — conditional, never a yes/no.
   const topIsConcern = top && top.direction === "penalty" && (top.vsCategory === "high" || top.vsCategory === "highest");
   let wouldMerkBuy: string;
-  if (brief.categoryN < 12) {
+  if (describeOnly || thinShelf) {
+    // No driver to reason about: a thin shelf, no shelf, or unreadable
+    // nutrients. Be honest, promise nothing, compare nothing.
     wouldMerkBuy = nb
       ? "Jeg kjenner ikke denne hyllen godt nok ennå. Det jeg ser, ser vanlig ut. Spør meg igjen når vi har skannet flere av disse."
       : "I don't know this shelf well enough yet. What I can see looks ordinary. Ask me again when we've scanned more of these.";
