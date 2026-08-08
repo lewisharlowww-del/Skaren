@@ -14,3 +14,4 @@ android/.idea/
 .DS_Store
 .allergen-demo-shot.png
 allergen-demo.html
+lib/merk/.statsInputs.json
