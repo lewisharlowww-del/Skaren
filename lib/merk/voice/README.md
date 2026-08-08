@@ -71,6 +71,7 @@ Runs, in sequence and failing non-zero on any error:
 |---|---|
 | `eval/validator.test.ts` | Each guardrail bites (banned term, tone, length, hallucinated number, bare comparison); clean copy passes. 6/6. |
 | `eval/model-reply.test.ts` | The parse+validate branches `generateMerkCopy` runs on a real reply: prose-wrapped JSON parses, missing slots reject, hallucinated numbers / banned terms / over-budget copy are caught (the retry+fallback triggers). 9/9. |
+| `eval/producers.test.ts` | The brief built from the app's real producers (`analyzeAdditives`), not fixtures. Proves the brief-as-firewall: a real additive description containing a banned term ("cancer risk" on E250) never reaches the brief the model sees. 15/15. |
 | `eval/integration.test.ts` | The real entry point `buildProductBrief(product, { stats })` on a realistic `ProductResult`, then `generateMerkCopy` end to end (fallback ladder when no key). 31/31. |
 | `eval/run.ts` (`--nb`) | The 50-brief set through the validator gate, both languages. 50/50 each. |
 
