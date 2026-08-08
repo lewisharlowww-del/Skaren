@@ -21,6 +21,7 @@ const steps: Array<{ name: string; file: string; args?: string[] }> = [
   { name: "real-producers boundary", file: "producers.test.ts" },
   { name: "no-stats degraded path", file: "no-stats.test.ts" },
   { name: "degenerate inputs", file: "degenerate.test.ts" },
+  { name: "cache invalidation", file: "cache.test.ts" },
   { name: "real-entry integration", file: "integration.test.ts" },
   { name: "50-brief eval (en)", file: "run.ts" },
   { name: "50-brief eval (nb)", file: "run.ts", args: ["--nb"] },
