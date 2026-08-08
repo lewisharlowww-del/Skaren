@@ -122,7 +122,7 @@ async function callMerkModel(
   }
 }
 
-function parseCopy(raw: string | null): MerkCopy | null {
+export function parseCopy(raw: string | null): MerkCopy | null {
   if (!raw) return null;
   const match = raw.match(/\{[\s\S]*\}/);
   if (!match) return null;
