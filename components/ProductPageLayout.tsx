@@ -10,7 +10,7 @@ import { NutritionTable } from "@/components/NutritionTable";
 import { Additives, additivesHeaderHint } from "@/components/Additives";
 import { Merk, type MerkExpression } from "@/components/Merk";
 import { ScoreCard, bandColour } from "@/components/ScoreCard";
-import { ScoreMethodSheet, type Deduction } from "@/components/ScoreMethodSheet";
+import { ScoreMethodSheet, type Deduction, type SkarenExplain } from "@/components/ScoreMethodSheet";
 import { ProcessingLevel, AllergenCard } from "@/components/ProcessingLevel";
 import { Alternatives, MerkBuyNote } from "@/components/Alternatives";
 import { getGradeLabel } from "@/components/ScoreBadge";
@@ -332,6 +332,31 @@ export function ProductPageLayout({
   // fetch can still supply one for products the category stats cannot place.
   const skarenShelfMedian = product.skarenShelfMedian ?? null;
 
+  // Build the Skaren "how this scored" breakdown when the category-relative
+  // score is present, so the sheet reflects the number actually shown.
+  const NUTRIENT_LABEL: Record<"salt" | "satFat" | "sugar" | "protein" | "fibre", string> = {
+    salt: t("factor_salt", lang),
+    satFat: t("factor_saturated_fat", lang),
+    sugar: t("factor_sugars", lang),
+    protein: t("factor_protein", lang),
+    fibre: t("factor_fiber", lang),
+  };
+  const NOVA_WORD = ["", t("product_nova_unprocessed", lang), t("product_nova_processed_ingredients", lang), t("product_nova_processed", lang), t("product_nova_ultra", lang)];
+  const skarenExplain: SkarenExplain | null =
+    hasSkaren && product.skarenBreakdown
+      ? {
+          bucketLabel: (product.skarenBucket ?? "").replace(/^cat:/, "").replace(/-/g, " "),
+          sampleSize: product.skarenSampleSize ?? 0,
+          shelfMedian: skarenShelfMedian,
+          percentiles: (Object.keys(NUTRIENT_LABEL) as Array<keyof typeof NUTRIENT_LABEL>)
+            .filter((k) => typeof product.skarenBreakdown?.percentiles[k] === "number")
+            .map((k) => ({ label: NUTRIENT_LABEL[k], pct: product.skarenBreakdown!.percentiles[k] as number })),
+          additivePenalty: product.skarenBreakdown.additivePenalty,
+          processingPenalty: product.skarenBreakdown.processingPenalty,
+          novaLabel: product.novaGroup ? NOVA_WORD[product.novaGroup] : "",
+        }
+      : null;
+
   const scoreFactors: ScoreFactor[] = explainHealthScore({
     nutrition: nutritionDataFromKassalapp(product.kassalappNutrition ?? []),
     labels: product.labels ?? [],
@@ -606,6 +631,7 @@ export function ProductPageLayout({
         score={score}
         deductions={deductions}
         baseline={HEALTH_SCORE_BASELINE}
+        skaren={skarenExplain}
         lang={lang}
       />
 

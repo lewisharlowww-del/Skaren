@@ -22,6 +22,19 @@ export type Deduction = {
   value: number;
 };
 
+/** The category-relative Skaren breakdown (spec section 9). When present, the
+ *  sheet shows the shelf comparison instead of the absolute baseline ladder. */
+export type SkarenExplain = {
+  bucketLabel: string;
+  sampleSize: number;
+  shelfMedian: number | null;
+  /** Per-nutrient percentile within the bucket, 100 = best in category. */
+  percentiles: Array<{ label: string; pct: number }>;
+  additivePenalty: number;
+  processingPenalty: number;
+  novaLabel: string;
+};
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -31,9 +44,11 @@ type Props = {
   /** The model's real starting point. The canvas mock showed 100; ours is 50. */
   baseline: number;
   lang: Language;
+  /** Present for category-relative (Skaren Score) products. */
+  skaren?: SkarenExplain | null;
 };
 
-export function ScoreMethodSheet({ open, onClose, product, score, deductions, baseline, lang }: Props) {
+export function ScoreMethodSheet({ open, onClose, product, score, deductions, baseline, lang, skaren }: Props) {
   // A sheet that traps the page behind it is a navigation in disguise; this one
   // only stops the body scrolling while it is up.
   useEffect(() => {
@@ -52,6 +67,13 @@ export function ScoreMethodSheet({ open, onClose, product, score, deductions, ba
 
   const basis = product.healthBasis ?? t("product_basis_absolute", lang);
   const model = product.healthModel ?? "—";
+  const isSkaren = Boolean(skaren);
+  const skarenBasis =
+    skaren != null
+      ? lang === "no"
+        ? `Sammenlignet med ${skaren.sampleSize} andre i «${skaren.bucketLabel}». Høyere prosent = bedre enn hyllen på det næringsstoffet.`
+        : `Compared with ${skaren.sampleSize} others in "${skaren.bucketLabel}". A higher percent means better than the shelf on that nutrient.`
+      : basis;
 
   return (
     <AnimatePresence>
@@ -109,27 +131,61 @@ export function ScoreMethodSheet({ open, onClose, product, score, deductions, ba
                 overflow: "hidden"
               }}
             >
-              <Row
-                label={t("product_starting_score", lang)}
-                reason=""
-                value={String(baseline)}
-                colour="var(--sk-text-primary)"
-                first
-              />
-              {deductions.map((deduction) => (
-                <Row
-                  key={deduction.factor}
-                  label={deduction.factor}
-                  reason={deduction.reason}
-                  value={`${deduction.value > 0 ? "+" : "−"}${Math.abs(deduction.value)}`}
-                  colour={deduction.value > 0 ? "var(--sk-status-positive)" : "var(--sk-score-weak)"}
-                />
-              ))}
+              {isSkaren && skaren ? (
+                <>
+                  {skaren.percentiles.map((row, i) => (
+                    <PercentileRow key={row.label} label={row.label} pct={row.pct} first={i === 0} />
+                  ))}
+                  {skaren.additivePenalty > 0 ? (
+                    <Row
+                      label={t("product_additives", lang)}
+                      reason={product.additives?.filter((a) => a.risk !== "safe").length ? String(product.additives.filter((a) => a.risk !== "safe").length) : ""}
+                      value={`−${skaren.additivePenalty}`}
+                      colour="var(--sk-score-weak)"
+                    />
+                  ) : null}
+                  {skaren.processingPenalty > 0 ? (
+                    <Row
+                      label={t("factor_processing", lang)}
+                      reason={skaren.novaLabel}
+                      value={`−${skaren.processingPenalty}`}
+                      colour="var(--sk-score-weak)"
+                    />
+                  ) : null}
+                  {skaren.shelfMedian != null ? (
+                    <Row
+                      label={lang === "no" ? "Hyllemedian" : "Shelf median"}
+                      reason={lang === "no" ? "typisk for denne hyllen" : "typical for this shelf"}
+                      value={String(skaren.shelfMedian)}
+                      colour="var(--sk-text-muted)"
+                    />
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <Row
+                    label={t("product_starting_score", lang)}
+                    reason=""
+                    value={String(baseline)}
+                    colour="var(--sk-text-primary)"
+                    first
+                  />
+                  {deductions.map((deduction) => (
+                    <Row
+                      key={deduction.factor}
+                      label={deduction.factor}
+                      reason={deduction.reason}
+                      value={`${deduction.value > 0 ? "+" : "−"}${Math.abs(deduction.value)}`}
+                      colour={deduction.value > 0 ? "var(--sk-status-positive)" : "var(--sk-score-weak)"}
+                    />
+                  ))}
+                </>
+              )}
             </div>
 
             {/* Which engine produced this number. */}
             <p style={{ marginTop: 14, fontSize: 12.5, lineHeight: 1.5, color: "var(--sk-text-secondary)" }}>
-              {basis}
+              {skarenBasis}
             </p>
             <p
               style={{
@@ -142,7 +198,7 @@ export function ScoreMethodSheet({ open, onClose, product, score, deductions, ba
                 color: "var(--sk-text-muted)"
               }}
             >
-              {t("product_model", lang)} {model}
+              {t("product_model", lang)} {isSkaren ? "skaren-category-1.0" : model}
             </p>
 
             <a
@@ -200,6 +256,35 @@ function Row({
       </div>
       <div style={{ fontFamily: "var(--sk-font-ui)", fontVariantNumeric: "tabular-nums", fontSize: 14, color: colour }}>
         {value}
+      </div>
+    </div>
+  );
+}
+
+// A nutrient's position within its bucket, drawn as a bar. 100 = best in
+// category. Green when above the shelf midpoint, clay when below.
+function PercentileRow({ label, pct, first }: { label: string; pct: number; first?: boolean }) {
+  const p = Math.max(0, Math.min(100, Math.round(pct)));
+  const good = p >= 50;
+  const fill = good ? "var(--sk-status-positive)" : "var(--sk-score-weak)";
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 11,
+        padding: "13px 17px",
+        borderTop: first ? undefined : "1px solid var(--sk-border-muted)"
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, color: "var(--sk-text-primary)" }}>{label}</div>
+        <div style={{ marginTop: 6, height: 6, borderRadius: 999, background: "var(--sk-border-muted)", overflow: "hidden" }}>
+          <div style={{ width: `${p}%`, height: "100%", borderRadius: 999, background: fill }} />
+        </div>
+      </div>
+      <div style={{ fontFamily: "var(--sk-font-ui)", fontVariantNumeric: "tabular-nums", fontSize: 13, color: "var(--sk-text-muted)", width: 42, textAlign: "right" }}>
+        {p}%
       </div>
     </div>
   );
