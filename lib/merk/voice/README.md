@@ -62,10 +62,24 @@ or every attempt fails validation, it returns the template line with
 ## Eval
 
 ```bash
+npm run merk:voice                            # the whole suite, gated, one command
+```
+
+Runs, in sequence and failing non-zero on any error:
+
+| Suite | What it proves |
+|---|---|
+| `eval/validator.test.ts` | Each guardrail bites (banned term, tone, length, hallucinated number, bare comparison); clean copy passes. 6/6. |
+| `eval/model-reply.test.ts` | The parse+validate branches `generateMerkCopy` runs on a real reply: prose-wrapped JSON parses, missing slots reject, hallucinated numbers / banned terms / over-budget copy are caught (the retry+fallback triggers). 9/9. |
+| `eval/integration.test.ts` | The real entry point `buildProductBrief(product, { stats })` on a realistic `ProductResult`, then `generateMerkCopy` end to end (fallback ladder when no key). 31/31. |
+| `eval/run.ts` (`--nb`) | The 50-brief set through the validator gate, both languages. 50/50 each. |
+
+Individually:
+
+```bash
 npx tsx lib/merk/voice/eval/run.ts            # template only, no API cost
 npx tsx lib/merk/voice/eval/run.ts --model    # live generation, validated
 npx tsx lib/merk/voice/eval/run.ts --nb       # Norwegian
-npx tsx lib/merk/voice/eval/validator.test.ts # guardrails bite (6/6)
 ```
 
 Run the whole 50 on every prompt change and read them by hand. Three questions

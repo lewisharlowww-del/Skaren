@@ -63,6 +63,9 @@ async function main() {
   console.log("  1. Is every number in the brief?");
   console.log("  2. Would a person feel judged?");
   console.log("  3. Could this sentence have been written about a different product?");
+  // The validator is a gate: any failure fails the run so CI / the acceptance
+  // suite catches it. Reading by hand is still the real check for tone drift.
+  if (fail > 0) process.exitCode = 1;
 }
 
 main().catch((e) => {

@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "merk:voice": "npx tsx lib/merk/voice/eval/all.ts",
     "icons": "node scripts/generate-pwa-icons.mjs"
   },
   "dependencies": {
