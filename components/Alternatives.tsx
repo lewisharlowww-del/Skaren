@@ -17,6 +17,7 @@
  */
 
 import { useState } from "react";
+import Link from "next/link";
 import { t, type Language } from "@/lib/i18n";
 import type { ProductResult } from "@/lib/types";
 
@@ -176,26 +177,33 @@ export function Alternatives({ product, clean, lang, onShelfMedian }: Props) {
       {state === "done" ? (
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
           {results.map((alternative) => (
-            <div
+            <Link
               key={alternative.barcode}
+              href={`/product/${alternative.barcode}`}
+              className="focus-ring"
               style={{
+                display: "block",
                 background: "var(--sk-surface-card)",
                 border: "0.5px solid var(--sk-border-default)",
                 borderRadius: 16,
-                padding: "13px 15px"
+                padding: "13px 15px",
+                textDecoration: "none"
               }}
             >
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
                 <span style={{ fontSize: 14, color: "var(--sk-text-primary)" }}>{alternative.name}</span>
-                <span
-                  style={{
-                    fontFamily: "var(--sk-font-ui)",
-                    fontVariantNumeric: "tabular-nums",
-                    fontSize: 17,
-                    color: "var(--sk-score-good)"
-                  }}
-                >
-                  {alternative.score}
+                <span style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <span
+                    style={{
+                      fontFamily: "var(--sk-font-ui)",
+                      fontVariantNumeric: "tabular-nums",
+                      fontSize: 17,
+                      color: "var(--sk-score-good)"
+                    }}
+                  >
+                    {alternative.score}
+                  </span>
+                  <span aria-hidden style={{ fontSize: 16, color: "var(--sk-text-muted)" }}>›</span>
                 </span>
               </div>
               <p style={{ fontSize: 11.5, color: "var(--sk-text-muted)", marginTop: 1 }}>{alternative.brand}</p>
@@ -211,7 +219,7 @@ export function Alternatives({ product, clean, lang, onShelfMedian }: Props) {
                   {tradeoff}
                 </p>
               ))}
-            </div>
+            </Link>
           ))}
           {considerLine ? (
             <p style={{ fontSize: 11, color: "var(--sk-text-muted)" }}>{considerLine}</p>
