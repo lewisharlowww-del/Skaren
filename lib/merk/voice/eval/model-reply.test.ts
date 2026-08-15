@@ -52,7 +52,7 @@ const cases: Case[] = [
     name: "well-formed reply within budgets is accepted",
     raw: JSON.stringify({
       headline: "Saltiest on this shelf",
-      verdict: "2,1 g salt per 100 g, the most on this shelf. The 18 g protein is the bright spot.",
+      verdict: "The saltiest yellow cheese on this shelf. The protein is the bright spot.",
       additiveNote: "Two additives do the same job, stretching shelf life.",
       wouldMerkBuy: "I'd buy it for a burger night, not the fridge shelf. At 2,1 g salt it's the saltiest on this shelf.",
     }),
@@ -60,7 +60,7 @@ const cases: Case[] = [
   },
   {
     name: "reply wrapped in prose/markdown still parses (regex extracts the object)",
-    raw: 'Here you go:\n```json\n{"headline":"Saltiest on this shelf","verdict":"2,1 g salt, most on this shelf.","additiveNote":null,"wouldMerkBuy":"At 2,1 g salt it leads this shelf."}\n```',
+    raw: 'Here you go:\n```json\n{"headline":"Saltiest on this shelf","verdict":"The saltiest here.","additiveNote":null,"wouldMerkBuy":"It leads this shelf on salt."}\n```',
     expect: "accept",
   },
   {

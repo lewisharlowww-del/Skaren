@@ -18,6 +18,8 @@ import type { ProductResult } from "@/lib/types";
 import type { AdditiveAnalysis } from "@/lib/additives";
 import type { CategoryStats, NutrientSpread } from "@/lib/merk/categoryScore";
 import { bucketFromCatalogue, toCategoryKey } from "@/lib/merk/categoryScore";
+import { bucketPresentation } from "@/lib/merk/voice/buckets";
+import { decideVerdict } from "@/lib/merk/voice/verdictType";
 
 export type BriefNutrient = "salt" | "satFat" | "sugar" | "protein" | "fibre";
 
@@ -31,6 +33,10 @@ export type BriefDriver = {
 };
 
 export type BriefWatchAdditive = { code: string; name: string; job: string };
+
+/** How a product is eaten, per bucket. Set by hand once (~60 values). Unlocks
+ *  the only genuinely new thing the buy-note can say: portion truth (§2). */
+export type PortionRole = "ingredient" | "component" | "whole-meal";
 
 export type ProductBrief = {
   name: string;
@@ -51,6 +57,14 @@ export type ProductBrief = {
   processing: { nova: 1 | 2 | 3 | 4; label: string };
   allergens: string[];
   dataGaps?: string[]; // ["fibre", "eco"] — say so, never guess
+  /** How the product is eaten (§2 buy-note). Absent when the bucket is unknown. */
+  portionRole?: PortionRole;
+  typicalPortion?: string; // e.g. "a slice", "a handful"
+  /** Human noun for the shelf, per language (§2 — never print a bucket key). */
+  categoryNoun?: { en: string; nb: string };
+  /** The computed verdict angle (§2). Skaren picks the TYPE; the model phrases
+   *  it. Present whenever drivers exist; absent leaves the model to the template. */
+  verdict?: import("@/lib/merk/voice/verdictType").VerdictAngle;
 };
 
 /* ------------------------------------------------------------------ *
@@ -258,7 +272,9 @@ export function buildProductBrief(product: ProductResult, opts: BuildBriefOption
 
   const nova = (product.novaGroup ?? 3) as 1 | 2 | 3 | 4;
 
-  return {
+  const presentation = bucketPresentation(category);
+
+  const brief: ProductBrief = {
     name: product.name,
     brand: product.brand || "",
     category,
@@ -276,7 +292,20 @@ export function buildProductBrief(product: ProductResult, opts: BuildBriefOption
     processing: { nova, label: NOVA_LABEL[nova] },
     allergens: product.allergens,
     ...(dataGaps.length ? { dataGaps } : {}),
+    ...(presentation
+      ? {
+          portionRole: presentation.portionRole,
+          typicalPortion: presentation.typicalPortion.en, // language picked at render
+          categoryNoun: presentation.noun,
+        }
+      : {}),
   };
+
+  // The verdict angle (§2) is a pure function of the finished brief, so it is
+  // computed last. It picks WHICH of the six argument shapes fits — the model
+  // only ever phrases the shape it is handed.
+  brief.verdict = decideVerdict(brief);
+  return brief;
 }
 
 /* ------------------------------------------------------------------ *

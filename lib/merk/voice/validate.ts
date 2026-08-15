@@ -101,5 +101,13 @@ export function validate(copy: MerkCopy, brief: ProductBrief): Validation {
     return fail("bare-comparison");
   }
 
+  // At most ONE number in the verdict slot (§2 "one number, allowed once").
+  // The verdict is not the table read aloud; more than one figure means it is
+  // reciting the panel below it.
+  if (copy.verdict) {
+    const verdictNumbers = numbersIn(copy.verdict).filter((n) => n !== "100");
+    if (verdictNumbers.length > 1) return fail("verdict-too-many-numbers", verdictNumbers.join(","));
+  }
+
   return ok(copy);
 }

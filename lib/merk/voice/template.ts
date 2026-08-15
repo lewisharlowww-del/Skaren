@@ -41,10 +41,6 @@ function categoryPhrase(brief: ProductBrief, lang: Lang): string {
   return raw;
 }
 
-function num(value: number, lang: Lang): string {
-  return lang === "nb" ? String(value).replace(".", ",") : String(value);
-}
-
 function clip(text: string, max: number): string {
   if (text.length <= max) return text;
   // Never cut mid-word; trim to the last space under the limit.
@@ -92,13 +88,15 @@ export function templateCopy(brief: ProductBrief, lang: Lang = "en"): MerkCopy {
             : "A clean ingredient list";
   }
 
-  // verdict — the leading fact, then additive count.
+  // verdict — v2 shape: the COMPARISON, not the raw label value. At most one
+  // number, and only when the number is the comparison itself. The gram figure
+  // lives in the table below, so it never appears here.
   let verdict: string;
   if (top) {
     const nutrient = NUTRIENT_WORD[lang][top.nutrient];
-    const value = `${num(top.value, lang)} ${top.unit}`;
-    const factEn = `${value} ${nutrient} per 100 g, ${BAND_WORD.en[top.vsCategory]} for a ${cat}.`;
-    const factNb = `${value} ${nutrient} per 100 g, ${BAND_WORD.nb[top.vsCategory]} for ${cat}.`;
+    const band = BAND_WORD[lang][top.vsCategory];
+    const factEn = `${cap(band)} ${nutrient} for a ${cat}.`;
+    const factNb = `${cap(band)} ${nutrient} for ${cat}.`;
     const addEn =
       watch > 0
         ? ` ${watch} additive${watch === 1 ? "" : "s"} worth watching.`
@@ -159,9 +157,14 @@ export function templateCopy(brief: ProductBrief, lang: Lang = "en"): MerkCopy {
       : "I don't know this shelf well enough yet. What I can see looks ordinary. Ask me again when we've scanned more of these.";
   } else if (topIsConcern && top) {
     const nutrient = NUTRIENT_WORD[lang][top.nutrient];
+    // v2 buy-note: an occasion + a portion truth when we have one, never a raw
+    // per-100 g figure. Uses the bucket's portionRole to say the plate-vs-panel
+    // thing only the buy-note can say.
+    const portionEn = portionLineEn(brief);
+    const portionNb = portionLineNb(brief);
     wouldMerkBuy = nb
-      ? `Grei for en gangs skyld, ikke for fast plass i kjøleskapet. ${num(top.value, lang)} ${top.unit} ${nutrient} per 100 g er ${BAND_WORD.nb[top.vsCategory]} for ${cat}. Er det en ukentlig vane, finnes det en med mindre.`
-      : `Fine for the occasion, not for the weekly shelf. At ${num(top.value, lang)} ${top.unit} ${nutrient} per 100 g it sits ${BAND_WORD.en[top.vsCategory]} for a ${cat}. If it's a weekly habit, there's one with less.`;
+      ? `Grei for en gangs skyld, ikke for fast plass i kjøleskapet. ${cap(BAND_WORD.nb[top.vsCategory])} ${nutrient} for ${cat}.${portionNb}`
+      : `Fine for the occasion, not the weekly shelf. ${cap(BAND_WORD.en[top.vsCategory])} ${nutrient} for a ${cat}.${portionEn}`;
   } else {
     wouldMerkBuy = nb
       ? `Ja, uten å tenke for mye på det. Det ser ryddig ut for ${cat}, og lite skiller seg ut på feil måte.`
@@ -177,3 +180,15 @@ export function templateCopy(brief: ProductBrief, lang: Lang = "en"): MerkCopy {
 }
 
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+
+// The portion truth (§2): only ingredients read harsher per-100 g than on the
+// plate, so only they earn the sentence. A component or whole-meal does not.
+function portionLineEn(brief: ProductBrief): string {
+  if (brief.portionRole !== "ingredient") return "";
+  const p = brief.typicalPortion ?? "a little";
+  return ` It is ${p} at a time, so it reads harder here than on the plate.`;
+}
+function portionLineNb(brief: ProductBrief): string {
+  if (brief.portionRole !== "ingredient") return "";
+  return " Det brukes litt om gangen, så tallene ser strengere ut her enn på tallerkenen.";
+}

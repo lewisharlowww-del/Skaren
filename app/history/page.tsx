@@ -12,6 +12,8 @@ import { t } from '@/lib/i18n'
 import { useLang } from '@/lib/language-context'
 import { usePremium } from '@/hooks/usePremium'
 import { readLocalProduct } from '@/lib/localProducts'
+import { pickMemory } from '@/lib/merk/voice/memory'
+import { bucketOf } from '@/lib/merk/categories'
 import { supabase } from '@/lib/supabase'
 import type { GradeLetter, ScanRecord } from '@/lib/types'
 
@@ -362,6 +364,17 @@ export default function HistoryPage() {
     return scans.filter((s) => new Date(s.created_at ?? '') >= cutoff)
   }, [scans, isPremium])
 
+  // Merk's one-line noticing over the history (§11 memory). Templated, no model.
+  // The most recent scan is treated as "this session's" product.
+  const memory = useMemo(() => {
+    if (!scans.length) return null
+    const newest = [...scans].sort(
+      (a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()
+    )[0]
+    const bucket = bucketOf({ name: newest.product_name ?? null, category: null })
+    return pickMemory(scans, { barcode: newest.barcode, bucket }, lang === 'no' ? 'no' : 'en')
+  }, [scans, lang])
+
   const monthlyCount = useMemo(() => {
     const now = new Date()
     return displayScans.filter((s) => {
@@ -482,6 +495,16 @@ export default function HistoryPage() {
         </div>
 
         <OverallCard scans={displayScans} lang={lang} />
+
+        {/* Merk's noticing — one line, memory over the whole history (§11).
+            Never a judgement of the person, just an observation. */}
+        {memory ? (
+          <div className="px-5 pb-1">
+            <p className="text-[13px]" style={{ color: 'var(--sk-brand-forest)' }}>
+              {memory.text}
+            </p>
+          </div>
+        ) : null}
 
         {/* Filter pills */}
         <div className="flex gap-2 px-5 pb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>

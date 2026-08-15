@@ -35,7 +35,7 @@ const brief: ProductBrief = {
 
 const clean: MerkCopy = {
   headline: "Saltiest on this shelf",
-  verdict: "2,1 g salt per 100 g, the most on this shelf. The 18 g protein is the bright spot.",
+  verdict: "The saltiest yellow cheese on this shelf. The protein is the one bright spot.",
   additiveNote: "Two additives do the same job, stretching shelf life.",
   wouldMerkBuy:
     "I'd buy this for a burger night, not the fridge shelf. At 2,1 g salt per 100 g it's the saltiest on this shelf.",
