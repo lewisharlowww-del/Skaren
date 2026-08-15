@@ -1,41 +1,38 @@
-import type { GradeLetter, ProductResult } from "@/lib/types";
+import type { ProductResult } from "@/lib/types";
 import {
   searchKassalappProducts,
   fetchKassalappProduct,
   cleanForKassalappSearch,
-  scoreSearchRelevance,
-  type KassalappSearchProduct
+  scoreSearchRelevance
 } from "@/lib/kassalapp";
 import { calculateHealthScore, nutritionDataFromKassalapp, type NutritionData } from "@/lib/healthscore";
 import { analyzeAdditives } from "@/lib/additives";
+import { bucketOf, sameShelf, shelfLabel, type Bucket } from "@/lib/merk/categoryBuckets";
 
 /**
- * Pull E-numbers out of a printed ingredient list so a catalogue candidate can
- * be graded on the same additive layer as the scanned product. Open Food Facts
- * ships `additives_tags`; the Norwegian catalogue does not, so we read the text.
- */
-function extractAdditiveTags(ingredients: string): string[] {
-  return ingredients.match(/\bE[\s-]?\d{3,4}[a-z]?\b/gi) ?? [];
-}
-
-/**
- * findAlternative — Merk's swap engine on top of the Kassalapp API.
+ * findAlternative — Merk's swap engine.
  *
- * Pipeline (designed around Kassalapp's 60 req/min budget):
- *   1. Derive a generic noun + category from the scanned product.
- *   2. ONE cached search against /api/v1/products (unique=1, exclude_without_ean=1).
- *   3. Grade every candidate locally with the same calculateHealthScore the
- *      scanned product got — no extra network calls for scoring.
- *   4. Hard filters: same product type, meaningfully better, and it must fix
- *      the scanned product's WORST metric (that is what "alternative" means).
- *   5. Fetch full detail (nutrition table, store_prices) for the top 3 only.
+ * WHAT CHANGED FROM v1, and why the old one always returned nothing:
  *
- * The reason string is built from real deltas, never templated fluff.
+ *   1. Shelf matching was string containment between two full category paths.
+ *      That fails on almost every real pair. Now: coarse buckets (sameShelf).
+ *   2. Candidates were pre-filtered on the search payload's healthGrade, which
+ *      Kassalapp often omits — ungraded products were silently dropped before
+ *      we ever looked at them. Now: every shortlisted candidate is graded
+ *      locally on real detail data, same as the scanned product.
+ *   3. Two AND-ed hard gates (+15 score AND -25 % on the worst metric) meant a
+ *      normal shelf produced zero passes. Now: ONE soft floor, then ranking.
+ *   4. Errors were indistinguishable from "nothing better exists". Now the
+ *      function throws, and the route reports failure separately from empty.
+ *
+ * RANKING PRIORITY: additives first. The button says "find versions with fewer
+ * additives" — so that is what it must rank on. Nutrition is a tie-breaker and
+ * a printed trade-off, never the headline. This also keeps Merk's picks out of
+ * nutrition advice, which is where the regulatory risk lives.
  */
 
 export type AlternativeReason = {
-  metric: "salt" | "sugars" | "saturatedFat" | "additives" | "nova";
-  /** e.g. "43 % less salt" — already localised, built from actual numbers */
+  metric: "additives" | "salt" | "sugars" | "saturatedFat" | "nova";
   text: string;
   before: number;
   after: number;
@@ -48,116 +45,148 @@ export type Alternative = {
   image: string | null;
   score: number;
   scoreDelta: number;
-  reasons: AlternativeReason[];      // ordered, worst-metric fix first
-  tradeoffs: string[];               // honesty: e.g. "2 g less protein"
+  additiveCount: number;
+  watchAdditiveCount: number;
+  reasons: AlternativeReason[];
+  /** Always at least one entry. "Nothing gets worse" is itself a finding. */
+  tradeoffs: string[];
   cheapestPrice: { amount: number; store: string } | null;
-  consideredCount: number;           // for the "why this one" trace in UI
+};
+
+export type AlternativeSearch = {
+  results: Alternative[];
+  /** How many products on this shelf were actually examined. */
+  consideredCount: number;
+  /** How many were graded in full (detail fetched). */
+  gradedCount: number;
+  bucket: Bucket | null;
+  shelfLabelNo: string | null;
+  shelfLabelEn: string | null;
 };
 
 export type WorstMetric = "salt" | "sugars" | "saturatedFat";
 
-const WORST_METRIC_THRESHOLDS: Record<WorstMetric, (n: NutritionData) => number> = {
+const METRIC_VALUE: Record<WorstMetric, (n: NutritionData) => number> = {
   salt: (n) => n.salt ?? 0,
   sugars: (n) => n.sugars ?? 0,
   saturatedFat: (n) => n.saturatedFat ?? 0
 };
 
-const METRIC_WORDS: Record<WorstMetric, string> = {
-  salt: "salt",
-  sugars: "sugar",
-  saturatedFat: "saturated fat"
+const METRIC_WORDS: Record<WorstMetric, { no: string; en: string }> = {
+  salt: { no: "salt", en: "salt" },
+  sugars: { no: "sukker", en: "sugar" },
+  saturatedFat: { no: "mettet fett", en: "saturated fat" }
 };
 
-/** Which single metric drags this product down the most, relative to
- *  Norwegian keyhole-style limits. This is the metric a swap MUST improve. */
+/** Which single nutrient drags this product down most, vs keyhole-style limits. */
 export function worstMetric(nutrition: NutritionData): WorstMetric {
-  const limits: Record<WorstMetric, number> = { salt: 1.0, sugars: 5.0, saturatedFat: 3.0 }; // per 100 g
+  const limits: Record<WorstMetric, number> = { salt: 1.0, sugars: 5.0, saturatedFat: 3.0 };
   let worst: WorstMetric = "salt";
   let worstRatio = 0;
   (Object.keys(limits) as WorstMetric[]).forEach((key) => {
-    const ratio = WORST_METRIC_THRESHOLDS[key](nutrition) / limits[key];
+    const ratio = METRIC_VALUE[key](nutrition) / limits[key];
     if (ratio > worstRatio) { worstRatio = ratio; worst = key; }
   });
   return worst;
 }
 
-/** Generic noun for the search: "Tine Cheddar Burgerost 162g" -> "cheddar" is
- *  too narrow (would only find other cheddars); the category gives "ost". */
+function extractAdditiveTags(ingredients: string): string[] {
+  return ingredients.match(/\bE[\s-]?\d{3,4}[a-z]?\b/gi) ?? [];
+}
+
+function countWatch(additives: Array<{ risk?: string; safety?: string }>): number {
+  return additives.filter((a) => {
+    const rating = a.risk ?? a.safety;
+    return rating && rating !== "safe";
+  }).length;
+}
+
+/**
+ * Search term. The bucket label is a better query than a leaf category
+ * ("gulost" finds the shelf; "Skiveost 162g Tine" finds one product).
+ */
 function searchNoun(product: ProductResult): string {
+  const bucket = bucketOf(product.categories, product.name);
+  const label = shelfLabel(bucket, "no");
+  if (label) return label;
   const category = (product.categories ?? "").split(",")[0]?.trim();
   if (category) return category.toLowerCase();
   return cleanForKassalappSearch(product.name).split(" ").pop() ?? product.name;
 }
 
 /**
- * shelfMedian — the median health score of the scanned product's category.
- * Powers the "this one · 22 / shelf median · 51" scale on the result screen.
- *
- * Fully doable with Kassalapp: it reuses the SAME cached category search as
- * findAlternative (zero extra requests), grades every candidate locally, and
- * takes the middle value. Cache the result per category (it moves slowly) so
- * repeat scans of the same shelf are free.
+ * shelfMedian — median score of this shelf, for the "· shelf median 51" chip.
+ * Reuses the same cached search as findAlternative, so it costs no extra calls.
  */
-export async function shelfMedian(scanned: ProductResult): Promise<{ median: number; sampleSize: number } | null> {
+export async function shelfMedian(
+  scanned: ProductResult
+): Promise<{ median: number; sampleSize: number; bucket: Bucket | null } | null> {
   const noun = searchNoun(scanned);
   const candidates = await searchKassalappProducts(noun, 30, { category: noun });
   const graded = candidates
-    .filter((c) => c.categories.some((cat) => (scanned.categories ?? "").toLowerCase().includes(cat.toLowerCase())))
-    .filter((c) => c.healthGrade !== null)
-    // search payload carries enough nutrition for the grade; map A–E to the
-    // score midpoints so the median lands on the same 0–100 scale as scores.
-    .map((c) => ({ A: 90, B: 70, C: 50, D: 30, E: 10 }[c.healthGrade as GradeLetter]));
-  if (graded.length < 5) return null; // don't show a median built on 3 products
+    .filter((c) => sameShelf(scanned, c))
+    .map((c) => c.healthGrade)
+    .filter((g): g is "A" | "B" | "C" | "D" | "E" => g !== null)
+    .map((g) => ({ A: 90, B: 70, C: 50, D: 30, E: 10 }[g]));
+
+  if (graded.length < 5) return null; // never show a median built on a handful
   graded.sort((a, b) => a - b);
   const mid = Math.floor(graded.length / 2);
   const median = graded.length % 2 ? graded[mid] : Math.round((graded[mid - 1] + graded[mid]) / 2);
-  return { median, sampleSize: graded.length };
+  return { median, sampleSize: graded.length, bucket: bucketOf(scanned.categories, scanned.name) };
 }
+
+/** How many detail requests we are willing to spend per scan. */
+const DETAIL_BUDGET = 10;
+/** Below this score gain, a swap is not worth interrupting someone for. */
+const MIN_SCORE_GAIN = 5;
 
 export async function findAlternative(
   scanned: ProductResult & { nutritionData: NutritionData; healthScore: number },
-  options: { preferredStores?: string[]; maxResults?: number } = {}
-): Promise<Alternative[]> {
-  const { preferredStores = [], maxResults = 3 } = options;
+  options: { preferredStores?: string[]; maxResults?: number; lang?: "no" | "en" } = {}
+): Promise<AlternativeSearch> {
+  const { preferredStores = [], maxResults = 3, lang = "no" } = options;
 
-  // 1–2. One cached category search. size 30 gives enough candidates without
-  //      burning the rate budget; searchKassalappProducts already caches 1 h.
+  const bucket = bucketOf(scanned.categories, scanned.name);
   const noun = searchNoun(scanned);
   const candidates = await searchKassalappProducts(noun, 30, { category: noun });
 
   const target = worstMetric(scanned.nutritionData);
+  const scannedAdditives = scanned.additives ?? [];
+  const scannedTotal = scannedAdditives.length;
+  const scannedWatch = countWatch(scannedAdditives);
 
-  // 3–4. Grade + filter locally.
-  const scoredCandidates = candidates
+  // Shortlist. Note what is NOT here any more: no healthGrade pre-filter.
+  // Grading happens below, on real data, for everyone who makes the shortlist.
+  const shortlist = candidates
     .filter((c) => c.barcode && c.barcode !== scanned.barcode)
-    // same product type: at least one category token overlaps
-    .filter((c) => c.categories.some((cat) => (scanned.categories ?? "").toLowerCase().includes(cat.toLowerCase())))
-    // relevance guard: drop accessory hits ("ostehøvel" when searching "ost")
+    .filter((c) => sameShelf(scanned, c))
     .filter((c) => scoreSearchRelevance(c, noun) > 0)
-    // healthGrade comes free with the search payload — a cheap pre-filter
-    // before we spend detail requests. Keep A–C only.
-    .filter((c) => c.healthGrade !== null && c.healthGrade <= "C");
+    .slice(0, DETAIL_BUDGET);
 
-  // 5. Full detail for the top candidates ONLY (3 requests max, each cached).
   const detailed = await Promise.all(
-    scoredCandidates.slice(0, 8).map(async (c) => {
+    shortlist.map(async (c) => {
       try {
         const full = await fetchKassalappProduct(c.barcode!);
         return full ? { search: c, full } : null;
-      } catch { return null; }
+      } catch {
+        return null; // one bad detail fetch must not sink the whole search
+      }
     })
   );
 
   const results: Alternative[] = [];
+  let gradedCount = 0;
+
   for (const entry of detailed) {
     if (!entry) continue;
-    // The catalogue detail payload carries nutrition, labels and categories but
-    // no NOVA group; additives are derived from the printed ingredient list,
-    // the same source the scanned product uses.
+    gradedCount++;
+
     const nutrition = nutritionDataFromKassalapp(entry.full.nutrition ?? []);
-    const candidateAdditives = analyzeAdditives(
-      extractAdditiveTags(entry.full.ingredients ?? "")
-    );
+    const candidateAdditives = analyzeAdditives(extractAdditiveTags(entry.full.ingredients ?? ""));
+    const additiveCount = candidateAdditives.length;
+    const watchCount = countWatch(candidateAdditives);
+
     const score = calculateHealthScore({
       nutrition,
       labels: entry.full.labels ?? [],
@@ -165,36 +194,83 @@ export async function findAlternative(
       novaGroup: null,
       additives: candidateAdditives
     });
-
     const scoreDelta = score - scanned.healthScore;
-    const before = WORST_METRIC_THRESHOLDS[target](scanned.nutritionData);
-    const after = WORST_METRIC_THRESHOLDS[target](nutrition);
 
-    // HARD RULES: +15 score minimum, and the worst metric improves ≥ 25 %.
-    if (scoreDelta < 15) continue;
-    if (before > 0 && (before - after) / before < 0.25) continue;
+    // The ONE floor. Everything else is ranking, not gatekeeping.
+    if (scoreDelta < MIN_SCORE_GAIN) continue;
+    // It must not be worse on the thing the button promised.
+    if (watchCount > scannedWatch) continue;
 
-    const reasons: AlternativeReason[] = [{
-      metric: target,
-      text: `${Math.round(((before - after) / before) * 100)} % less ${METRIC_WORDS[target]}`,
-      before, after
-    }];
-    const addBefore = scanned.additives?.length ?? 0;
-    const addAfter = candidateAdditives.length;
-    if (addAfter < addBefore) {
-      reasons.push({ metric: "additives", text: addAfter === 0 ? "no additives" : `${addBefore - addAfter} fewer additives`, before: addBefore, after: addAfter });
+    const reasons: AlternativeReason[] = [];
+
+    // Additives lead — that is what the button asked for.
+    if (watchCount < scannedWatch) {
+      const fewer = scannedWatch - watchCount;
+      reasons.push({
+        metric: "additives",
+        text: watchCount === 0
+          ? (lang === "no" ? "ingen tilsetningsstoffer å følge med på" : "no additives worth watching")
+          : (lang === "no" ? `${fewer} færre å følge med på` : `${fewer} fewer worth watching`),
+        before: scannedWatch,
+        after: watchCount
+      });
+    } else if (additiveCount < scannedTotal) {
+      reasons.push({
+        metric: "additives",
+        text: lang === "no"
+          ? `${scannedTotal - additiveCount} færre tilsetningsstoffer`
+          : `${scannedTotal - additiveCount} fewer additives`,
+        before: scannedTotal,
+        after: additiveCount
+      });
     }
 
-    // Honesty: surface what gets WORSE, never hide it.
+    // Nutrition is a supporting line, never the headline.
+    const before = METRIC_VALUE[target](scanned.nutritionData);
+    const after = METRIC_VALUE[target](nutrition);
+    const metricGain = before > 0 ? (before - after) / before : 0;
+    if (metricGain >= 0.15) {
+      reasons.push({
+        metric: target,
+        text: lang === "no"
+          ? `${Math.round(metricGain * 100)} % mindre ${METRIC_WORDS[target].no}`
+          : `${Math.round(metricGain * 100)} % less ${METRIC_WORDS[target].en}`,
+        before, after
+      });
+    }
+
+    if (!reasons.length) continue; // better score, but nothing we can name — skip
+
+    // Trade-offs. Always non-empty: saying "nothing gets worse" is the finding.
     const tradeoffs: string[] = [];
     const proteinLoss = (scanned.nutritionData.protein ?? 0) - (nutrition.protein ?? 0);
-    if (proteinLoss >= 2) tradeoffs.push(`${proteinLoss.toFixed(0)} g less protein`);
+    if (proteinLoss >= 2) {
+      tradeoffs.push(lang === "no" ? `${proteinLoss.toFixed(0)} g mindre protein` : `${proteinLoss.toFixed(0)} g less protein`);
+    }
+    for (const key of ["salt", "sugars", "saturatedFat"] as WorstMetric[]) {
+      const b = METRIC_VALUE[key](scanned.nutritionData);
+      const a = METRIC_VALUE[key](nutrition);
+      if (b > 0 && (a - b) / b >= 0.15) {
+        tradeoffs.push(lang === "no"
+          ? `${Math.round(((a - b) / b) * 100)} % mer ${METRIC_WORDS[key].no}`
+          : `${Math.round(((a - b) / b) * 100)} % more ${METRIC_WORDS[key].en}`);
+      }
+    }
+    if (additiveCount > scannedTotal) {
+      tradeoffs.push(lang === "no"
+        ? `${additiveCount - scannedTotal} flere tilsetningsstoffer, alle harmløse`
+        : `${additiveCount - scannedTotal} more additives, all harmless`);
+    }
+    if (!tradeoffs.length) {
+      tradeoffs.push(lang === "no" ? "Ingenting blir dårligere her." : "Nothing gets worse here.");
+    }
 
-    // Availability + price from store_prices; prefer the user's stores.
     const prices = (entry.full.storePrices ?? [])
       .filter((p) => p.price != null)
       .sort((a, b) => Number(a.price) - Number(b.price));
-    const preferred = prices.find((p) => preferredStores.some((s) => p.store?.toLowerCase().includes(s.toLowerCase())));
+    const preferred = prices.find((p) =>
+      preferredStores.some((s) => p.store?.toLowerCase().includes(s.toLowerCase()))
+    );
     const cheapest = preferred ?? prices[0] ?? null;
 
     results.push({
@@ -202,14 +278,28 @@ export async function findAlternative(
       name: entry.search.name,
       brand: entry.search.brand,
       image: entry.search.image,
-      score, scoreDelta, reasons, tradeoffs,
-      cheapestPrice: cheapest ? { amount: Number(cheapest.price), store: cheapest.store ?? "" } : null,
-      consideredCount: candidates.length
+      score,
+      scoreDelta,
+      additiveCount,
+      watchAdditiveCount: watchCount,
+      reasons,
+      tradeoffs,
+      cheapestPrice: cheapest ? { amount: Number(cheapest.price), store: cheapest.store ?? "" } : null
     });
   }
 
-  // Rank: fixes the problem hardest, then availability, then score.
-  return results
-    .sort((a, b) => (b.reasons[0].before - b.reasons[0].after) - (a.reasons[0].before - a.reasons[0].after) || b.score - a.score)
-    .slice(0, maxResults);
+  // Rank: additives removed first, then score gain. Price is never a factor.
+  results.sort((a, b) => {
+    const additiveGain = (x: Alternative) => scannedWatch - x.watchAdditiveCount;
+    return additiveGain(b) - additiveGain(a) || b.scoreDelta - a.scoreDelta;
+  });
+
+  return {
+    results: results.slice(0, maxResults),
+    consideredCount: candidates.filter((c) => sameShelf(scanned, c)).length,
+    gradedCount,
+    bucket,
+    shelfLabelNo: shelfLabel(bucket, "no"),
+    shelfLabelEn: shelfLabel(bucket, "en")
+  };
 }

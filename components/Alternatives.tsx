@@ -1,17 +1,26 @@
 "use client";
 
 /**
- * Alternatives — opt-in, and never sponsored.
+ * Alternatives — opt-in, never sponsored.
  *
- * The CTA is a quiet outlined row, not a banner: nobody scanned a product to be
- * sold a different one. When it opens, Merk shows his working — how many he
- * looked at, what actually improved, and what got worse. The trade-off line is
- * the point. A swap engine that only prints upside is an ad.
+ * Four states, not two. v1 collapsed "we could not check" into "nothing found",
+ * which is both dishonest and undebuggable:
+ *
+ *   idle    the quiet outlined row; nobody scanned a product to be sold another
+ *   loading Merk's barcode, the same loading motif as everywhere else
+ *   done    cards, each printing what improves AND what gets worse
+ *   empty   "I checked N on this shelf, none clearly better" — a real answer
+ *   failed  "I could not check the shelf" — a different sentence entirely
+ *
+ * The trade-off line is the point. A swap engine that only prints upside is an
+ * advertisement with extra steps.
  */
 
 import { useState } from "react";
 import { t, type Language } from "@/lib/i18n";
 import type { ProductResult } from "@/lib/types";
+
+type Reason = { metric: string; text: string };
 
 type Alternative = {
   barcode: string;
@@ -19,10 +28,20 @@ type Alternative = {
   brand: string;
   score: number;
   scoreDelta: number;
-  reasons: Array<{ metric: string; text: string }>;
+  watchAdditiveCount: number;
+  reasons: Reason[];
   tradeoffs: string[];
-  consideredCount: number;
 };
+
+type Response = {
+  ok: boolean;
+  results?: Alternative[];
+  consideredCount?: number;
+  shelfLabel?: string | null;
+  shelfMedian?: number | null;
+};
+
+type State = "idle" | "loading" | "done" | "empty" | "failed";
 
 type Props = {
   product: ProductResult;
@@ -33,29 +52,42 @@ type Props = {
 };
 
 export function Alternatives({ product, clean, lang, onShelfMedian }: Props) {
-  const [state, setState] = useState<"idle" | "loading" | "done" | "empty">("idle");
+  const [state, setState] = useState<State>("idle");
   const [results, setResults] = useState<Alternative[]>([]);
+  const [considered, setConsidered] = useState(0);
+  const [shelf, setShelf] = useState<string | null>(null);
 
   async function load() {
     if (state === "loading") return;
     setState("loading");
     try {
-      const response = await fetch("/api/alternatives", {
+      const response = await fetch(`/api/alternatives?lang=${lang}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ product })
       });
-      const data = (await response.json()) as {
-        alternatives?: Alternative[];
-        shelfMedian?: number | null;
-      };
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = (await response.json()) as Response;
+
       onShelfMedian?.(data.shelfMedian ?? null);
-      setResults(data.alternatives ?? []);
-      setState((data.alternatives ?? []).length ? "done" : "empty");
+      setConsidered(data.consideredCount ?? 0);
+      setShelf(data.shelfLabel ?? null);
+
+      if (!data.ok) { setState("failed"); return; }
+      setResults(data.results ?? []);
+      setState((data.results ?? []).length ? "done" : "empty");
     } catch {
-      setState("empty");
+      setState("failed");
     }
   }
+
+  /* "Looked at 31 yellow cheeses." The sentence that makes this feel like a
+     friend checked the shelf rather than an algorithm upselling you. */
+  const considerLine = considered
+    ? lang === "no"
+      ? `Så på ${considered}${shelf ? ` ${shelf}` : ""} på denne hylla.`
+      : `Looked at ${considered}${shelf ? ` ${shelf}` : ""} on this shelf.`
+    : null;
 
   return (
     <div>
@@ -72,8 +104,6 @@ export function Alternatives({ product, clean, lang, onShelfMedian }: Props) {
           minHeight: "var(--sk-min-tap)",
           padding: "15px 20px",
           borderRadius: 20,
-          /* 1.5px ink, not a hairline — this is the one outlined control on the
-             page, and the canvas gives it real weight. */
           border: "1.5px solid var(--sk-text-primary)",
           background: "transparent",
           opacity: clean ? 0.65 : 1
@@ -87,9 +117,7 @@ export function Alternatives({ product, clean, lang, onShelfMedian }: Props) {
             {clean ? t("product_nothing_to_replace", lang) : t("product_alternatives_sub", lang)}
           </span>
         </span>
-        {!clean ? (
-          <span aria-hidden style={{ fontSize: 18, color: "var(--sk-text-primary)" }}>→</span>
-        ) : null}
+        {!clean ? <span aria-hidden style={{ fontSize: 18, color: "var(--sk-text-primary)" }}>→</span> : null}
       </button>
 
       {state === "loading" ? (
@@ -109,10 +137,40 @@ export function Alternatives({ product, clean, lang, onShelfMedian }: Props) {
         </div>
       ) : null}
 
+      {/* Checked, found nothing. Say how many — that is the honest part. */}
       {state === "empty" ? (
-        <p style={{ marginTop: 10, fontSize: 12.5, color: "var(--sk-text-muted)" }}>
-          {t("product_no_alternatives", lang)}
-        </p>
+        <div style={{ marginTop: 10 }}>
+          <p style={{ fontSize: 12.5, color: "var(--sk-text-muted)" }}>
+            {t("product_no_alternatives", lang)}
+          </p>
+          {considerLine ? (
+            <p style={{ fontSize: 11, color: "var(--sk-text-faint)", marginTop: 3 }}>{considerLine}</p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* Could not check. A different sentence, and a way back. */}
+      {state === "failed" ? (
+        <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
+          <p style={{ flex: 1, fontSize: 12.5, color: "var(--sk-text-muted)" }}>
+            {lang === "no" ? "Jeg fikk ikke sjekket hylla nå." : "I could not check the shelf just now."}
+          </p>
+          <button
+            type="button"
+            onClick={load}
+            className="focus-ring"
+            style={{
+              fontSize: 12.5,
+              color: "var(--sk-brand-forest)",
+              background: "transparent",
+              border: 0,
+              padding: "6px 2px",
+              textDecoration: "underline"
+            }}
+          >
+            {lang === "no" ? "Prøv igjen" : "Try again"}
+          </button>
+        </div>
       ) : null}
 
       {state === "done" ? (
@@ -147,7 +205,7 @@ export function Alternatives({ product, clean, lang, onShelfMedian }: Props) {
                   {reason.text}
                 </p>
               ))}
-              {/* What gets worse is printed, never hidden. */}
+              {/* What gets worse is printed, never hidden. Always at least one. */}
               {alternative.tradeoffs.map((tradeoff) => (
                 <p key={tradeoff} style={{ fontSize: 12.5, color: "var(--sk-score-weak)", marginTop: 3 }}>
                   {tradeoff}
@@ -155,9 +213,9 @@ export function Alternatives({ product, clean, lang, onShelfMedian }: Props) {
               ))}
             </div>
           ))}
-          <p style={{ fontSize: 11, color: "var(--sk-text-muted)" }}>
-            {t("product_considered", lang)} {results[0]?.consideredCount ?? 0}
-          </p>
+          {considerLine ? (
+            <p style={{ fontSize: 11, color: "var(--sk-text-muted)" }}>{considerLine}</p>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -165,11 +223,12 @@ export function Alternatives({ product, clean, lang, onShelfMedian }: Props) {
 }
 
 /**
- * WhatWouldMerkBuySheet — three short paragraphs, no numbers.
+ * MerkBuyNote — the "What would Merk buy?" note on the result screen.
  *
- * A score can tell you how a product rates. It cannot tell you whether to buy
- * it, because that depends on what you are making. This is use-case advice, so
- * it deliberately never quotes a figure.
+ * Kept exported from this module because ProductPageLayout imports it here.
+ * Deliberately never quotes a figure: it is use-case advice, not a number. When
+ * the Merk voice engine supplies a paragraph it is preferred (`note`), otherwise
+ * a static strong/weak line by grade.
  */
 export function MerkBuyNote({ grade, lang, note }: { grade: string | null; lang: Language; note?: string | null }) {
   const strong = grade === "A" || grade === "B";
