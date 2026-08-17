@@ -32,7 +32,7 @@ import { bucketOf, sameShelf, shelfLabel, type Bucket } from "@/lib/merk/categor
  */
 
 export type AlternativeReason = {
-  metric: "additives" | "salt" | "sugars" | "saturatedFat" | "nova";
+  metric: "additives" | "salt" | "sugars" | "saturatedFat" | "nova" | "score";
   text: string;
   before: number;
   after: number;
@@ -122,7 +122,7 @@ export async function shelfMedian(
   scanned: ProductResult
 ): Promise<{ median: number; sampleSize: number; bucket: Bucket | null } | null> {
   const noun = searchNoun(scanned);
-  const candidates = await searchKassalappProducts(noun, 30, { category: noun });
+  const candidates = await searchKassalappProducts(noun, 30);
   const graded = candidates
     .filter((c) => sameShelf(scanned, c))
     .map((c) => c.healthGrade)
@@ -138,8 +138,10 @@ export async function shelfMedian(
 
 /** How many detail requests we are willing to spend per scan. */
 const DETAIL_BUDGET = 10;
-/** Below this score gain, a swap is not worth interrupting someone for. */
-const MIN_SCORE_GAIN = 5;
+/** Below this score gain, a swap is not worth interrupting someone for. Kept
+ *  low: on tight shelves (cheese, oil) a +3 cleaner option is still an honest
+ *  answer, and the printed trade-off keeps it from over-selling. */
+const MIN_SCORE_GAIN = 3;
 
 export async function findAlternative(
   scanned: ProductResult & { nutritionData: NutritionData; healthScore: number },
@@ -149,7 +151,7 @@ export async function findAlternative(
 
   const bucket = bucketOf(scanned.categories, scanned.name);
   const noun = searchNoun(scanned);
-  const candidates = await searchKassalappProducts(noun, 30, { category: noun });
+  const candidates = await searchKassalappProducts(noun, 30);
 
   const target = worstMetric(scanned.nutritionData);
   const scannedAdditives = scanned.additives ?? [];
@@ -239,7 +241,19 @@ export async function findAlternative(
       });
     }
 
-    if (!reasons.length) continue; // better score, but nothing we can name — skip
+    // Fallback reason: the candidate cleared the score floor but nothing above
+    // could be named — usually because the scanned product carried no additives
+    // to beat (common: Open Food Facts omits additive tags for Norwegian items).
+    // A genuinely higher-scoring shelf-mate is still the better buy, so say that
+    // plainly rather than dropping it. Without this, most scans find nothing.
+    if (!reasons.length) {
+      reasons.push({
+        metric: "score",
+        text: lang === "no" ? "bedre totalt på denne hylla" : "better overall on this shelf",
+        before: scanned.healthScore,
+        after: score,
+      });
+    }
 
     // Trade-offs. Always non-empty: saying "nothing gets worse" is the finding.
     const tradeoffs: string[] = [];
