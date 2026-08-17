@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, ChevronRight, Crown, Info, ListPlus } from "lucide-react";
@@ -24,7 +24,66 @@ import {
 } from "@/lib/healthscore";
 import { t } from "@/lib/i18n";
 import { useLang } from "@/lib/language-context";
+import { buildProductImageCandidates } from "@/lib/productImage";
 import type { ProductInsight, ProductResult, GradeLetter } from "@/lib/types";
+
+// ── 60x60 product thumbnail for the header row ────────────────────────────────
+// The Kassalapp image when we have one, walking image fallbacks on error; a
+// diagonal-striped "product image" placeholder when there is none.
+function HeaderThumb({ image, barcode, lang }: { image: string | null; barcode: string; lang: "en" | "no" }) {
+  const candidates = buildProductImageCandidates(image, barcode);
+  const [i, setI] = useState(0);
+  const src = candidates[i];
+  const size = 60;
+  const base: CSSProperties = {
+    width: size,
+    height: size,
+    borderRadius: 15,
+    flexShrink: 0,
+    overflow: "hidden",
+  };
+  if (src) {
+    return (
+      <div style={{ ...base, background: "var(--sk-surface-card)", border: "0.5px solid var(--sk-border-default)" }}>
+        <img
+          key={src}
+          src={src}
+          alt=""
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+          onError={() => setI((n) => n + 1)}
+        />
+      </div>
+    );
+  }
+  return (
+    <div
+      aria-hidden
+      style={{
+        ...base,
+        display: "grid",
+        placeItems: "center",
+        background:
+          "repeating-linear-gradient(135deg, var(--sk-brand-mist-card) 0 8px, var(--sk-brand-mist) 8px 16px)",
+        border: "0.5px solid var(--sk-border-default)",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--sk-font-ui)",
+          fontSize: 9,
+          lineHeight: 1.1,
+          fontWeight: 600,
+          textAlign: "center",
+          color: "var(--sk-text-muted)",
+          whiteSpace: "pre-line",
+          letterSpacing: "0.02em",
+        }}
+      >
+        {lang === "no" ? "produkt\nbilde" : "product\nimage"}
+      </span>
+    </div>
+  );
+}
 
 // ── Additive extraction from ingredients text ─────────────────────────────────
 function extractAdditivesFromIngredients(ingredients: string): string[] {
@@ -537,29 +596,32 @@ export function ProductPageLayout({
         <div className="h-10 w-10" aria-hidden="true" />
       </div>
 
-      {/* ── PRODUCT HEADER — context line, then the product name is the title,
-            spanning full width (no thumbnail — the label IS Merk). ────────── */}
+      {/* ── PRODUCT HEADER — a 60x60 product thumbnail, then the name + brand.
+            The Kassalapp image when present, a striped placeholder when null. */}
       <div ref={heroRef} className="mx-5 mt-2" style={{ willChange: "opacity" }}>
-        <div ref={heroContentRef} style={{ willChange: "opacity, transform" }}>
-          <h1
-            style={{
-              fontFamily: "var(--sk-font-ui)",
-              fontSize: 24,
-              fontWeight: 600,
-              letterSpacing: "-0.025em",
-              color: "var(--sk-text-primary)",
-              lineHeight: 1.12,
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-            }}
-          >
-            {product.name}
-          </h1>
-          <p style={{ fontSize: 13, color: "var(--sk-text-muted)", marginTop: 4 }}>
-            {product.brand || product.barcode}
-          </p>
+        <div ref={heroContentRef} style={{ display: "flex", alignItems: "center", gap: 14, willChange: "opacity, transform" }}>
+          <HeaderThumb image={product.displayImage} barcode={product.barcode} lang={lang} />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h1
+              style={{
+                fontFamily: "var(--sk-font-ui)",
+                fontSize: 24,
+                fontWeight: 600,
+                letterSpacing: "-0.025em",
+                color: "var(--sk-text-primary)",
+                lineHeight: 1.12,
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
+              {product.name}
+            </h1>
+            <p style={{ fontSize: 13, color: "var(--sk-text-muted)", marginTop: 4 }}>
+              {product.brand || product.barcode}
+            </p>
+          </div>
         </div>
       </div>
 
