@@ -39,6 +39,12 @@ const RULES: Array<[Bucket, RegExp, RegExp?]> = [
   ["crackers",         /kjeks|cracker|salt(kjeks|stang)/],
 
   // ── Protein ─────────────────────────────────────────────────────────────
+  // Sweet spreads sit above cold-cuts on purpose: a jar of Nutella is filed
+  // under "Søtpålegg", and the broad /pålegg/ cold-cuts rule would otherwise
+  // swallow it. chocolate-spread is its own shelf (nobody swaps Nutella for
+  // strawberry jam); each label below is also a real Kassalapp search term.
+  ["chocolate-spread", /nugatti|nutella|sjokoladep(a|å)legg|hasseln(o|ø)ttkrem/],
+  ["spread-sweet",     /syltet(o|ø)y|marmelade|honning|peanøttsm(o|ø)r/],
   ["sausage",          /p(o|ø)lse|wienerp(o|ø)lse|grillp(o|ø)lse|chorizo|salami/],
   ["cold-cuts",        /p(a|å)legg|skinke|servelat|leverpostei|salamip(a|å)legg|kjøttp(a|å)legg/],
   ["mince",            /kj(o|ø)ttdeig|karbonadedeig|farse|kj(o|ø)ttkaker/],
@@ -58,7 +64,6 @@ const RULES: Array<[Bucket, RegExp, RegExp?]> = [
   ["sauce-cold",       /ketchup|majones|remulade|dressing|aioli|sennep|bearnaise/],
   ["soup-stock",       /suppe|buljong|fond\b|kraft\b/],
   ["ready-meal",       /ferdigrett|middagsrett|lasagne|pizza|wok\b|gryte\b/],
-  ["spread-sweet",     /syltet(o|ø)y|nugatti|peanøttsm(o|ø)r|honning|marmelade/],
 
   // ── Snacks & sweets ─────────────────────────────────────────────────────
   ["crisps",           /potetgull|chips|nachos|ostepop|snacks/],
@@ -185,7 +190,8 @@ export const BUCKET_LABELS: Record<string, { no: string; en: string }> = {
   "sauce-cold": { no: "kalde sauser", en: "cold sauces" },
   "soup-stock": { no: "suppe og buljong", en: "soup and stock" },
   "ready-meal": { no: "ferdigretter", en: "ready meals" },
-  "spread-sweet": { no: "søtt pålegg", en: "sweet spreads" },
+  "chocolate-spread": { no: "sjokoladepålegg", en: "chocolate spread" },
+  "spread-sweet": { no: "syltetøy", en: "jam and honey" },
   crisps: { no: "potetgull", en: "crisps" },
   nuts: { no: "nøtter", en: "nuts" },
   chocolate: { no: "sjokolade", en: "chocolate" },
