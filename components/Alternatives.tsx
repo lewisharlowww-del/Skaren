@@ -232,68 +232,291 @@ export function Alternatives({ product, clean, lang, onShelfMedian }: Props) {
 }
 
 /**
- * MerkBuyNote — the "What would Merk buy?" note on the result screen.
+ * MerkBuyNote — the "What would Merk buy?" card on the result screen.
+ *
+ * Design (mascot bible, "the ink card"): the buy card is its own black box that
+ * echoes the verdict — Merk on the left, a one-line teaser in his own words, a
+ * chevron. Tapping it opens a bottom SHEET that is Merk's space: the full note,
+ * two verdict chips, and one cream action button at the bottom ("show me a
+ * better one") that hands off to the alternatives flow.
  *
  * Kept exported from this module because ProductPageLayout imports it here.
- * Deliberately never quotes a figure: it is use-case advice, not a number. When
- * the Merk voice engine supplies a paragraph it is preferred (`note`), otherwise
- * a static strong/weak line by grade.
+ * Deliberately never quotes a figure: it is use-case advice, not a number.
  */
-export function MerkBuyNote({ grade, lang, note }: { grade: string | null; lang: Language; note?: string | null }) {
+export function MerkBuyNote({
+  grade,
+  lang,
+  note,
+  productName,
+  brand,
+  onFindAlternatives,
+}: {
+  grade: string | null;
+  lang: Language;
+  note?: string | null;
+  productName?: string;
+  brand?: string;
+  onFindAlternatives?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
   const strong = grade === "A" || grade === "B";
-  const body = note?.trim() ? note : strong ? t("merk_buy_strong", lang) : t("merk_buy_weak", lang);
+  const body = note?.trim() ? note.trim() : strong ? t("merk_buy_strong", lang) : t("merk_buy_weak", lang);
+
+  // The teaser is Merk's position in one line — his first sentence, not a
+  // description of the feature. You tap because you want the reasoning.
+  const teaser = firstSentence(body);
+  const paragraphs = body.split(/\n+/).flatMap((p) => splitSentencesForSheet(p));
+
   return (
-    <div
-      style={{
-        position: "relative",
-        overflow: "hidden",
-        background: "var(--sk-verdict-bg)",
-        borderRadius: 22,
-        padding: "16px 18px",
-        display: "flex",
-        alignItems: "flex-end",
-        gap: 13,
-      }}
-    >
-      {/* Folded-corner signature, same as the verdict card. */}
-      <span
-        aria-hidden
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="focus-ring w-full"
+        aria-expanded={open}
         style={{
-          position: "absolute",
-          top: 0,
-          right: 0,
-          width: 24,
-          height: 24,
-          background: "var(--sk-verdict-fold)",
-          clipPath: "polygon(0 0, 100% 100%, 0 100%)",
+          position: "relative",
+          overflow: "hidden",
+          background: "var(--sk-verdict-bg)",
+          borderRadius: 22,
+          padding: "18px 20px",
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          textAlign: "left",
+          border: "none",
+          cursor: "pointer",
         }}
-      />
-      {/* Merk himself, holding a basket — this is the "what would he buy" card. */}
-      <Merk
-        expression={merkForGrade(grade)}
-        accessory="basket"
-        pose="hold"
-        size={72}
-        limbs={false}
-        aria-hidden
-      />
-      <div style={{ flex: 1, minWidth: 0, paddingBottom: 4 }}>
-        <p
+      >
+        <span
+          aria-hidden
           style={{
-            fontFamily: "var(--sk-font-ui)",
-            fontVariantNumeric: "tabular-nums",
-            fontSize: 9.5,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            color: "var(--sk-verdict-body)",
+            position: "absolute",
+            top: 0,
+            right: 0,
+            width: 30,
+            height: 30,
+            background: "var(--sk-verdict-fold)",
+            clipPath: "polygon(0 0, 100% 100%, 0 100%)",
+          }}
+        />
+        <Merk expression={merkForGrade(grade)} size={52} limbs={false} still aria-hidden />
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span
+            style={{
+              display: "block",
+              fontFamily: "var(--sk-font-brand)",
+              fontSize: 17.5,
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              color: "var(--sk-verdict-text)",
+            }}
+          >
+            {t("product_what_would_merk_buy", lang)}
+          </span>
+          <span
+            style={{
+              display: "block",
+              fontSize: 12.5,
+              lineHeight: 1.45,
+              color: "var(--sk-verdict-body)",
+              marginTop: 4,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {teaser}
+          </span>
+        </span>
+        <span
+          aria-hidden
+          style={{
+            width: 34,
+            height: 34,
+            flexShrink: 0,
+            borderRadius: "50%",
+            background: "rgba(246,243,236,.1)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 15,
+            color: "var(--sk-verdict-text)",
           }}
         >
-          {t("product_what_would_merk_buy", lang)}
-        </p>
-        <p style={{ fontSize: 14, lineHeight: 1.5, color: "var(--sk-verdict-text)", marginTop: 6 }}>
-          {body}
+          ›
+        </span>
+      </button>
+
+      <MerkBuySheet
+        open={open}
+        onClose={() => setOpen(false)}
+        lang={lang}
+        grade={grade}
+        productName={productName}
+        brand={brand}
+        paragraphs={paragraphs}
+        onFindAlternatives={onFindAlternatives}
+      />
+    </>
+  );
+}
+
+/** The full "what would Merk buy" sheet — his space, in ink. */
+function MerkBuySheet({
+  open,
+  onClose,
+  lang,
+  grade,
+  productName,
+  brand,
+  paragraphs,
+  onFindAlternatives,
+}: {
+  open: boolean;
+  onClose: () => void;
+  lang: Language;
+  grade: string | null;
+  productName?: string;
+  brand?: string;
+  paragraphs: string[];
+  onFindAlternatives?: () => void;
+}) {
+  if (!open) return null;
+  const subtitle = [productName, brand].filter(Boolean).join(" · ");
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("product_what_would_merk_buy", lang)}
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 60,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-end",
+        background: "rgba(32,29,21,.38)",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          background: "var(--sk-verdict-bg)",
+          borderRadius: "30px 30px 0 0",
+          padding: "14px 22px calc(26px + env(safe-area-inset-bottom))",
+          boxShadow: "0 -18px 50px rgba(32,29,21,.35)",
+          maxHeight: "88vh",
+          overflowY: "auto",
+        }}
+      >
+        <span
+          aria-hidden
+          style={{
+            position: "absolute",
+            right: 0,
+            top: 0,
+            width: 44,
+            height: 44,
+            background: "var(--sk-verdict-fold)",
+            clipPath: "polygon(0 0, 100% 100%, 0 100%)",
+          }}
+        />
+        <div
+          aria-hidden
+          onClick={onClose}
+          style={{ width: 38, height: 4, borderRadius: 2, background: "rgba(246,243,236,.22)", margin: "0 auto 16px", cursor: "pointer" }}
+        />
+
+        <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+          <Merk expression={merkForGrade(grade)} size={62} aria-hidden />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--sk-font-brand)", fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", color: "var(--sk-verdict-text)", lineHeight: 1.15 }}>
+              {t("product_what_would_merk_buy", lang)}
+            </div>
+            {subtitle ? (
+              <div style={{ fontSize: 12.5, color: "var(--sk-verdict-body)", marginTop: 3 }}>{subtitle}</div>
+            ) : null}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          {paragraphs.map((p, i) => (
+            <p
+              key={i}
+              style={{
+                fontSize: 15.5,
+                lineHeight: 1.6,
+                color: i === 0 ? "var(--sk-verdict-text)" : "rgba(246,243,236,.86)",
+                marginTop: i === 0 ? 0 : 11,
+              }}
+            >
+              {p}
+            </p>
+          ))}
+        </div>
+
+        {onFindAlternatives ? (
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onFindAlternatives();
+            }}
+            className="focus-ring w-full"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 11,
+              background: "var(--sk-verdict-text)",
+              borderRadius: 18,
+              padding: "14px 17px",
+              marginTop: 15,
+              border: "none",
+              cursor: "pointer",
+              textAlign: "left",
+            }}
+          >
+            <span style={{ flex: 1 }}>
+              <span style={{ display: "block", fontSize: 14.5, fontWeight: 600, color: "var(--sk-verdict-bg)" }}>
+                {t("merk_buy_show_better", lang)}
+              </span>
+              <span style={{ display: "block", fontSize: 11.5, color: "var(--sk-brand-forest)", marginTop: 1 }}>
+                {t("product_alternatives_sub", lang)}
+              </span>
+            </span>
+            <span aria-hidden style={{ fontSize: 15, color: "var(--sk-verdict-bg)" }}>›</span>
+          </button>
+        ) : null}
+
+        <p style={{ fontSize: 11.5, lineHeight: 1.5, color: "rgba(246,243,236,.45)", marginTop: 13, textAlign: "center" }}>
+          {t("merk_buy_disclaimer", lang)}
         </p>
       </div>
     </div>
   );
+}
+
+/** Merk's first sentence, for the collapsed teaser. Kept short and un-truncated
+ *  mid-word; the card clamps it to one line with an ellipsis. */
+function firstSentence(text: string): string {
+  const m = text.match(/^[^.!?]*[.!?]/);
+  return (m ? m[0] : text).trim();
+}
+
+/** Break a paragraph into at most three sentences for the sheet, so the note
+ *  reads as distinct beats rather than one wall of text. */
+function splitSentencesForSheet(text: string): string[] {
+  const sentences = text.match(/[^.!?]+[.!?]+|\S[^.!?]*$/g)?.map((s) => s.trim()).filter(Boolean) ?? [text];
+  if (sentences.length <= 1) return sentences;
+  // Group into up to three beats: 1, then the middle, then the rest.
+  const first = sentences[0];
+  const rest = sentences.slice(1);
+  if (rest.length <= 2) return [first, ...rest];
+  const mid = rest.slice(0, rest.length - 1).join(" ");
+  const last = rest[rest.length - 1];
+  return [first, mid, last];
 }

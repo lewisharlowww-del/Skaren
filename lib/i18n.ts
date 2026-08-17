@@ -136,6 +136,8 @@ export const translations = {
     nodata_contribute_sub: 'To bilder, omtrent tjue sekunder',
     merk_buy_strong: 'Denne ville jeg lagt i kurven uten å tenke mer på det. Til hverdags er den grei som den er, og du trenger ikke lete etter noe annet.',
     merk_buy_weak: 'Til en enkelt middag gjør den jobben. Skal den stå i kjøleskapet hver uke, ville jeg sett meg om etter noe med kortere ingrediensliste.',
+    merk_buy_show_better: 'Vis meg en bedre en',
+    merk_buy_disclaimer: 'Merks mening, skrevet fra etiketten — ikke en medisinsk anbefaling.',
     // History page
     history_title: 'Historikk',
     history_scans_this_month: 'skanninger denne måneden',
@@ -483,6 +485,8 @@ export const translations = {
     nodata_contribute_sub: 'Two photos, about twenty seconds',
     merk_buy_strong: 'I would put this in the basket without thinking about it again. For everyday cooking it is fine as it is, and you do not need to go looking for something else.',
     merk_buy_weak: 'For one dinner it does the job. If it is going to live in your fridge every week, I would look for something with a shorter ingredient list.',
+    merk_buy_show_better: 'Show me a better one',
+    merk_buy_disclaimer: "Merk's opinion, written from the label — not a medical recommendation.",
     // History page
     history_title: 'History',
     history_scans_this_month: 'scans this month',

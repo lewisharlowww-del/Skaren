@@ -267,6 +267,7 @@ export function ProductPageLayout({
   const heroContentRef = useRef<HTMLDivElement>(null);
   const gradeHelpRef = useRef<HTMLDivElement>(null);
   const gradeHelpButtonRef = useRef<HTMLButtonElement>(null);
+  const alternativesRef = useRef<HTMLDivElement>(null);
 
   const hasOfficialEcoData = hasEcoData(product);
   const ecoGrade = hasOfficialEcoData ? product.ecoGradeLetter ?? getEcoGrade(product) : null;
@@ -723,7 +724,16 @@ export function ProductPageLayout({
         {/* 7. WHAT WOULD MERK BUY — use-case advice, deliberately no numbers.
               Prefer the v1 copy's paragraph (premium) over the static line. */}
         <div style={{ marginTop: 16 }}>
-          <MerkBuyNote grade={healthGrade} lang={lang} note={isPremium ? merkCopy?.wouldMerkBuy ?? null : null} />
+          <MerkBuyNote
+            grade={healthGrade}
+            lang={lang}
+            note={isPremium ? merkCopy?.wouldMerkBuy ?? null : null}
+            productName={product.name}
+            brand={product.brand}
+            onFindAlternatives={() => {
+              alternativesRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }}
+          />
         </div>
 
         {/* 8. INGREDIENTS — free for all users */}
@@ -777,7 +787,7 @@ export function ProductPageLayout({
         )}
 
         {/* 9. ALTERNATIVES — opt-in, ranked on criteria, never sponsored */}
-        <div style={{ marginTop: 16 }}>
+        <div ref={alternativesRef} style={{ marginTop: 16, scrollMarginTop: 80 }}>
           <Alternatives
             product={product}
             clean={allAdditives.length === 0 && (healthGrade === "A" || healthGrade === "B")}
