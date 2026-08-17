@@ -19,6 +19,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { t, type Language } from "@/lib/i18n";
+import { Merk, merkForGrade } from "@/components/Merk";
 import type { ProductResult } from "@/lib/types";
 
 type Reason = { metric: string; text: string };
@@ -240,29 +241,59 @@ export function Alternatives({ product, clean, lang, onShelfMedian }: Props) {
  */
 export function MerkBuyNote({ grade, lang, note }: { grade: string | null; lang: Language; note?: string | null }) {
   const strong = grade === "A" || grade === "B";
+  const body = note?.trim() ? note : strong ? t("merk_buy_strong", lang) : t("merk_buy_weak", lang);
   return (
     <div
       style={{
-        background: "var(--sk-brand-mist-card)",
-        borderRadius: 18,
-        padding: "15px 17px"
+        position: "relative",
+        overflow: "hidden",
+        background: "var(--sk-verdict-bg)",
+        borderRadius: 22,
+        padding: "16px 18px",
+        display: "flex",
+        alignItems: "flex-end",
+        gap: 13,
       }}
     >
-      <p
+      {/* Folded-corner signature, same as the verdict card. */}
+      <span
+        aria-hidden
         style={{
-          fontFamily: "var(--sk-font-ui)",
-          fontVariantNumeric: "tabular-nums",
-          fontSize: 9.5,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color: "var(--sk-text-muted)"
+          position: "absolute",
+          top: 0,
+          right: 0,
+          width: 24,
+          height: 24,
+          background: "var(--sk-verdict-fold)",
+          clipPath: "polygon(0 0, 100% 100%, 0 100%)",
         }}
-      >
-        {t("product_what_would_merk_buy", lang)}
-      </p>
-      <p style={{ fontSize: 14, lineHeight: 1.5, color: "var(--sk-text-primary)", marginTop: 8 }}>
-        {note?.trim() ? note : strong ? t("merk_buy_strong", lang) : t("merk_buy_weak", lang)}
-      </p>
+      />
+      {/* Merk himself, holding a basket — this is the "what would he buy" card. */}
+      <Merk
+        expression={merkForGrade(grade)}
+        accessory="basket"
+        pose="hold"
+        size={72}
+        limbs={false}
+        aria-hidden
+      />
+      <div style={{ flex: 1, minWidth: 0, paddingBottom: 4 }}>
+        <p
+          style={{
+            fontFamily: "var(--sk-font-ui)",
+            fontVariantNumeric: "tabular-nums",
+            fontSize: 9.5,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: "var(--sk-verdict-body)",
+          }}
+        >
+          {t("product_what_would_merk_buy", lang)}
+        </p>
+        <p style={{ fontSize: 14, lineHeight: 1.5, color: "var(--sk-verdict-text)", marginTop: 6 }}>
+          {body}
+        </p>
+      </div>
     </div>
   );
 }
