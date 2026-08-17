@@ -52,9 +52,9 @@ const cases: Case[] = [
     name: "well-formed reply within budgets is accepted",
     raw: JSON.stringify({
       headline: "Saltiest on this shelf",
-      verdict: "The saltiest yellow cheese on this shelf. The protein is the bright spot.",
+      verdict: "The saltiest yellow cheese here, though the protein is a real bright spot.",
       additiveNote: "Two additives do the same job, stretching shelf life.",
-      wouldMerkBuy: "I'd buy it for a burger night, not the fridge shelf. At 2,1 g salt it's the saltiest on this shelf.",
+      wouldMerkBuy: "I'd keep it for a burger night rather than the everyday fridge. One slice melts well and goes further than the panel suggests.",
     }),
     expect: "accept",
   },
@@ -67,9 +67,9 @@ const cases: Case[] = [
     name: "explicit null additiveNote is accepted",
     raw: JSON.stringify({
       headline: "Most salt on this shelf",
-      verdict: "2,1 g salt per 100 g, the most on this shelf.",
+      verdict: "The most salt of any yellow cheese here, though the protein holds up.",
       additiveNote: null,
-      wouldMerkBuy: "At 2,1 g salt it tops this shelf, though the 18 g protein is real.",
+      wouldMerkBuy: "Better for an occasional melt than a daily staple. A slice at a time reads gentler than the panel does.",
     }),
     expect: "accept",
   },

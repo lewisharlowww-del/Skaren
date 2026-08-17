@@ -636,6 +636,21 @@ export function ProductPageLayout({
           lang={lang}
           onWhy={() => setMethodOpen(true)}
         />
+        {/* §13 data-coverage line — absences belong to the interface, never to
+            Merk's copy. A small grey line under the score, stated once. */}
+        {product.merkCoverage ? (
+          <p
+            style={{
+              fontSize: 12,
+              lineHeight: 1.45,
+              color: "var(--sk-text-muted)",
+              marginTop: 8,
+              paddingLeft: 2,
+            }}
+          >
+            {product.merkCoverage}
+          </p>
+        ) : null}
       </div>
 
       {/* ── MERK'S VERDICT — traced from the canvas: ink card, 26px folded

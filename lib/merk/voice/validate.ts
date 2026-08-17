@@ -41,6 +41,31 @@ function hasEmoji(text: string): boolean {
 const COMPARISON =
   /\b(more|less|higher|lower|highest|lowest|saltiest|most|least|best|worst|mest|minst|mer|mindre|h\u00f8yere|lavere)\b/i;
 
+// Absence talk (§13). The verdict and the buy note must never speak about
+// missing data or deflect the reader to check it themselves — a missing figure
+// belongs to the coverage line the UI renders under the score, not to Merk.
+const ABSENCE_TALK =
+  /\b(not listed|no data|missing|isn'?t listed|check it yourself|see for yourself|can'?t say|cannot say|mangler|ikke oppgitt|ikke listet|sjekk selv|se selv)\b/i;
+
+// The §13 overlap ceiling. Above this, the verdict and buy note are telling the
+// same story — the separation contract is broken and the pair must be retried.
+export const MAX_SLOT_OVERLAP = 0.4;
+
+/** Content-word Jaccard overlap between two strings (§13). Words of four or
+ *  more letters only, so function words ("the", "with") do not inflate it. The
+ *  denominator is the SMALLER set, so a short slot fully contained in a long one
+ *  scores 1.0 — a restatement, however padded, is caught. */
+export function slotOverlap(a: string, b: string): number {
+  const words = (s: string) =>
+    new Set((s.toLowerCase().match(/[a-z\u00e6\u00f8\u00e5]{4,}/gi) ?? []));
+  const A = words(a);
+  const B = words(b);
+  if (!A.size || !B.size) return 0;
+  let shared = 0;
+  for (const w of Array.from(A)) if (B.has(w)) shared++;
+  return shared / Math.min(A.size, B.size);
+}
+
 export type Validation =
   | { ok: true; copy: MerkCopy }
   | { ok: false; reason: string; detail?: string };
@@ -107,6 +132,19 @@ export function validate(copy: MerkCopy, brief: ProductBrief): Validation {
   if (copy.verdict) {
     const verdictNumbers = numbersIn(copy.verdict).filter((n) => n !== "100");
     if (verdictNumbers.length > 1) return fail("verdict-too-many-numbers", verdictNumbers.join(","));
+  }
+
+  // Absence talk (§13). Neither the verdict nor the buy note may speak about a
+  // missing figure or deflect the reader — that belongs to the coverage line.
+  if (ABSENCE_TALK.test(`${copy.verdict} ${copy.wouldMerkBuy}`)) {
+    return fail("absence-talk");
+  }
+
+  // The separation contract (§13). The verdict answers "how good"; the buy note
+  // answers "when". If they share too many content words they are telling the
+  // same story, and the pair must be regenerated.
+  if (slotOverlap(copy.verdict, copy.wouldMerkBuy) > MAX_SLOT_OVERLAP) {
+    return fail("slot-overlap");
   }
 
   return ok(copy);

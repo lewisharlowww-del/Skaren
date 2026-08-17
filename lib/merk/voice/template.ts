@@ -156,19 +156,26 @@ export function templateCopy(brief: ProductBrief, lang: Lang = "en"): MerkCopy {
       ? "Jeg kjenner ikke denne hyllen godt nok ennå. Det jeg ser, ser vanlig ut. Spør meg igjen når vi har skannet flere av disse."
       : "I don't know this shelf well enough yet. What I can see looks ordinary. Ask me again when we've scanned more of these.";
   } else if (topIsConcern && top) {
-    const nutrient = NUTRIENT_WORD[lang][top.nutrient];
     // v2 buy-note: an occasion + a portion truth when we have one, never a raw
-    // per-100 g figure. Uses the bucket's portionRole to say the plate-vs-panel
-    // thing only the buy-note can say.
+    // per-100 g figure. §13: it must NOT restate the verdict's shelf comparison
+    // (band + nutrient + category) — that story belongs to the verdict alone.
+    // So the concern is only alluded to as an occasion ("for the occasion, not
+    // the weekly shelf"); the portion truth carries the rest.
     const portionEn = portionLineEn(brief);
     const portionNb = portionLineNb(brief);
     wouldMerkBuy = nb
-      ? `Grei for en gangs skyld, ikke for fast plass i kjøleskapet. ${cap(BAND_WORD.nb[top.vsCategory])} ${nutrient} for ${cat}.${portionNb}`
-      : `Fine for the occasion, not the weekly shelf. ${cap(BAND_WORD.en[top.vsCategory])} ${nutrient} for a ${cat}.${portionEn}`;
+      ? `Grei for en gangs skyld, ikke for fast plass i kjøleskapet.${portionNb}`
+      : `Fine for the occasion, not the weekly shelf.${portionEn}`;
   } else {
+    // Clean / good: no concern to reason about. §13 — the buy note answers
+    // "when", so it must NOT echo the verdict's shelf noun (${cat}). Use the
+    // portion truth when the bucket carries one; otherwise a plain, shelf-free
+    // yes that could only be said about something worth buying without fuss.
+    const portionEn = portionSuffixEn(brief);
+    const portionNb = portionSuffixNb(brief);
     wouldMerkBuy = nb
-      ? `Ja, uten å tenke for mye på det. Det ser ryddig ut for ${cat}, og lite skiller seg ut på feil måte.`
-      : `Yes, without thinking too hard about it. It reads clean for a ${cat}, and nothing here stands out the wrong way.`;
+      ? `Ja, uten å tenke for mye på det.${portionNb || " Ingenting her ber deg nøle."}`
+      : `Yes, without thinking too hard about it.${portionEn || " Nothing here asks you to pause."}`;
   }
 
   return {
@@ -191,4 +198,18 @@ function portionLineEn(brief: ProductBrief): string {
 function portionLineNb(brief: ProductBrief): string {
   if (brief.portionRole !== "ingredient") return "";
   return " Det brukes litt om gangen, så tallene ser strengere ut her enn på tallerkenen.";
+}
+
+// A shelf-free portion sentence for the clean/good case (§13). Unlike the
+// concern lines above, this fires for ANY portion role, because a plain "yes"
+// is stronger with a concrete serving attached — and it never names the shelf.
+function portionSuffixEn(brief: ProductBrief): string {
+  const p = brief.typicalPortion;
+  if (!p) return "";
+  return ` ${cap(p)} is the everyday amount, and it sits easily there.`;
+}
+function portionSuffixNb(brief: ProductBrief): string {
+  const p = brief.typicalPortion;
+  if (!p) return "";
+  return ` ${cap(p)} er den vanlige mengden, og der sitter det fint.`;
 }

@@ -35,10 +35,10 @@ const brief: ProductBrief = {
 
 const clean: MerkCopy = {
   headline: "Saltiest on this shelf",
-  verdict: "The saltiest yellow cheese on this shelf. The protein is the one bright spot.",
+  verdict: "The saltiest yellow cheese here, though the protein is a real bright spot.",
   additiveNote: "Two additives do the same job, stretching shelf life.",
   wouldMerkBuy:
-    "I'd buy this for a burger night, not the fridge shelf. At 2,1 g salt per 100 g it's the saltiest on this shelf.",
+    "I'd keep this for a burger night rather than the everyday fridge. One slice melts well and goes further than the panel suggests.",
 };
 
 type Case = { name: string; copy: MerkCopy; expect: "ok" | string };

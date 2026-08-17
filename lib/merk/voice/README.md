@@ -26,8 +26,9 @@ Merk writes exactly four things, each with a hard length limit.
 | `copy.ts` | The `MerkCopy` shape and `SLOT_LIMITS`. |
 | `prompt.ts` | `MERK_SYSTEM_PROMPT`, the `nb` addendum, and the three few-shot examples. **Brand assets.** `MERK_VOICE_VERSION`. |
 | `template.ts` | `templateCopy(brief, lang)` — the model-free fallback line. Ship this first. |
-| `generate.ts` | `generateMerkCopy(brief, lang)` — one structured-output call, validated, one retry, then the template. Always resolves. |
-| `validate.ts` | `validate(copy, brief)` — banned terms, tone, length, hallucinated-number, bare-comparison. Enforcement, not guidance. |
+| `partition.ts` | `partitionBrief(brief)` — the §13 separation contract. Splits the brief into a verdict slice (shelf comparison) and a buy-note slice (portion + occasion); absences go to a `coverage` list. `coverageLine(gaps, lang)` renders the grey line under the score. |
+| `generate.ts` | `generateMerkCopy(brief, lang)` — one structured-output call carrying the two partitioned slices, validated, one retry, then the template. Always resolves. |
+| `validate.ts` | `validate(copy, brief)` — banned terms, tone, length, hallucinated-number, bare-comparison, one-number-per-verdict, §13 absence-talk and cross-slot overlap. Enforcement, not guidance. |
 | `cache.ts` | `briefCacheKey(brief, lang)` — stable hash of the brief + language + voice version. |
 | `index.ts` | The public surface. |
 | `eval/` | The 50-brief set, the runner, and the validator self-test. |

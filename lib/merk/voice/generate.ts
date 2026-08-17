@@ -18,6 +18,7 @@ import type { MerkCopy, MerkCopyResult } from "@/lib/merk/voice/copy";
 import { SLOT_LIMITS } from "@/lib/merk/voice/copy";
 import { templateCopy } from "@/lib/merk/voice/template";
 import { validate } from "@/lib/merk/voice/validate";
+import { partitionBrief } from "@/lib/merk/voice/partition";
 import {
   MERK_SYSTEM_PROMPT,
   MERK_SYSTEM_PROMPT_NB_ADDENDUM,
@@ -49,11 +50,23 @@ function buildInput(brief: ProductBrief, language: Lang): ResponsesInputItem[] {
     { role: "assistant" as const, content: ex.copy },
   ]);
 
+  // The separation contract (§13): still ONE call, but the brief is partitioned
+  // so each slot sees only its own facts. The verdict slice carries the shelf
+  // comparison; the buy-note slice carries portion and occasion. Absences go to
+  // neither — they are rendered by the UI, never spoken by Merk. A fact absent
+  // from a slice cannot be restated, so the overlap is impossible, not merely
+  // discouraged.
+  const { verdict, buyNote } = partitionBrief(brief);
   const user: ResponsesInputItem = {
     role: "user",
     content: JSON.stringify({
       language,
-      brief,
+      // headline + verdict + additiveNote are written from verdictFacts;
+      // wouldMerkBuy is written from buyNoteFacts. Each fact belongs to exactly
+      // one slot — a fact used in one answer must not appear in another.
+      verdictFacts: verdict,
+      buyNoteFacts: buyNote,
+      rule: "Each fact belongs to exactly one slot. Write headline, verdict and additiveNote from verdictFacts only. Write wouldMerkBuy from buyNoteFacts only. A fact used in one answer must not appear in another.",
       // Strict structured output rejects maxLength, so the budgets ride in the
       // message and are ENFORCED by the validator.
       limits: SLOT_LIMITS,

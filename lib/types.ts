@@ -91,6 +91,10 @@ export type ProductResult = {
      and validated server-side. Present for premium/cached; the UI falls back to
      merkVerdict then the static grade map when absent. */
   merkCopy?: import("@/lib/merk/voice/copy").MerkCopy | null;
+  /* Merk voice §13 — the data-coverage line the UI renders under the score
+     ("Fibre and eco not in the catalogue for this product."). Absences belong
+     to the interface, never to Merk's copy. Null when nothing is missing. */
+  merkCoverage?: string | null;
   /* ── Scoring provenance ──────────────────────────────────────────────────
      Which engine produced the number, and which version of it. Persisted with
      every saved scan so a re-tune never silently rewrites a user's history. */

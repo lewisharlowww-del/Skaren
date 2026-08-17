@@ -22,8 +22,11 @@ export type { MerkCopy, MerkCopyResult, MerkCopySource } from "@/lib/merk/voice/
 export { SLOT_LIMITS } from "@/lib/merk/voice/copy";
 
 export { templateCopy } from "@/lib/merk/voice/template";
-export { validate, numbersIn } from "@/lib/merk/voice/validate";
+export { validate, numbersIn, slotOverlap, MAX_SLOT_OVERLAP } from "@/lib/merk/voice/validate";
 export type { Validation } from "@/lib/merk/voice/validate";
+
+export { partitionBrief, coverageLine } from "@/lib/merk/voice/partition";
+export type { BriefPartition, VerdictSlice, BuyNoteSlice } from "@/lib/merk/voice/partition";
 
 export { generateMerkCopy } from "@/lib/merk/voice/generate";
 export type { Lang } from "@/lib/merk/voice/generate";

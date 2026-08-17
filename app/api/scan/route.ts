@@ -11,6 +11,7 @@ import {
 import { getCachedAiAnalysis, saveCachedAiAnalysis } from "@/lib/productCache";
 import { buildProductBrief } from "@/lib/merk/voice/brief";
 import { generateMerkCopy } from "@/lib/merk/voice/generate";
+import { coverageLine } from "@/lib/merk/voice/partition";
 import { briefCacheKey } from "@/lib/merk/voice/cache";
 import { MERK_VOICE_VERSION } from "@/lib/merk/voice/prompt";
 import { scoreProduct } from "@/lib/merk/scoreProduct";
@@ -218,6 +219,11 @@ export async function POST(request: Request) {
     let merkCopy: MerkCopy | null =
       cachedCopyEntry && cachedCopyEntry.briefHash === briefHash ? cachedCopyEntry.copy : null;
 
+    // §13 — the data-coverage line ("Fibre and eco not in the catalogue…").
+    // Deterministic and model-free, so it is computed for everyone, not just
+    // premium, and never contradicts what Merk (silently) omits.
+    const merkCoverage = coverageLine(brief.dataGaps ?? [], voiceLang);
+
     const needsSummary = !cachedAi && isPremium;
     const needsVerdict = !merkVerdict && isPremium;
     const needsCopy = !merkCopy && isPremium;
@@ -293,6 +299,7 @@ export async function POST(request: Request) {
         aiSummary,
         merkVerdict,
         merkCopy,
+        merkCoverage,
       }
     });
   } catch (error) {

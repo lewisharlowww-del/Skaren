@@ -42,9 +42,9 @@ const okReply = (obj: unknown): Response =>
 
 const validCopy = {
   headline: "Saltiest on this shelf",
-  verdict: "The saltiest yellow cheese on this shelf. The protein is the one bright spot.",
+  verdict: "The saltiest yellow cheese here, though the protein is a real bright spot.",
   additiveNote: "Two additives do the same job, stretching shelf life.",
-  wouldMerkBuy: "I'd buy it for a burger night, not the fridge shelf. At 2,1 g salt it tops this shelf.",
+  wouldMerkBuy: "I'd keep it for a burger night rather than the everyday fridge. One slice melts well and goes further than the panel suggests.",
 };
 const hallucinated = { ...validCopy, verdict: "3,4 g salt per 100 g, the most on this shelf." };
 
@@ -84,7 +84,9 @@ async function main() {
     check("request includes system + 3 few-shot pairs + user (8 msgs)", Array.isArray(body.input) && body.input.length === 8, String(body.input?.length));
     check("first input message is the system prompt", body.input?.[0]?.role === "system" && /You are Merk/.test(body.input?.[0]?.content));
     const lastMsg = JSON.parse(body.input?.[body.input.length - 1]?.content || "{}");
-    check("final user message carries the brief and the limits", lastMsg.brief?.name === "Cheddar Burger Cheese" && lastMsg.limits?.headline === 42);
+    check("final user message carries the partitioned facts and the limits", lastMsg.verdictFacts?.name === "Cheddar Burger Cheese" && lastMsg.buyNoteFacts?.name === "Cheddar Burger Cheese" && lastMsg.limits?.headline === 42);
+    check("§13: buyNote slice never carries shelf percentile", lastMsg.buyNoteFacts?.percentile === undefined);
+    check("§13: verdict slice never carries portion fields", lastMsg.verdictFacts?.typicalPortion === undefined);
 
     // ── 2 · Retry: first reply hallucinates, retry at 0.2 returns valid.
     installFetch((_u, _i, idx) => (idx === 0 ? okReply(hallucinated) : okReply(validCopy)));
