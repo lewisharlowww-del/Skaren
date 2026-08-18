@@ -10,8 +10,8 @@
 import type { ProductResult } from "@/lib/types";
 import { bucketOf } from "@/lib/merk/categories";
 import { countWatchlisted } from "@/lib/merk/watchlist";
-import { nutritionDataFromKassalapp } from "@/lib/healthscore";
 import { skarenScore, type CategoryStats, type ScoreResult } from "@/lib/merk/score";
+import { readCleanNutrients, toScoreNutrients, type Rejection } from "@/lib/merk/normalise";
 import statsJson from "@/lib/merk/categoryStats.json";
 
 const STATS = statsJson as unknown as CategoryStats;
@@ -20,6 +20,8 @@ const STATS = statsJson as unknown as CategoryStats;
 export type SkarenScored = {
   result: ScoreResult;
   bucket: string;
+  /** D2 — nutrients dropped as implausible, for the data-quality log. */
+  rejections: Rejection[];
 };
 
 /** Score one product against the shipped category stats. Never throws. */
@@ -30,9 +32,17 @@ export function scoreProduct(product: ProductResult): SkarenScored {
       product.kassalappCategories?.filter(Boolean).join(" ") ||
       product.categories ||
       null,
+    // D3 — let the processed-protein guard see the ingredient list + additive
+    // count, so breaded chicken leaves the plain "poultry" shelf.
+    ingredients: product.ingredients ?? null,
+    additiveCount: (product.additives ?? []).length,
   });
 
-  const n = nutritionDataFromKassalapp(product.kassalappNutrition ?? []);
+  // D1 + D2 — one parser, plausibility-gated against the product's own shelf.
+  const { nutrients: clean, rejections } = readCleanNutrients(
+    product.kassalappNutrition ?? [],
+    STATS[bucket] ?? null
+  );
   const additiveCodes = (product.additives ?? [])
     .map((a) => a.code)
     .filter((c): c is string => Boolean(c));
@@ -40,17 +50,20 @@ export function scoreProduct(product: ProductResult): SkarenScored {
     (product.additives ?? []).map((a) => ({ code: a.code, risk: a.risk }))
   );
 
+  // Log every rejection with the barcode — this log IS the data-quality
+  // backlog (audit D2): after a few weeks it says which source to distrust.
+  if (rejections.length) {
+    console.warn(
+      `[Skaren D2] ${product.barcode} "${product.name}" dropped ${rejections
+        .map((r) => `${r.nutrient}=${r.value}(${r.reason})`)
+        .join(", ")}`
+    );
+  }
+
   const result = skarenScore(
     {
       bucket,
-      nutrients: {
-        salt: n.salt ?? null,
-        satFat: n.saturatedFat ?? null,
-        sugar: n.sugars ?? null,
-        protein: n.protein ?? null,
-        fibre: n.fiber ?? null,
-        energy: n.calories ?? null,
-      },
+      nutrients: toScoreNutrients(clean),
       watchAdditives,
       // v2 — the ingredient list and additive codes drive the new layers.
       ingredients: product.ingredients ?? null,
@@ -60,5 +73,5 @@ export function scoreProduct(product: ProductResult): SkarenScored {
     STATS
   );
 
-  return { result, bucket };
+  return { result, bucket, rejections };
 }

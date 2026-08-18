@@ -1,4 +1,5 @@
 import type { ProductInsight, ProductResult, MerkVerdict, GradeLetter } from "@/lib/types";
+import { readCleanNutrients } from "@/lib/merk/normalise";
 
 type OpenAiTextBlock = {
   type?: string;
@@ -297,7 +298,13 @@ export async function generateMerkVerdict(
   const grade = (product.healthGrade ?? null) as GradeLetter | null;
   const no = language === "no";
 
-  const sugarValue = getSugarValue(product);
+  // D1 + D2 — feed Merk only gated numbers. An absent or implausible figure
+  // becomes "unknown", never a "0 g" he then calls a virtue, and never a
+  // mis-matched sat-fat. One parser, the same one the score and brief use.
+  const { nutrients: clean } = readCleanNutrients(product.kassalappNutrition ?? []);
+  const g = (v: number | null) => (v == null ? "unknown" : String(v));
+
+  const sugarValue = clean.sugar == null ? "unknown" : String(clean.sugar);
   const sugarInIngredients = ingredientsContainSugar(product.ingredients);
   const sugarContext = sugarValue !== "unknown"
     ? `${sugarValue}g per 100g`
@@ -366,11 +373,11 @@ Processing (NOVA 1 unprocessed … 4 ultra-processed): ${product.novaGroup ?? "u
 Ingredients: ${product.ingredients || "not available"}
 Additives worth naming (function + risk): ${worstAdditives || "none of concern"}
 All additive codes: ${product.additives.map((a) => a.code).join(", ") || "none detected"}
-Fat: ${getFatValue(product)}g per 100g
-Saturated fat: ${getNutritionValue(product, ["saturated", "mettede", "mettet"])}g per 100g
+Fat: ${g(clean.fat)}g per 100g
+Saturated fat: ${g(clean.satFat)}g per 100g
 Sugar: ${sugarContext}
-Protein: ${getNutritionValue(product, ["protein", "proteins"])}g per 100g
-Salt: ${getNutritionValue(product, ["salt", "sodium", "natrium"])}g per 100g
+Protein: ${g(clean.protein)}g per 100g
+Salt: ${g(clean.salt)}g per 100g
 Eco grade: ${product.ecoGrade ?? "not available"}
 Origin: ${product.origins || "not listed"}
 Allergens: ${product.allergens.join(", ") || "none listed"}

@@ -63,8 +63,13 @@ const cases: Case[] = [
   { name: "negative salt is dropped as a data gap (no impossible -5 g)", product: product([{ code: "salt", displayName: "Salt", amount: -5, unit: "g" }]), withStats: true, expectDrivers: 0 },
   { name: "NaN amount is dropped", product: product([{ code: "salt", displayName: "Salt", amount: NaN, unit: "g" }, { code: "protein", displayName: "Protein", amount: 20, unit: "g" }]), withStats: true, expectDrivers: 1 },
   { name: "Infinity is dropped", product: product([{ code: "salt", displayName: "Salt", amount: Infinity, unit: "g" }]), withStats: true, expectDrivers: 0 },
-  { name: "zero is a legitimate value (kept)", product: product([{ code: "salt", displayName: "Salt", amount: 0, unit: "g" }]), withStats: true, expectDrivers: 1 },
-  { name: "huge value is kept and banded", product: product([{ code: "protein", displayName: "Protein", amount: 99999, unit: "g" }]), withStats: true, expectDrivers: 1 },
+  // audit D2 gate 3 (bucket sanity): a cheese reading 0 g salt sits below the
+  // shelf's plausible minimum (p10 0.8 → p1 ≈ 0.4), so it is dropped as
+  // implausible rather than believed. A real 0 must be plausible for its shelf.
+  { name: "implausible zero for the shelf is dropped (audit D2)", product: product([{ code: "salt", displayName: "Salt", amount: 0, unit: "g" }]), withStats: true, expectDrivers: 0 },
+  // audit D2 gate 1 (absolute bounds): 99999 g protein is not a food, it is a
+  // bad record. Out of [0,90] → dropped, never "banded" as a dramatic fact.
+  { name: "out-of-bounds value is dropped (audit D2)", product: product([{ code: "protein", displayName: "Protein", amount: 99999, unit: "g" }]), withStats: true, expectDrivers: 0 },
   { name: "empty product (no name, nothing)", product: product([], { name: "", kassalappCategories: [] }), withStats: false, expectDrivers: 0 },
   { name: "long name does not throw", product: product([], { name: "A".repeat(300) }), withStats: false, expectDrivers: 0 },
 ];

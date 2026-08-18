@@ -20,7 +20,68 @@ export type CatalogueProduct = {
   name?: string | null;
   category?: string | null;
   subCategory?: string | null;
+  /** v2 (audit D3) — ingredients + additive count, for the processed-protein
+   *  guard. A "plain" bucket assumes there is nothing to read; a breaded,
+   *  seasoned or additive-carrying product breaks that assumption and is moved
+   *  to its processed sibling. Optional: callers without them skip the guard. */
+  ingredients?: string | null;
+  additiveCount?: number | null;
 };
+
+// ── Name overrides (audit D3) ─────────────────────────────────────────────
+// Kassalapp's taxonomy mixes shelf LOCATION with product TYPE — biscuits, crisps
+// and candy all share a "Snacks" parent, baby food sits under the food it
+// imitates. So a single catalogue-category match sends the wrong products to the
+// nearest snack-ish bucket. These patterns are tested against the NAME ONLY and
+// win over every category rule: if the product is literally called "kjeks" it is
+// a biscuit, whatever aisle the catalogue filed it under. Order matters here too.
+export const NAME_OVERRIDES: Array<[RegExp, string]> = [
+  // Baby food announces itself in the name (age band), never in a nutrient.
+  [/\b\d{1,2}\s*[-–]\s*\d{1,2}\s*(mnd|m[åa]ned|[åa]r)\b|\b\d{1,2}\s*mnd\b|\bfra\s*\d{1,2}\s*(mnd|m[åa]ned)|velling|barnegr[øo]t|barnemat/i, "baby-food"],
+  // Sweets miscategorised under Snacks/Sjokolade.
+  [/vingummi|seigmenn|seigmann|lakris|vingum|gelégodt|gele\s*godt|pastiller|smågodt|smagodt|skum(?:bananer|nisser)|bilar\b/i, "candy"],
+  // Biscuits miscategorised under Snacks.
+  [/\bkjeks\b|digestive|marie\b|kakemenn|pepperkake/i, "biscuits"],
+  // Potato/pasta salads are a condiment/deli item, not sour cream.
+  [/potetsalat|pastasalat|salatmix\s*med|coleslaw/i, "condiment"],
+  // Chocolate bars/wafers sometimes filed under Snacks/Kjeks.
+  [/kvikk\s*lunsj|sjokolade(?:bar|plate)|toblerone|firkl[øo]ver/i, "chocolate"],
+];
+
+// ── Processed-protein guard (audit D3) ─────────────────────────────────────
+// A product in a PLAIN bucket (chicken, fish, mince…) that carries more than a
+// couple of ingredients, or any additive, is not plain — it is breaded,
+// marinated or emulsified. Plain mode reads no ingredient list, so leaving it
+// there hides real processing behind a whole-food ceiling. Route it to a
+// processed sibling instead. Keyed by the plain bucket → its processed home.
+const PLAIN_TO_PROCESSED: Record<string, string> = {
+  poultry: "ready-meal",
+  fish: "fish-cakes",
+  salmon: "ready-meal",
+  shellfish: "ready-meal",
+  "red-meat": "ready-meal",
+  "minced-meat": "ready-meal",
+};
+const PLAIN_BUCKETS = new Set(Object.keys(PLAIN_TO_PROCESSED));
+
+/** Count the comma/parenthesis-separated components of an ingredient string.
+ *  A whole food has one or two ("Chicken breast", "Salmon, salt"); breaded or
+ *  marinated products list many. */
+function ingredientCount(ingredients: string | null | undefined): number {
+  if (!ingredients) return 0;
+  const cleaned = ingredients.replace(/\([^)]*\)/g, ""); // drop sub-lists
+  return cleaned.split(/[,;]/).map((s) => s.trim()).filter(Boolean).length;
+}
+
+/** Apply the processed-protein guard: a plain bucket with >3 ingredients or any
+ *  additive is moved to its processed sibling. Pure; returns the same bucket
+ *  when the guard does not apply. */
+export function applyProcessedGuard(bucket: string, p: CatalogueProduct): string {
+  if (!PLAIN_BUCKETS.has(bucket)) return bucket;
+  const many = ingredientCount(p.ingredients) > 3;
+  const hasAdditive = (p.additiveCount ?? 0) > 0;
+  return many || hasAdditive ? PLAIN_TO_PROCESSED[bucket] : bucket;
+}
 
 // Order matters: the first matching rule wins, so more specific patterns come
 // before the broader ones that would otherwise swallow them (fresh cheese
@@ -106,14 +167,42 @@ export const BUCKET_RULES: Array<[RegExp, string]> = [
 ];
 
 /**
- * The bucket for a catalogue product. Searches category, subCategory and name
- * (in that priority order, joined) against the rules. Returns "unbucketed" when
- * nothing matches — those are scored in limited-data mode (section 7) and read
- * by hand to grow the rule set (build order step 1).
+ * The bucket for a catalogue product (audit D3). Resolution order, most trusted
+ * first, so a product's own NAME wins over the aisle the catalogue filed it in:
+ *
+ *   1. Name overrides — "kjeks" is a biscuit whatever the category says.
+ *   2. Bucket rules against the NAME — the product names itself ("Jarlsberg").
+ *   3. Bucket rules against the CATEGORY — the shelf, when the name is silent.
+ *   4. Processed-protein guard — a "plain" bucket with a real ingredient list
+ *      or any additive is not plain; move it to its processed sibling.
+ *
+ * Returns "unbucketed" when nothing matches — scored in limited-data mode
+ * (never guessed into the nearest snack bucket), read by hand to grow the rules.
  */
 export function bucketOf(p: CatalogueProduct): string {
-  const hay = [p.category, p.subCategory, p.name].filter(Boolean).join(" ");
-  if (!hay.trim()) return "unbucketed";
-  for (const [re, key] of BUCKET_RULES) if (re.test(hay)) return key;
-  return "unbucketed";
+  const name = (p.name ?? "").trim();
+  const category = [p.category, p.subCategory].filter(Boolean).join(" ").trim();
+  if (!name && !category) return "unbucketed";
+
+  let bucket = "unbucketed";
+
+  // 1 · name overrides win over everything.
+  for (const [re, key] of NAME_OVERRIDES) {
+    if (name && re.test(name)) { bucket = key; break; }
+  }
+
+  // 2 · rules against the name (the product naming itself).
+  if (bucket === "unbucketed" && name) {
+    for (const [re, key] of BUCKET_RULES) if (re.test(name)) { bucket = key; break; }
+  }
+
+  // 3 · rules against the catalogue category (the shelf).
+  if (bucket === "unbucketed" && category) {
+    for (const [re, key] of BUCKET_RULES) if (re.test(category)) { bucket = key; break; }
+  }
+
+  if (bucket === "unbucketed") return bucket;
+
+  // 4 · processed-protein guard.
+  return applyProcessedGuard(bucket, p);
 }

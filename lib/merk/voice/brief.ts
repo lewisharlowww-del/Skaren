@@ -20,6 +20,7 @@ import type { CategoryStats, NutrientSpread } from "@/lib/merk/categoryScore";
 import { bucketFromCatalogue, toCategoryKey } from "@/lib/merk/categoryScore";
 import { bucketPresentation } from "@/lib/merk/voice/buckets";
 import { decideVerdict } from "@/lib/merk/voice/verdictType";
+import { readCleanNutrients } from "@/lib/merk/normalise";
 
 export type BriefNutrient = "salt" | "satFat" | "sugar" | "protein" | "fibre";
 
@@ -233,11 +234,22 @@ export function buildProductBrief(product: ProductResult, opts: BuildBriefOption
 
   const dataGaps: string[] = [];
 
-  // Read every nutrient we might turn into a driver.
+  // Read every nutrient we might turn into a driver. D1 + D2: route through the
+  // shared gated reader so an absent or implausible value (a dropped satFat, an
+  // all-zero placeholder) never reaches Merk's brief — he cannot cite a number
+  // he was never handed. Gated against the product's own shelf when we have it.
+  const { nutrients: clean } = readCleanNutrients(product.kassalappNutrition, stat);
+  const cleanFor: Record<BriefNutrient, number | null> = {
+    salt: clean.salt,
+    satFat: clean.satFat,
+    sugar: clean.sugar,
+    protein: clean.protein,
+    fibre: clean.fibre,
+  };
   const nutrients: BriefNutrient[] = ["salt", "satFat", "sugar", "protein", "fibre"];
   const values: Array<{ nutrient: BriefNutrient; value: number }> = [];
   for (const n of nutrients) {
-    const v = readNutrient(product, n);
+    const v = cleanFor[n];
     if (v == null) {
       if (n === "fibre") dataGaps.push("fibre");
       continue;
