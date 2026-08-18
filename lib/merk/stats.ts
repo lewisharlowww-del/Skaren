@@ -23,9 +23,12 @@ export type StatInputProduct = {
   nutrients: ScoreNutrients;
   watchAdditives: number;
   nova?: 1 | 2 | 3 | 4 | null;
+  /** v2 — passed through so the second pass scores with the real layers. */
+  ingredients?: string | null;
+  additiveCodes?: string[] | null;
 };
 
-const NUTRIENT_KEYS: Array<keyof ScoreNutrients> = ["salt", "satFat", "sugar", "protein", "fibre"];
+const NUTRIENT_KEYS: Array<keyof ScoreNutrients> = ["salt", "satFat", "sugar", "protein", "fibre", "energy"];
 
 // Percentile by nearest-rank, matching the spec's reference implementation.
 export function pctl(xs: number[], q: number): number {
@@ -72,18 +75,23 @@ export function buildStatsWithDiagnostics(products: StatInputProduct[]): {
       sugar: null,
       protein: null,
       fibre: null,
+      energy: null,
     };
     for (const key of NUTRIENT_KEYS) {
       const xs = list
         .map((p) => p.nutrients[key])
         .filter((v): v is number => typeof v === "number" && Number.isFinite(v) && v >= 0);
       if (xs.length < list.length * REPORT_THRESHOLD) continue; // too sparse → null
-      stat[key] = { p10: pctl(xs, 0.1), p50: pctl(xs, 0.5), p90: pctl(xs, 0.9) };
+      (stat as unknown as Record<string, { p10: number; p50: number; p90: number }>)[key] = {
+        p10: pctl(xs, 0.1),
+        p50: pctl(xs, 0.5),
+        p90: pctl(xs, 0.9),
+      };
     }
     stats[bucket] = stat;
   });
 
-  // ── Pass 2 — shelf median (scoreP50) ─────────────────────────────────
+  // ── Pass 2 — shelf median (scoreP50) + the sorted score distribution ──
   // Only possible once the bands exist. skarenScore must NOT read shelfMedian.
   const rawScores: number[] = [];
   buckets.forEach((list, bucket) => {
@@ -91,13 +99,23 @@ export function buildStatsWithDiagnostics(products: StatInputProduct[]): {
     if (!stat) return;
     const scores: number[] = [];
     for (const p of list) {
-      const input = { bucket, nutrients: p.nutrients, watchAdditives: p.watchAdditives, nova: p.nova ?? null };
+      const input = {
+        bucket,
+        nutrients: p.nutrients,
+        watchAdditives: p.watchAdditives,
+        nova: p.nova ?? null,
+        ingredients: p.ingredients ?? null,
+        additiveCodes: p.additiveCodes ?? null,
+      };
       const r = skarenScore(input, stats);
       if (r.score !== null) scores.push(r.score);
       const raw = rawSkarenScore(input, stats);
       if (raw !== null) rawScores.push(raw);
     }
+    scores.sort((a, b) => a - b);
     stat.scoreP50 = scores.length ? Math.round(pctl(scores, 0.5)) : null;
+    // The full sorted distribution powers percentileRank ("better than 71%").
+    stat.scores = scores;
   });
 
   return { stats, rawScores };

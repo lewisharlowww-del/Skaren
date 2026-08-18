@@ -155,6 +155,40 @@ function getGradeBorder(g: GradeLetter | null) {
   return g ? GRADE_BORDERS[g] ?? CARD_BORDER : CARD_BORDER;
 }
 
+// §6 UI rule — the "top of its shelf, but still a X" line shown when the
+// category ceiling clamps a product's score. Keyed on the bucket so the noun is
+// honest ("still a snack", "still soda"). Falls back to a generic phrasing.
+const CEILING_NOUN: Record<string, { no: string; en: string }> = {
+  crisps: { no: "et snacks", en: "a snack" },
+  chocolate: { no: "sjokolade", en: "chocolate" },
+  candy: { no: "godteri", en: "sweets" },
+  biscuits: { no: "kjeks", en: "a biscuit" },
+  "ice-cream": { no: "iskrem", en: "ice cream" },
+  "snack-bar": { no: "en bar", en: "a snack bar" },
+  "jam-honey": { no: "søtt pålegg", en: "a sweet spread" },
+  "soft-drink": { no: "brus", en: "soda" },
+  "energy-drink": { no: "energidrikk", en: "an energy drink" },
+  cordial: { no: "saft", en: "cordial" },
+  juice: { no: "juice", en: "juice" },
+  sausage: { no: "en pølse", en: "a sausage" },
+  "cured-meat": { no: "spekemat", en: "cured meat" },
+  "ham-bacon": { no: "bacon eller skinke", en: "ham or bacon" },
+  pizza: { no: "pizza", en: "pizza" },
+  "ready-meal": { no: "en ferdigrett", en: "a ready meal" },
+  "potato-frozen": { no: "pommes frites", en: "fried potato" },
+};
+function ceilingLine(bucket: string | undefined, lang: "en" | "no"): string {
+  const noun = bucket ? CEILING_NOUN[bucket] : undefined;
+  if (lang === "no") {
+    return noun
+      ? `Toppen av hyllen, men dette er fortsatt ${noun.no}.`
+      : "Toppen av hyllen, men fortsatt denne kategorien.";
+  }
+  return noun
+    ? `Top of its shelf, but this is still ${noun.en}.`
+    : "Top of its shelf, but still this category.";
+}
+
 function getHealthGradeBasis(product: ProductResult, hasNutrition: boolean, lang: "en" | "no" = "en") {
   const no = lang === "no";
   if (!hasNutrition) return no ? "Trenger næringsdata for å gi karakter." : "Needs nutrition data to grade.";
@@ -414,6 +448,18 @@ export function ProductPageLayout({
           additivePenalty: product.skarenBreakdown.additivePenalty,
           processingPenalty: product.skarenBreakdown.processingPenalty,
           novaLabel: product.novaGroup ? NOVA_WORD[product.novaGroup] : "",
+          // v2 — the ingredient signals (each cites its matched word), the
+          // category ceiling, the shelf rank, the band and the score version.
+          ingredientSignals: product.skarenBreakdown.ingredientSignals?.map((s) => ({
+            label: s.label,
+            points: s.points,
+            cite: s.cite,
+          })),
+          ceiling: product.skarenCeiling ?? null,
+          ceilingApplied: product.skarenCeilingApplied ?? false,
+          rank: product.skarenRank ?? null,
+          band: product.skarenBand,
+          version: product.skarenVersion,
         }
       : null;
 
@@ -636,6 +682,21 @@ export function ProductPageLayout({
           lang={lang}
           onWhy={() => setMethodOpen(true)}
         />
+        {/* §6 UI rule — when the category ceiling binds, say so out loud. Never
+            silently cap: "Top of its shelf, but this is still a snack." */}
+        {product.skarenCeilingApplied ? (
+          <p
+            style={{
+              fontSize: 12,
+              lineHeight: 1.45,
+              color: "var(--sk-text-muted)",
+              marginTop: product.merkCoverage ? 4 : 8,
+              paddingLeft: 2,
+            }}
+          >
+            {ceilingLine(product.skarenBucket, lang)}
+          </p>
+        ) : null}
         {/* §13 data-coverage line — absences belong to the interface, never to
             Merk's copy. A small grey line under the score, stated once. */}
         {product.merkCoverage ? (

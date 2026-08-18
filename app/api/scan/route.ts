@@ -171,8 +171,22 @@ export async function POST(request: Request) {
             skarenShelfMedian: scored.result.shelfMedian,
             skarenSampleSize: scored.result.n,
             skarenBreakdown: scored.result.breakdown,
+            // v2 — band, ceiling and rank so the card and sheet can be honest.
+            skarenBand: scored.result.band,
+            skarenCeiling: scored.result.ceiling,
+            skarenCeilingApplied: scored.result.ceilingApplied,
+            skarenRank: scored.result.rank,
+            skarenMode: scored.result.mode,
+            skarenVersion: scored.result.version,
           }
-        : { skarenScore: null as number | null, skarenBucket: scored.bucket, skarenBreakdown: null };
+        : {
+            skarenScore: null as number | null,
+            skarenBucket: scored.bucket,
+            skarenBreakdown: null,
+            // v2 — an excluded bucket (spice, water…) is a deliberate no-score.
+            skarenExcluded: scored.result.confidence === "limited" && scored.result.excluded === true,
+            skarenVersion: scored.result.version,
+          };
     Object.assign(productWithGrades, skarenFields);
 
     // Resolve the authenticated user + premium status once. Reused below for both

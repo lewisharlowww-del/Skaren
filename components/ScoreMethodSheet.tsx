@@ -33,6 +33,16 @@ export type SkarenExplain = {
   additivePenalty: number;
   processingPenalty: number;
   novaLabel: string;
+  /** v2 — ingredient signals, each citing the exact word it matched. */
+  ingredientSignals?: Array<{ label: string; points: number; cite: string }>;
+  /** v2 — the category ceiling, shown as its own row when it clamped the number. */
+  ceiling?: number | null;
+  ceilingApplied?: boolean;
+  /** v2 — "better than N% of the shelf". */
+  rank?: number | null;
+  /** v2 — coarse band and the score version, printed at the foot of the sheet. */
+  band?: string;
+  version?: string;
 };
 
 type Props = {
@@ -136,20 +146,41 @@ export function ScoreMethodSheet({ open, onClose, product, score, deductions, ba
                   {skaren.percentiles.map((row, i) => (
                     <PercentileRow key={row.label} label={row.label} pct={row.pct} first={i === 0} />
                   ))}
-                  {skaren.additivePenalty > 0 ? (
+                  {/* v2 — ingredient signals, each quoting the exact word it
+                      matched ("Sugar leads −6 · sukker (second)"). */}
+                  {skaren.ingredientSignals?.map((sig) => (
+                    <Row
+                      key={sig.label + sig.cite}
+                      label={sig.label}
+                      reason={sig.cite}
+                      value={`${sig.points > 0 ? "+" : "−"}${Math.abs(sig.points)}`}
+                      colour={sig.points > 0 ? "var(--sk-status-positive)" : "var(--sk-score-weak)"}
+                    />
+                  ))}
+                  {skaren.additivePenalty !== 0 ? (
                     <Row
                       label={t("product_additives", lang)}
                       reason={product.additives?.filter((a) => a.risk !== "safe").length ? String(product.additives.filter((a) => a.risk !== "safe").length) : ""}
-                      value={`−${skaren.additivePenalty}`}
+                      value={`−${Math.abs(skaren.additivePenalty)}`}
                       colour="var(--sk-score-weak)"
                     />
                   ) : null}
-                  {skaren.processingPenalty > 0 ? (
+                  {skaren.processingPenalty !== 0 ? (
                     <Row
                       label={t("factor_processing", lang)}
                       reason={skaren.novaLabel}
-                      value={`−${skaren.processingPenalty}`}
+                      value={`−${Math.abs(skaren.processingPenalty)}`}
                       colour="var(--sk-score-weak)"
+                    />
+                  ) : null}
+                  {/* v2 — the category ceiling gets its own row when it binds,
+                      in plain words, never a silent clamp (spec §6, §10). */}
+                  {skaren.ceilingApplied && skaren.ceiling != null ? (
+                    <Row
+                      label={lang === "no" ? "Kategoritak" : "Category ceiling"}
+                      reason={lang === "no" ? "toppen av hyllen, men fortsatt denne kategorien" : "top of its shelf, still this category"}
+                      value={String(skaren.ceiling)}
+                      colour="var(--sk-text-primary)"
                     />
                   ) : null}
                   {skaren.shelfMedian != null ? (
@@ -198,7 +229,7 @@ export function ScoreMethodSheet({ open, onClose, product, score, deductions, ba
                 color: "var(--sk-text-muted)"
               }}
             >
-              {t("product_model", lang)} {isSkaren ? "skaren-category-1.0" : model}
+              {t("product_model", lang)} {isSkaren ? `skaren-category-${skaren?.version ?? "2.0.0"}` : model}
             </p>
 
             <a

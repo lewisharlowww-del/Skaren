@@ -72,13 +72,18 @@ function amount(n: KassalNutrition[] | undefined, codes: string[]): number | nul
   return null;
 }
 
-// Parse E-numbers out of the ingredient text and count the watch-listed ones.
-function watchCount(ingredients: string | undefined): number {
-  if (!ingredients) return 0;
+// Parse the E-numbers out of the ingredient text (deduplicated).
+function additiveCodes(ingredients: string | undefined): string[] {
+  if (!ingredients) return [];
   const codes = (ingredients.match(/e[\s-]?\d{3,4}[a-z]?/gi) ?? [])
     .map((raw) => normalizeAdditiveCode(raw))
     .filter((c): c is string => Boolean(c));
-  return countWatchlisted(Array.from(new Set(codes)));
+  return Array.from(new Set(codes));
+}
+
+// Parse E-numbers out of the ingredient text and count the watch-listed ones.
+function watchCount(ingredients: string | undefined): number {
+  return countWatchlisted(additiveCodes(ingredients));
 }
 
 function toStatInput(p: KassalProduct): StatInputProduct | null {
@@ -94,11 +99,21 @@ function toStatInput(p: KassalProduct): StatInputProduct | null {
     sugar: amount(n, ["sukkerarter", "sukker"]),
     protein: amount(n, ["protein"]),
     fibre: amount(n, ["kostfiber", "fiber"]),
+    energy: amount(n, ["energi_kcal", "energi", "kcal"]),
   };
   if (nutrients.salt == null && nutrients.satFat == null && nutrients.protein == null && nutrients.sugar == null) {
     return null; // no usable nutrition
   }
-  return { bucket, nutrients, watchAdditives: watchCount(p.ingredients), nova: null };
+  return {
+    bucket,
+    nutrients,
+    watchAdditives: watchCount(p.ingredients),
+    // v2 — carry the ingredient list + additive codes so pass 2 scores with the
+    // real five layers (ingredient signals, tiered additives, ceiling).
+    ingredients: p.ingredients ?? null,
+    additiveCodes: additiveCodes(p.ingredients),
+    nova: null,
+  };
 }
 
 async function main() {

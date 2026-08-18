@@ -78,7 +78,7 @@ export const BUCKET_RULES: Array<[RegExp, string]> = [
   [/frossen.*gr[øo]nn|frosne\s*gr[øo]nn|wok|frossengr[øo]nn/i, "frozen-veg"],
   [/t[øo]rket|rosiner|aprikos|dadler/i, "dried-fruit"],
   [/hermetiske?\s*(tomat|bønner|mais|kikert)|bønner|kikerter|linser/i, "legumes-canned"],
-  [/syltet[øo]y|marmelade|honning/i, "jam-honey"],
+  [/syltet[øo]y|marmelade|honning|nugatti|nutella|sjokoladep[åa]legg|hasseln[øo]ttkrem/i, "jam-honey"],
   [/pean[øo]ttsm[øo]r|nøttesmør/i, "nut-butter"],
   [/ketchup|sennep|majones|dressing|remulade/i, "condiment"],
   [/pastasaus|tomatsaus|salsa|pesto/i, "cooking-sauce"],

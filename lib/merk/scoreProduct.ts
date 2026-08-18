@@ -33,6 +33,9 @@ export function scoreProduct(product: ProductResult): SkarenScored {
   });
 
   const n = nutritionDataFromKassalapp(product.kassalappNutrition ?? []);
+  const additiveCodes = (product.additives ?? [])
+    .map((a) => a.code)
+    .filter((c): c is string => Boolean(c));
   const watchAdditives = countWatchlisted(
     (product.additives ?? []).map((a) => ({ code: a.code, risk: a.risk }))
   );
@@ -46,8 +49,12 @@ export function scoreProduct(product: ProductResult): SkarenScored {
         sugar: n.sugars ?? null,
         protein: n.protein ?? null,
         fibre: n.fiber ?? null,
+        energy: n.calories ?? null,
       },
       watchAdditives,
+      // v2 — the ingredient list and additive codes drive the new layers.
+      ingredients: product.ingredients ?? null,
+      additiveCodes,
       nova: product.novaGroup ?? null,
     },
     STATS

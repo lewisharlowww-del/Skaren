@@ -62,7 +62,8 @@ const sBar = skarenScore(proteinBar, STATS);
 // 1 · Extra virgin olive oil scores well — fat is the category, not a fault.
 check("olive oil scores well (>= 55)", sOlive.score !== null && sOlive.score >= 55, `${sOlive.score}`);
 
-// 2 · Bottled water: limited-data path (n=12 < 30), not a score of 100.
+// 2 · Bottled water: no number. In v2 water is an EXCLUDED bucket (per-100 g
+// figures are meaningless), so it takes the excluded path, not a score of 100.
 check("water uses limited-data path", sWater.score === null && sWater.confidence === "limited", JSON.stringify(sWater));
 
 // 3 · Two crisps, same brand: the less salty ranks higher; both under 45.
@@ -103,7 +104,15 @@ for (const inv of invariants) {
 check("every full score is 0..100", [sOlive, sCrispSalty, sNorvegia, sCheddar].every((r) => r.score === null || (r.score >= 0 && r.score <= 100)));
 check("full results carry a breakdown", sNorvegia.confidence === "full" && "breakdown" in sNorvegia);
 check("unbucketed → no-category reason", (() => { const r = skarenScore(P("unbucketed", { salt: 1 }), STATS); return r.score === null && r.confidence === "limited" && r.reason === "no-category"; })());
-check("thin bucket → thin-category reason", sWater.score === null && sWater.confidence === "limited" && sWater.reason === "thin-category");
+// A thin SCORED bucket (oil has n=40 in the stand-in table above the 30 floor;
+// use a made-up thin scored bucket instead so the thin-category path is hit).
+check("thin scored bucket → thin-category reason", (() => {
+  const thin: CategoryStats = { biscuits: { n: 12, salt: band(0.2, 0.5, 1), satFat: band(3, 6, 12), sugar: band(15, 25, 40), protein: band(4, 6, 9), fibre: band(1, 3, 7), scoreP50: 48 } };
+  const r = skarenScore(P("biscuits", { salt: 0.5, satFat: 6, sugar: 25, protein: 6, fibre: 3 }), thin);
+  return r.score === null && r.confidence === "limited" && r.reason === "thin-category";
+})());
+// Water is an excluded bucket in v2 — no score, excluded flag set.
+check("water is excluded (v2)", (() => { const r = skarenScore(water, STATS); return r.score === null && r.confidence === "limited" && r.excluded === true; })());
 
 console.log(`\n${failures ? failures + " FAILURES" : "All Skaren Score fixture checks passed."}`);
 if (failures) process.exitCode = 1;

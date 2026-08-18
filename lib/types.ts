@@ -116,8 +116,26 @@ export type ProductResult = {
     additivePenalty: number;
     processingPenalty: number;
     used: number;
-    percentiles: Partial<Record<"salt" | "satFat" | "sugar" | "protein" | "fibre", number>>;
+    percentiles: Partial<Record<"salt" | "satFat" | "sugar" | "protein" | "fibre" | "energy", number>>;
+    /** v2 — ingredient-signal total and the cited signals for the waterfall. */
+    ingredientTotal?: number;
+    ingredientSignals?: Array<{ id: string; label: string; points: number; cite: string }>;
+    /** v2 — the full waterfall rows (base, signals, additives, processing, ceiling). */
+    rows?: Array<{ label: string; value: number; kind: string; detail?: string }>;
   } | null;
+  /* ── Skaren Score v2 fields (spec §2) ────────────────────────────────────── */
+  /** Coarse band; the UI leads with this where space allows. */
+  skarenBand?: "poor" | "weak" | "middling" | "good" | "excellent";
+  /** The category's honest maximum, and whether it clamped the number. */
+  skarenCeiling?: number;
+  skarenCeilingApplied?: boolean;
+  /** "better than N% of the shelf", or null when the distribution is absent. */
+  skarenRank?: number | null;
+  /** Which scoring mode produced the number (scored | plain | excluded). */
+  skarenMode?: "scored" | "plain" | "excluded";
+  /** True when the bucket is intentionally excluded (spice, water, coffee…). */
+  skarenExcluded?: boolean;
+  skarenVersion?: string;
 };
 
 export type ProductStore = {
