@@ -122,12 +122,16 @@ const HIGHER_IS_BETTER: Record<BriefNutrient, boolean> = {
   fibre: true,
 };
 
-// Category stats only cover salt/satFat/protein. sugar/fibre have no spread,
-// so they can appear as drivers only when we can rank them another way.
+// Category stats cover salt/satFat/protein for certain, and the shipped
+// categoryStats.json also carries sugar/fibre spreads. Read those defensively:
+// when a spread is present the nutrient can be a ranked driver, otherwise it is
+// dropped (a value with no shelf to compare against is not a driver).
 function spreadFor(stat: CategoryStats[string], nutrient: BriefNutrient): NutrientSpread | null {
   if (nutrient === "salt") return stat.salt;
   if (nutrient === "satFat") return stat.satFat;
   if (nutrient === "protein") return stat.protein;
+  const extra = (stat as unknown as Record<string, NutrientSpread | null | undefined>)[nutrient];
+  if (extra && Number.isFinite(extra.p10) && Number.isFinite(extra.p90)) return extra;
   return null;
 }
 
@@ -197,6 +201,11 @@ const NOVA_LABEL: Record<1 | 2 | 3 | 4, string> = {
 export type BuildBriefOptions = {
   /** Category-relative stats, when the app has them. Enables drivers/percentile. */
   stats?: CategoryStats | null;
+  /** The resolved bucket key, when the caller already computed it (e.g. the
+   *  Skaren score). Overrides the brief's own catalogue bucketing so the brief
+   *  and the score agree on the same shelf — and so `stats` is looked up under
+   *  the key it is actually stored under. */
+  bucket?: string | null;
   /** Overall 0-100 score for the product, when already computed. */
   score?: number | null;
   /** Percentile inside the category, when already computed. */
@@ -213,6 +222,7 @@ export type BuildBriefOptions = {
  */
 export function buildProductBrief(product: ProductResult, opts: BuildBriefOptions = {}): ProductBrief {
   const category =
+    (opts.bucket && opts.bucket !== "unbucketed" ? opts.bucket : null) ??
     bucketFromCatalogue(undefined, product.kassalappCategories) ??
     toCategoryKey(product.categories) ??
     toCategoryKey(product.kassalappCategories.join(" ")) ??

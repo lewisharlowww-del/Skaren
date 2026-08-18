@@ -15,8 +15,15 @@ import { coverageLine } from "@/lib/merk/voice/partition";
 import { briefCacheKey } from "@/lib/merk/voice/cache";
 import { MERK_VOICE_VERSION } from "@/lib/merk/voice/prompt";
 import { scoreProduct } from "@/lib/merk/scoreProduct";
+import skarenStatsJson from "@/lib/merk/categoryStats.json";
+import type { CategoryStats } from "@/lib/merk/categoryScore";
 import type { MerkCopy } from "@/lib/merk/voice/copy";
 import type { MerkVerdict, ProductResult } from "@/lib/types";
+
+// The shipped category distributions (13k+ Kassalapp products, ~49 buckets).
+// Shared by the Skaren score and Merk's brief so both compare a product against
+// the same shelf. The json is a superset of the brief's stat shape.
+const SKAREN_CATEGORY_STATS = skarenStatsJson as unknown as CategoryStats;
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -211,8 +218,19 @@ export async function POST(request: Request) {
     // copy only when it was written from THIS exact brief (so a rescore or a
     // reformulation invalidates it). Generate fresh for premium on a miss.
     const voiceLang: "en" | "nb" = lang === "no" ? "nb" : "en";
+    // Feed the brief the SAME bucket + category stats the Skaren score used, so
+    // Merk gets a real shelf to compare against (drivers, percentile, verdict
+    // type) instead of falling to LIMITED_DATA on every product. Without this
+    // the brief's own bucketer disagrees with the stats keys and categoryN is 0.
+    const skarenPct =
+      scored.result.score !== null && scored.result.breakdown
+        ? scored.result.breakdown.nutrition
+        : null;
     const brief = buildProductBrief(productWithGrades as ProductResult, {
-      score: productWithGrades.healthScore ?? undefined,
+      stats: SKAREN_CATEGORY_STATS,
+      bucket: scored.bucket,
+      score: productWithGrades.healthScore ?? scored.result.score ?? undefined,
+      percentile: skarenPct,
     });
     const briefHash = briefCacheKey(brief, voiceLang);
     const cachedCopyEntry = cachedAi?.merkCopy?.[lang] ?? null;
