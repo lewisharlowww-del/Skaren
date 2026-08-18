@@ -43,8 +43,7 @@ const BUCKET_TERMS: string[] = [
   // buckets.ts already defines, so the rebuilt stats cover every shelf a product
   // can land on (a breaded chicken → ready-meal, baby pasta → baby-food).
   "ferdigrett middag", "panert kylling", "fiskepinner", "grøt barn", "velling",
-  "havregryn", "frokostblanding sjokolade", "ris", "tortilla", "pommes frites",
-  "frosne grønnsaker", "hermetiske bønner", "te", "kakemiks", "gjær",
+  "havregryn", "tortilla", "grønn te", "kakemiks",
 ];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -65,6 +64,9 @@ async function search(term: string, page: number): Promise<KassalProduct[]> {
   url.searchParams.set("page", String(page));
   const res = await fetch(url, { headers: { Authorization: `Bearer ${TOKEN}` } });
   if (res.status === 429) { await sleep(4000); return search(term, page); }
+  // A 422 means the query was rejected (e.g. too short a term). Skip it rather
+  // than crash the whole build before the JSON is written.
+  if (res.status === 422) { console.warn(`  (skipped "${term}": 422)`); return []; }
   if (!res.ok) throw new Error(`${res.status} ${url}`);
   const json = (await res.json()) as { data?: KassalProduct[] };
   return json.data ?? [];
