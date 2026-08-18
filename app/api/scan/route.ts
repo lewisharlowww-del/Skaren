@@ -14,6 +14,7 @@ import { generateMerkCopy } from "@/lib/merk/voice/generate";
 import { coverageLine } from "@/lib/merk/voice/partition";
 import { briefCacheKey } from "@/lib/merk/voice/cache";
 import { MERK_VOICE_VERSION } from "@/lib/merk/voice/prompt";
+import { excludedVerdict, excludedCopy } from "@/lib/merk/voice/excluded";
 import { scoreProduct } from "@/lib/merk/scoreProduct";
 import skarenStatsJson from "@/lib/merk/categoryStats.json";
 import type { CategoryStats } from "@/lib/merk/categoryScore";
@@ -176,6 +177,7 @@ export async function POST(request: Request) {
             skarenCeiling: scored.result.ceiling,
             skarenCeilingApplied: scored.result.ceilingApplied,
             skarenRank: scored.result.rank,
+            skarenRankSuppressed: scored.result.rankSuppressed,
             skarenMode: scored.result.mode,
             skarenVersion: scored.result.version,
           }
@@ -256,9 +258,21 @@ export async function POST(request: Request) {
     // premium, and never contradicts what Merk (silently) omits.
     const merkCoverage = coverageLine(brief.dataGaps ?? [], voiceLang);
 
+    // ── Excluded shelves short-circuit (audit D6) ────────────────────────
+    // Water, coffee, sugar, spice, alcohol… have no score because a per-100 g
+    // figure is meaningless there. Merk must not be asked to comment on their
+    // nutrition (the run caught "0 g sugar, water rating stays steady"). Serve a
+    // fixed, hand-written line and skip the model call entirely — cheaper and it
+    // can never say something absurd.
+    const isExcludedShelf = scored.result.mode === "excluded";
+    if (isExcludedShelf) {
+      merkVerdict = merkVerdict ?? excludedVerdict(scored.bucket, lang);
+      merkCopy = merkCopy ?? excludedCopy(scored.bucket, voiceLang);
+    }
+
     const needsSummary = !cachedAi && isPremium;
-    const needsVerdict = !merkVerdict && isPremium;
-    const needsCopy = !merkCopy && isPremium;
+    const needsVerdict = !merkVerdict && isPremium && !isExcludedShelf;
+    const needsCopy = !merkCopy && isPremium && !isExcludedShelf;
 
     if (needsSummary || needsVerdict || needsCopy) {
       const [freshSummary, freshVerdict, freshCopy] = await Promise.all([

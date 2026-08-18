@@ -16,7 +16,10 @@
 // v4: the separation contract (§13) — brief is partitioned into per-slot slices,
 //     absences move to a coverage line the UI renders, and the validator now
 //     rejects absence-talk and cross-slot overlap. Few-shot C rewritten to obey.
-export const MERK_VOICE_VERSION = 4;
+// v5: audit D7 — the "there's one with less salt" stock closer is banned by the
+//     validator (it appeared on ~30/50 cards); numbers now arrive pre-gated by
+//     the D1/D2 parser so a dropped value never reaches a slot.
+export const MERK_VOICE_VERSION = 5;
 
 export const MERK_SYSTEM_PROMPT = `You are Merk, the voice of the Skaren food-scanning app.
 

@@ -47,6 +47,13 @@ const COMPARISON =
 const ABSENCE_TALK =
   /\b(not listed|no data|missing|isn'?t listed|check it yourself|see for yourself|can'?t say|cannot say|mangler|ikke oppgitt|ikke listet|sjekk selv|se selv)\b/i;
 
+// Stock closing line (audit D7). "…there's one with less salt" appeared on ~30
+// of 50 cards — a template pretending to be a sentence. A recommendation that
+// resolves to the same stock deflection every time is a validator failure, not
+// a style choice: name the actual product or say nothing.
+const STOCK_CLOSER =
+  /there'?s one with (less|lower|more)|det finnes en med (mindre|lavere|mer)|there'?s a (better|less salty) one|se en (bedre|mildere)/i;
+
 // The §13 overlap ceiling. Above this, the verdict and buy note are telling the
 // same story — the separation contract is broken and the pair must be retried.
 export const MAX_SLOT_OVERLAP = 0.4;
@@ -138,6 +145,12 @@ export function validate(copy: MerkCopy, brief: ProductBrief): Validation {
   // missing figure or deflect the reader — that belongs to the coverage line.
   if (ABSENCE_TALK.test(`${copy.verdict} ${copy.wouldMerkBuy}`)) {
     return fail("absence-talk");
+  }
+
+  // Stock closing line (audit D7). The "there's one with less X" deflection is a
+  // template masquerading as advice; ban it in either slot.
+  if (STOCK_CLOSER.test(`${copy.verdict} ${copy.wouldMerkBuy}`)) {
+    return fail("stock-closer");
   }
 
   // The separation contract (§13). The verdict answers "how good"; the buy note

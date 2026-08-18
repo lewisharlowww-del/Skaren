@@ -86,6 +86,7 @@ type Row = {
   shelfMedian?: number | null;
   n?: number | null;
   rank?: number | null;
+  rankSuppressed?: string | null;
   ceiling?: number | null;
   ceilingApplied?: boolean;
   mode?: string;
@@ -162,6 +163,7 @@ async function scanOne(bucketWanted: string, term: string): Promise<Row> {
   row.shelfMedian = scored.result.shelfMedian ?? null;
   row.n = scored.result.n ?? null;
   row.rank = scored.result.rank ?? null;
+  row.rankSuppressed = scored.result.rankSuppressed ?? null;
   row.ceiling = scored.result.ceiling ?? null;
   row.ceilingApplied = scored.result.ceilingApplied;
   row.mode = scored.result.mode;
@@ -218,7 +220,10 @@ function md(rows: Row[]): string {
   for (const r of rows) {
     const score = r.score === null ? (r.excluded ? "—" : "n/a") : String(r.score);
     const band = r.band ?? "";
-    const rank = r.rank != null && r.n != null ? `beats ${r.rank}%` : "";
+    const rank = r.rank != null && r.n != null ? `beats ${r.rank}%`
+      : r.rankSuppressed === "tight-shelf" ? "tight shelf"
+      : r.rankSuppressed === "disagrees" ? "n/a (lopsided)"
+      : "";
     const head = (r.copyHeadline || r.verdictHeadline || r.note || "").replace(/\|/g, "/");
     const name = (r.name || r.term).replace(/\|/g, "/");
     out.push(`| ${r.bucket} | ${name} | ${score} | ${band} | ${rank} | ${head} |`);
@@ -239,6 +244,8 @@ function md(rows: Row[]): string {
       const bits = [`**Skaren Score: ${r.score}/100** (${r.band})`];
       if (r.shelfMedian != null) bits.push(`shelf median ${r.shelfMedian}`);
       if (r.rank != null && r.n != null) bits.push(`beats ${r.rank}% of the ${r.n} on this shelf`);
+      else if (r.rankSuppressed === "tight-shelf") bits.push(`rank withheld: this shelf is tightly packed`);
+      else if (r.rankSuppressed === "disagrees") bits.push(`rank withheld: the shelf is lopsided (band and rank disagree)`);
       if (r.ceilingApplied) bits.push(`ceiling ${r.ceiling} applied`);
       out.push(bits.join(" · "));
     }

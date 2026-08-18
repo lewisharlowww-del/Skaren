@@ -111,8 +111,13 @@ export type ScoreResult =
       ceilingApplied: boolean;
       /** v2 — the ceiling value that applied, for the sheet's ceiling row. */
       ceiling: number;
-      /** v2 — "better than N% of the shelf", or null when scores are absent. */
+      /** v2 — "better than N% of the shelf", or null when scores are absent.
+       *  v2.1 (audit D4) — also null when the rank disagrees with the band or the
+       *  shelf is too tight to rank; `rankSuppressed` then says why. */
       rank: number | null;
+      /** audit D4 — why rank was withheld, so the card shows the explaining fact
+       *  instead of a number that contradicts the band. */
+      rankSuppressed: "tight-shelf" | "disagrees" | null;
       /** v2 — the scoring mode used (scored | plain). */
       mode: ScoreMode;
       version: string;
@@ -226,6 +231,45 @@ function percentileRank(value: number, scores: number[] | undefined): number | n
   let below = 0;
   for (const s of scores) if (s < value) below++;
   return Math.round((100 * below) / scores.length);
+}
+
+/**
+ * Rank, honesty-gated (audit D4). The band is an ABSOLUTE judgement; the rank is
+ * a RELATIVE one. On a shelf where everything is good (cod, prawns) or everything
+ * is poor (bread) the two genuinely disagree — a 95 that "beats 54%", an 86
+ * "excellent" that trails its own median. Both are correct; printing them side by
+ * side is the trust defect. So we only surface the rank when it agrees in
+ * direction with the score, and never on a tight shelf where a percentile is
+ * describing noise.
+ *
+ * Returns { rank, suppressed } — rank is null when suppressed, with a reason the
+ * brief/UI can turn into the fact that explains it ("this shelf is tightly
+ * packed") instead of a contradictory number.
+ */
+function gatedRank(
+  value: number,
+  displayScores: number[] | undefined
+): { rank: number | null; suppressed: "tight-shelf" | "disagrees" | null } {
+  const raw = percentileRank(value, displayScores);
+  if (raw == null) return { rank: null, suppressed: null };
+
+  // Tight shelf: if the displayed scores span under 15 points p10..p90, a
+  // percentile is measurement noise, not quality. Suppress rank language.
+  if (displayScores && displayScores.length >= 8) {
+    const sorted = displayScores; // already sorted by the builder
+    const p10 = sorted[Math.floor(0.1 * sorted.length)];
+    const p90 = sorted[Math.min(sorted.length - 1, Math.floor(0.9 * sorted.length))];
+    if (p90 - p10 < 15) return { rank: null, suppressed: "tight-shelf" };
+  }
+
+  // Direction check: the score and the rank must both sit above the midpoint or
+  // both below it. When they disagree the shelf is lopsided, and the rank would
+  // contradict the band on the card.
+  const scoreAbove = value >= 50;
+  const rankAbove = raw >= 50;
+  if (scoreAbove !== rankAbove) return { rank: null, suppressed: "disagrees" };
+
+  return { rank: raw, suppressed: null };
 }
 
 function limitedData(p: ScoreProduct, reason?: "no-category" | "thin-category" | "no-ingredients" | "no-nutrition"): ScoreResult {
@@ -357,6 +401,11 @@ export function skarenScore(p: ScoreProduct, stats: CategoryStats): ScoreResult 
     rows.push({ label: "Category ceiling", value: ceiling, kind: "ceiling", detail: "top of its shelf, still this category" });
   }
 
+  // audit D4 — rank is gated against the band's direction and the shelf's
+  // tightness on the DISPLAYED score, so the card never prints a percentile that
+  // argues with the word beside it.
+  const { rank, suppressed: rankSuppressed } = gatedRank(value, s.scores);
+
   return {
     score: value,
     bucket: p.bucket,
@@ -366,7 +415,8 @@ export function skarenScore(p: ScoreProduct, stats: CategoryStats): ScoreResult 
     band: bandOf(value),
     ceilingApplied,
     ceiling,
-    rank: percentileRank(raw, s.scores),
+    rank,
+    rankSuppressed,
     mode,
     version: SCORE_VERSION,
     breakdown: {

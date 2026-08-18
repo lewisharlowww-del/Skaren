@@ -21,6 +21,8 @@ import { bucketFromCatalogue, toCategoryKey } from "@/lib/merk/categoryScore";
 import { bucketPresentation } from "@/lib/merk/voice/buckets";
 import { decideVerdict } from "@/lib/merk/voice/verdictType";
 import { readCleanNutrients } from "@/lib/merk/normalise";
+import { MODE_OF, PROFILE_OF } from "@/lib/merk/buckets";
+import { PROFILES } from "@/lib/merk/profiles";
 
 export type BriefNutrient = "salt" | "satFat" | "sugar" | "protein" | "fibre";
 
@@ -260,11 +262,31 @@ export function buildProductBrief(product: ProductResult, opts: BuildBriefOption
 
   // Rank candidate drivers by their distance from the category median. Only
   // nutrients the category stats can place get a band and a leverage score.
+  //
+  // audit D5 — two gates keep protein (and any near-flat nutrient) from taking
+  // over the voice on shelves where it is not a real axis:
+  //   a. profile gate — a nutrient the bucket's PROFILE gives no weight is not a
+  //      story for that shelf ("top protein for a soft drink" is not information).
+  //   b. trivial-spread gate — if the whole shelf sits within a hair on this
+  //      nutrient, a tiny absolute gap produces an extreme percentile that reads
+  //      as drama. Below a per-nutrient threshold it may still score, but it is
+  //      never eligible to be NAMED.
+  const profile = MODE_OF(category) === "plain" ? null : PROFILE_OF(category);
+  const profileNutrients = profile
+    ? new Set(Object.keys(PROFILES[profile]) as BriefNutrient[])
+    : null; // plain buckets have no profile — allow all (they name few facts anyway)
+  const MENTION_MIN_SPREAD: Record<BriefNutrient, number> = {
+    protein: 2, salt: 0.2, sugar: 1, satFat: 1.5, fibre: 1,
+  };
   type Candidate = BriefDriver & { distance: number };
   const candidates: Candidate[] = [];
   for (const { nutrient, value } of values) {
     const spread = stat ? spreadFor(stat, nutrient) : null;
     if (!spread) continue;
+    // a. profile gate.
+    if (profileNutrients && !profileNutrients.has(nutrient)) continue;
+    // b. trivial-spread gate.
+    if (spread.p90 - spread.p10 < MENTION_MIN_SPREAD[nutrient]) continue;
     const { vsCategory, distance } = placeInCategory(value, spread, HIGHER_IS_BETTER[nutrient]);
     candidates.push({
       nutrient,
