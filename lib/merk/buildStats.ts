@@ -22,7 +22,7 @@ const TOKEN = process.env.KASSALAPP_API_KEY;
 const BASE = "https://kassal.app/api/v1";
 const PAGE_SIZE = 100;
 const MAX_PAGES = 6; // up to ~600 products per search term
-const RATE_MS = 400;
+const RATE_MS = 1100; // stay under the 60 calls/min API limit (1 call/sec + margin)
 
 // One search term per bucket. Broad enough to fill the shelf, specific enough
 // to stay on it. bucketOf() re-buckets every returned product, so a term that
