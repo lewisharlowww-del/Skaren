@@ -17,6 +17,8 @@ import { buildStatsWithDiagnostics, pctl, type StatInputProduct } from "@/lib/me
 import { bucketOf } from "@/lib/merk/categories";
 import { countWatchlisted } from "@/lib/merk/watchlist";
 import { normalizeAdditiveCode } from "@/lib/additives";
+import { readCleanNutrients } from "@/lib/merk/normalise";
+import type { KassalappNutrition } from "@/lib/types";
 
 const TOKEN = process.env.KASSALAPP_API_KEY;
 const BASE = "https://kassal.app/api/v1";
@@ -37,6 +39,12 @@ const BUCKET_TERMS: string[] = [
   "syltetøy", "peanøttsmør", "ketchup", "pastasaus", "suppe", "krydder", "sukker",
   "energidrikk", "brus", "saft", "juice", "vann", "kaffe", "pizza", "ferdigmiddag",
   "barnemat", "egg",
+  // audit D3 — the processed siblings the guard now routes into, plus the splits
+  // buckets.ts already defines, so the rebuilt stats cover every shelf a product
+  // can land on (a breaded chicken → ready-meal, baby pasta → baby-food).
+  "ferdigrett middag", "panert kylling", "fiskepinner", "grøt barn", "velling",
+  "havregryn", "frokostblanding sjokolade", "ris", "tortilla", "pommes frites",
+  "frosne grønnsaker", "hermetiske bønner", "te", "kakemiks", "gjær",
 ];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -62,15 +70,8 @@ async function search(term: string, page: number): Promise<KassalProduct[]> {
   return json.data ?? [];
 }
 
-// Kassalapp nutrition codes → the score's nutrients (per 100 g).
-function amount(n: KassalNutrition[] | undefined, codes: string[]): number | null {
-  if (!n) return null;
-  for (const code of codes) {
-    const hit = n.find((x) => x.code === code);
-    if (hit && Number.isFinite(Number(hit.amount))) return Number(hit.amount);
-  }
-  return null;
-}
+// Nutrition is read via the shared gated parser (readCleanNutrients) so the
+// shipped stats match the live scan path exactly — see toStatInput below.
 
 // Parse the E-numbers out of the ingredient text (deduplicated).
 function additiveCodes(ingredients: string | undefined): string[] {
@@ -90,16 +91,31 @@ function toStatInput(p: KassalProduct): StatInputProduct | null {
   const bucket = bucketOf({
     name: p.name ?? null,
     category: p.category?.map((c) => c.name).filter(Boolean).join(" ") ?? null,
+    // D3 — the guard needs the ingredient list + additive count so breaded
+    // chicken lands on ready-meal here too, matching the live scan path.
+    ingredients: p.ingredients ?? null,
+    additiveCount: additiveCodes(p.ingredients).length,
   });
   if (bucket === "unbucketed") return null;
-  const n = p.nutrition;
+
+  // D1 + D2 — build the shipped stats from the SAME gated parser the live scan
+  // uses. Without this the shelves are contaminated (biscuit salt=0 placeholder
+  // rows, mono-fat mis-read as satFat), and every product is then ranked against
+  // dirty bands. Adapt the raw rows to the reader's {code,displayName,amount}.
+  const rows: KassalappNutrition[] = (p.nutrition ?? []).map((r) => ({
+    code: r.code,
+    displayName: r.code,
+    amount: r.amount,
+    unit: r.unit,
+  }));
+  const { nutrients: cleaned } = readCleanNutrients(rows); // no stat yet (pass 0)
   const nutrients = {
-    salt: amount(n, ["salt"]),
-    satFat: amount(n, ["mettet_fett", "fett_mettet"]),
-    sugar: amount(n, ["sukkerarter", "sukker"]),
-    protein: amount(n, ["protein"]),
-    fibre: amount(n, ["kostfiber", "fiber"]),
-    energy: amount(n, ["energi_kcal", "energi", "kcal"]),
+    salt: cleaned.salt,
+    satFat: cleaned.satFat,
+    sugar: cleaned.sugar,
+    protein: cleaned.protein,
+    fibre: cleaned.fibre,
+    energy: cleaned.energy,
   };
   if (nutrients.salt == null && nutrients.satFat == null && nutrients.protein == null && nutrients.sugar == null) {
     return null; // no usable nutrition

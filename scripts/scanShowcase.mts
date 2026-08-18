@@ -14,6 +14,7 @@ import { fetchOpenFoodFactsProduct, normalizeOpenFoodFactsProduct } from "@/lib/
 import { buildProductBrief } from "@/lib/merk/voice/brief";
 import { generateMerkCopy } from "@/lib/merk/voice/generate";
 import { scoreProduct } from "@/lib/merk/scoreProduct";
+import { excludedVerdict, excludedCopy } from "@/lib/merk/voice/excluded";
 import skarenStatsJson from "@/lib/merk/categoryStats.json";
 import type { CategoryStats } from "@/lib/merk/categoryScore";
 import type { ProductResult } from "@/lib/types";
@@ -180,6 +181,15 @@ async function scanOne(bucketWanted: string, term: string): Promise<Row> {
     score: productWithGrades.healthScore ?? scored.result.score ?? undefined,
     percentile: skarenPct,
   });
+  // D6 — excluded shelves short-circuit to fixed lines, exactly like the route.
+  // No model call, no absurd "0 g sugar, water rating stays steady".
+  if (scored.result.mode === "excluded") {
+    const v = excludedVerdict(scored.bucket, "en");
+    const c = excludedCopy(scored.bucket, "en");
+    row.verdictHeadline = v.headline; row.verdictText = v.text; row.verdictExpr = v.expression; row.verdictSource = v.source;
+    row.copyHeadline = c.headline; row.copyVerdict = c.verdict; row.copyAdditive = c.additiveNote; row.copyBuy = c.wouldMerkBuy; row.copySource = "static";
+    return row;
+  }
   const [copyRes, verdict] = await Promise.all([
     generateMerkCopy(brief, "en").catch((e) => ({ copy: null, source: "error:" + String(e) } as any)),
     generateMerkVerdict(productWithGrades, "en").catch(() => null),
